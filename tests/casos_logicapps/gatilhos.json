@@ -1,0 +1,29 @@
+{
+  "_comentario": "Um gatilho de cada tipo oficial (Recurrence, Request, Http, HttpWebhook, ApiConnection, ApiConnectionWebhook) e o que o leitor deve extrair.",
+  "fonte": "https://learn.microsoft.com/azure/logic-apps/logic-apps-workflow-actions-triggers#trigger-types-list",
+  "casos": [
+    {"nome": "Manual", "gatilho": {"type": "Request", "kind": "Http", "inputs": {}},
+     "tipo": "Request", "conector": null, "por_dia": null, "texto_contem": ["sob demanda", "qualquer método"]},
+    {"nome": "Verificar_status", "gatilho": {"type": "Http", "recurrence": {"frequency": "Hour", "interval": 2},
+       "inputs": {"method": "GET", "uri": "https://status.exemplo.com/api"}},
+     "tipo": "Http", "conector": null, "por_dia": "12", "operacao": "GET https://status.exemplo.com/api",
+     "texto_contem": ["a cada 2 horas"]},
+    {"nome": "Assinar_eventos", "gatilho": {"type": "HttpWebhook", "inputs": {"subscribe": {"method": "POST", "uri": "https://eventos.exemplo.com/assinar"},
+       "unsubscribe": {"method": "POST", "uri": "https://eventos.exemplo.com/cancelar"}}},
+     "tipo": "HttpWebhook", "conector": null, "por_dia": null, "texto_contem": ["webhook"]},
+    {"nome": "Nova_mensagem_teams", "gatilho": {"type": "ApiConnectionWebhook", "inputs": {
+       "host": {"connection": {"name": "@parameters('$connections')['teams']['connectionId']"}}, "path": "/subscriptions", "body": {}}},
+     "tipo": "ApiConnectionWebhook", "conector": "teams", "por_dia": null, "texto_contem": ["webhook", "teams"]},
+    {"nome": "Item_alterado", "gatilho": {"type": "ApiConnection", "recurrence": {"frequency": "Minute", "interval": 15},
+       "conditions": [{"expression": "@equals(triggerBody()?['Status'], 'Aprovado')"}],
+       "runtimeConfiguration": {"concurrency": {"runs": 1}},
+       "inputs": {"host": {"connection": {"name": "@parameters('$connections')['sharepointonline']['connectionId']"}},
+         "method": "get", "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://exemplo.sharepoint.com/sites/demo'))}/tables/@{encodeURIComponent(encodeURIComponent('Chamados'))}/onupdateditems"}},
+     "tipo": "ApiConnection", "conector": "sharepointonline", "por_dia": "96",
+     "operacao": "Quando um item é criado ou modificado na lista 'Chamados'",
+     "condicoes": ["@equals(triggerBody()?['Status'], 'Aprovado')"], "concorrencia": 1,
+     "texto_contem": ["sharepointonline", "a cada 15 minutos"]},
+    {"nome": "Agenda", "gatilho": {"type": "Recurrence", "recurrence": {"frequency": "Day", "interval": 1, "schedule": {"hours": [7], "minutes": [0]}}},
+     "tipo": "Recurrence", "conector": null, "por_dia": "1", "texto_contem": ["todo dia, às 07:00"]}
+  ]
+}

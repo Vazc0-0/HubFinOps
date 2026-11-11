@@ -1,0 +1,93 @@
+{
+  "_comentario": "Gabarito escrito à mão, lendo o JSON e a documentação oficial, SEM rodar o leitor. Cobre todos os tipos de ação da Workflow Definition Language listados na referência oficial.",
+  "gatilho": {
+    "nome": "Ao_receber_pedido", "tipo": "Request", "conector": null,
+    "texto_contem": ["sob demanda", "POST"],
+    "campos_entrada": ["cliente", "itens", "pedidoId"],
+    "por_dia": null
+  },
+  "ordem": [
+    ["1", "Inicializar_total", "InitializeVariable", null, null],
+    ["2", "Inicializar_log", "InitializeVariable", null, null],
+    ["3", "Buscar_cliente", "Http", null, null],
+    ["4", "Ler_cliente", "ParseJson", null, null],
+    ["5", "Somar_itens", "Foreach", null, null],
+    ["5.1", "Somar_valor", "IncrementVariable", "Somar_itens", null],
+    ["5.2", "Registrar_item", "AppendToArrayVariable", "Somar_itens", null],
+    ["5.3", "Por_lote", "Foreach", "Somar_itens", null],
+    ["5.3.1", "Validar_lote", "Compose", "Por_lote", null],
+    ["6", "Escolher_canal", "Switch", null, null],
+    ["6.Caso_email.1", "Montar_email", "Compose", "Escolher_canal", "Caso_email"],
+    ["6.Caso_sms.1", "Aguardar_janela", "Wait", "Escolher_canal", "Caso_sms"],
+    ["6.Caso_sms.2", "Enviar_sms", "Http", "Escolher_canal", "Caso_sms"],
+    ["6.P.1", "Canal_invalido", "Terminate", "Escolher_canal", "Padrão"],
+    ["7", "Tentar_confirmar", "Until", null, null],
+    ["7.1", "Consultar_status", "Http", "Tentar_confirmar", null],
+    ["8", "Resumo_html", "Select", null, null],
+    ["9", "Responder_erro", "Response", null, null],
+    ["10", "Juntar_linhas", "Join", null, null],
+    ["11", "Calcular_desconto", "JavaScriptCode", null, null],
+    ["12", "Notificar_fluxo_filho", "Workflow", null, null],
+    ["13", "Chamar_function", "Function", null, null],
+    ["14", "Responder", "Response", null, null]
+  ],
+  "usa": {
+    "Inicializar_total": [], "Inicializar_log": [],
+    "Buscar_cliente": ["gatilho"],
+    "Ler_cliente": ["acao:Buscar_cliente"],
+    "Somar_itens": ["gatilho"],
+    "Somar_valor": ["item:Somar_itens"],
+    "Registrar_item": ["item:Somar_itens"],
+    "Por_lote": ["item:Somar_itens"],
+    "Validar_lote": ["item:Por_lote", "item:Somar_itens"],
+    "Escolher_canal": ["acao:Ler_cliente"],
+    "Montar_email": ["acao:Ler_cliente"],
+    "Aguardar_janela": [],
+    "Enviar_sms": ["variavel:total"],
+    "Canal_invalido": [],
+    "Tentar_confirmar": ["acao:Consultar_status"],
+    "Consultar_status": ["gatilho"],
+    "Resumo_html": ["item:Resumo_html", "variavel:log"],
+    "Responder_erro": ["acao:Tentar_confirmar"],
+    "Juntar_linhas": ["acao:Resumo_html"],
+    "Calcular_desconto": [],
+    "Notificar_fluxo_filho": ["gatilho"],
+    "Chamar_function": ["acao:Calcular_desconto"],
+    "Responder": ["acao:Juntar_linhas", "variavel:total"]
+  },
+  "paralelo": {
+    "Calcular_desconto": ["Notificar_fluxo_filho"],
+    "Notificar_fluxo_filho": ["Calcular_desconto"]
+  },
+  "variaveis": {
+    "total": { "tipo": "float", "criada_em": "Inicializar_total", "alterada_em": ["Somar_valor"] },
+    "log": { "tipo": "array", "criada_em": "Inicializar_log", "alterada_em": ["Registrar_item"] }
+  },
+  "conectores": [],
+  "trata_erro": true,
+  "achados": [["SEGREDO_NO_CABECALHO", "Buscar_cliente"]],
+  "cobranca": {
+    "fixas_por_execucao": 15,
+    "conector_fixas": 0,
+    "por_item_de_loop": { "Somar_itens": 3, "Somar_itens × Por_lote": 1, "Tentar_confirmar": 1 },
+    "so_em_caso_de_falha": ["Responder_erro"]
+  },
+  "detalhes": {
+    "Buscar_cliente": { "metodo": "GET", "cabecalhos": ["Authorization"] },
+    "Ler_cliente": { "campos": { "nome": "string", "email": "string" } },
+    "Somar_itens": { "sequencial": true, "paralelismo": 1 },
+    "Por_lote": { "sequencial": false, "paralelismo": null },
+    "Escolher_canal": { "casos": { "Caso_email": "email", "Caso_sms": "sms" }, "tem_padrao": true },
+    "Aguardar_janela": { "intervalo": "5 Minute" },
+    "Canal_invalido": { "status": "Failed", "erro": "Canal não suportado" },
+    "Tentar_confirmar": { "limite_vezes": 10, "limite_tempo": "PT1H" },
+    "Resumo_html": { "mapa": ["linha"] },
+    "Juntar_linhas": { "separador": "; " },
+    "Calcular_desconto": { "linhas_de_codigo": 2 },
+    "Notificar_fluxo_filho": { "gatilho_filho": "manual" },
+    "Chamar_function": { "metodo": "POST" },
+    "Responder": { "status": 200 },
+    "Responder_erro": { "status": 500 },
+    "Inicializar_total": { "variaveis": [ { "nome": "total", "tipo": "float", "valor": 0 } ] }
+  }
+}

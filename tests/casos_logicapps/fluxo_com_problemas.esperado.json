@@ -1,0 +1,71 @@
+{
+  "_comentario": "Gabarito escrito à mão. Fluxo com 14 problemas plantados de propósito, um ou mais de cada regra.",
+  "gatilho": {
+    "nome": "Quando_item_criado", "tipo": "ApiConnection", "conector": "sharepointonline",
+    "operacao": "Quando um item é criado na lista 'Pedidos'",
+    "texto_contem": ["a cada 3 minutos"],
+    "dividir_em": "@triggerBody()?['value']",
+    "usa": ["parametro:siteUrl"],
+    "por_dia": "480"
+  },
+  "ordem": [
+    ["1", "Inicializar_contador", "InitializeVariable", null, null],
+    ["2", "Registrar", "Compose", null, null],
+    ["3", "Processar", "Foreach", null, null],
+    ["3.1", "Guardar_ultimo", "SetVariable", "Processar", null],
+    ["3.2", "Contar", "IncrementVariable", "Processar", null],
+    ["3.3", "Anotar", "AppendToStringVariable", "Processar", null],
+    ["4", "Enviar_resumo", "ApiConnection", null, null],
+    ["5", "Chamar_api", "Http", null, null],
+    ["6", "Item_solto", "Compose", null, null],
+    ["7", "Ciclo_a", "Compose", null, null],
+    ["8", "Ciclo_b", "Compose", null, null]
+  ],
+  "usa": {
+    "Inicializar_contador": [],
+    "Registrar": ["acao:Guardar_ultimo"],
+    "Processar": ["gatilho"],
+    "Guardar_ultimo": ["item:Processar"],
+    "Contar": [],
+    "Anotar": [],
+    "Enviar_resumo": ["acao:Montar_resumo", "parametro:emailEquipe", "variavel:contador"],
+    "Chamar_api": ["parametro:chaveApi", "variavel:contador"],
+    "Item_solto": ["item:?"],
+    "Ciclo_a": [],
+    "Ciclo_b": []
+  },
+  "paralelo": {},
+  "variaveis": {
+    "contador": { "tipo": "integer", "criada_em": "Inicializar_contador", "alterada_em": ["Guardar_ultimo", "Contar"] }
+  },
+  "conectores": ["office365", "sharepointonline"],
+  "trata_erro": false,
+  "achados": [
+    ["REFERENCIA_INEXISTENTE", "Quando_item_criado"],
+    ["REFERENCIA_INEXISTENTE", "Anotar"],
+    ["REFERENCIA_INEXISTENTE", "Enviar_resumo"],
+    ["REFERENCIA_INEXISTENTE", "Chamar_api"],
+    ["REFERENCIA_INEXISTENTE", "Item_solto"],
+    ["RUNAFTER_INVALIDO", "Registrar"],
+    ["RUNAFTER_INVALIDO", "Ciclo_a"],
+    ["SEGREDO_NA_URL", "Chamar_api"],
+    ["RECORRENCIA_FREQUENTE", "Quando_item_criado"],
+    ["SEM_RETENTATIVA", "Chamar_api"],
+    ["VARIAVEL_EM_LOOP_PARALELO", "Guardar_ultimo"],
+    ["VARIAVEL_EM_LOOP_PARALELO", "Anotar"],
+    ["DESTINATARIO_FIXO", "Enviar_resumo"],
+    ["SEM_TRATAMENTO_DE_ERRO", "(fluxo inteiro)"]
+  ],
+  "cobranca": {
+    "fixas_por_execucao": 8,
+    "conector_fixas": 1,
+    "por_item_de_loop": { "Processar": 3 },
+    "so_em_caso_de_falha": [],
+    "execucoes_por_mes": "14600"
+  },
+  "detalhes": {
+    "Processar": { "sequencial": false, "paralelismo": null },
+    "Enviar_resumo": { "operacao": "Enviar um e-mail (V2)", "metodo": "POST" },
+    "Chamar_api": { "metodo": "POST", "cabecalhos": ["x-api-key"] }
+  }
+}

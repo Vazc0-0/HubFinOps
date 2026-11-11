@@ -1,0 +1,8 @@
+[
+  {"logicapp": "lgc-desvios-processo", "regra": "RECORRENCIA_FREQUENTE", "historia": "Roda a cada 5 minutos para um relatório semanal: é a causa da mudança de patamar de custo encontrada na fase 1 (A4)."},
+  {"logicapp": "lgc-desvios-processo", "regra": "SEM_TRATAMENTO_DE_ERRO", "historia": "Se o SharePoint falhar, ninguém fica sabendo."},
+  {"logicapp": "lgc-chamados-nao-respondentes", "regra": "DESTINATARIO_FIXO", "historia": "E-mail do coordenador escrito direto na ação; mudar de pessoa exige editar o fluxo."},
+  {"logicapp": "lgc-relatorio-custos", "regra": "SEGREDO_NA_URL", "historia": "Chave da Function App (code=) exposta na URL da ação HTTP."},
+  {"logicapp": "lgc-relatorio-custos", "regra": "SEM_RETENTATIVA", "historia": "retryPolicy 'none' na chamada HTTP: uma falha passageira derruba a execução."},
+  {"logicapp": "lgc-relatorio-custos", "regra": "SEM_TRATAMENTO_DE_ERRO", "historia": "Nenhuma ação roda após falha; erro passa em silêncio."}
+]

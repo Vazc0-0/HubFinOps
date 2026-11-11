@@ -1,0 +1,167 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": { "$connections": { "defaultValue": {}, "type": "Object" } },
+    "triggers": {
+      "Ao_receber_pedido": {
+        "type": "Request",
+        "kind": "Http",
+        "inputs": {
+          "method": "POST",
+          "schema": { "type": "object", "properties": { "pedidoId": { "type": "string" }, "itens": { "type": "array" }, "cliente": { "type": "object" } } }
+        }
+      }
+    },
+    "actions": {
+      "Inicializar_total": {
+        "type": "InitializeVariable",
+        "inputs": { "variables": [ { "name": "total", "type": "float", "value": 0 } ] },
+        "runAfter": {}
+      },
+      "Inicializar_log": {
+        "type": "InitializeVariable",
+        "inputs": { "variables": [ { "name": "log", "type": "array", "value": [] } ] },
+        "runAfter": { "Inicializar_total": [ "Succeeded" ] }
+      },
+      "Buscar_cliente": {
+        "type": "Http",
+        "inputs": {
+          "method": "GET",
+          "uri": "https://api.exemplo.com/clientes/@{triggerBody()?['cliente']?['id']}",
+          "headers": { "Authorization": "Bearer abc123" }
+        },
+        "runAfter": { "Inicializar_log": [ "Succeeded" ] }
+      },
+      "Ler_cliente": {
+        "type": "ParseJson",
+        "inputs": {
+          "content": "@body('Buscar_cliente')",
+          "schema": { "type": "object", "properties": { "nome": { "type": "string" }, "email": { "type": "string" } } }
+        },
+        "runAfter": { "Buscar_cliente": [ "Succeeded" ] }
+      },
+      "Somar_itens": {
+        "type": "Foreach",
+        "foreach": "@triggerBody()?['itens']",
+        "runtimeConfiguration": { "concurrency": { "repetitions": 1 } },
+        "actions": {
+          "Somar_valor": {
+            "type": "IncrementVariable",
+            "inputs": { "name": "total", "value": "@item()?['valor']" },
+            "runAfter": {}
+          },
+          "Registrar_item": {
+            "type": "AppendToArrayVariable",
+            "inputs": { "name": "log", "value": "@concat('item ', items('Somar_itens')?['sku'])" },
+            "runAfter": { "Somar_valor": [ "Succeeded" ] }
+          },
+          "Por_lote": {
+            "type": "Foreach",
+            "foreach": "@items('Somar_itens')?['lotes']",
+            "actions": {
+              "Validar_lote": {
+                "type": "Compose",
+                "inputs": "@{items('Somar_itens')?['sku']}-@{item()?['lote']}",
+                "runAfter": {}
+              }
+            },
+            "runAfter": { "Registrar_item": [ "Succeeded" ] }
+          }
+        },
+        "runAfter": { "Ler_cliente": [ "Succeeded" ] }
+      },
+      "Escolher_canal": {
+        "type": "Switch",
+        "expression": "@body('Ler_cliente')?['canal']",
+        "cases": {
+          "Caso_email": {
+            "case": "email",
+            "actions": {
+              "Montar_email": { "type": "Compose", "inputs": "@{body('Ler_cliente')?['email']}", "runAfter": {} }
+            }
+          },
+          "Caso_sms": {
+            "case": "sms",
+            "actions": {
+              "Aguardar_janela": { "type": "Wait", "inputs": { "interval": { "count": 5, "unit": "Minute" } }, "runAfter": {} },
+              "Enviar_sms": {
+                "type": "Http",
+                "inputs": { "method": "POST", "uri": "https://sms.exemplo.com/enviar", "body": { "mensagem": "Total: @{variables('total')}" } },
+                "runAfter": { "Aguardar_janela": [ "Succeeded" ] }
+              }
+            }
+          }
+        },
+        "default": {
+          "actions": {
+            "Canal_invalido": {
+              "type": "Terminate",
+              "inputs": { "runStatus": "Failed", "runError": { "code": "CANAL", "message": "Canal não suportado" } },
+              "runAfter": {}
+            }
+          }
+        },
+        "runAfter": { "Somar_itens": [ "Succeeded" ] }
+      },
+      "Tentar_confirmar": {
+        "type": "Until",
+        "expression": "@equals(body('Consultar_status')?['status'], 'ok')",
+        "limit": { "count": 10, "timeout": "PT1H" },
+        "actions": {
+          "Consultar_status": {
+            "type": "Http",
+            "inputs": { "method": "GET", "uri": "https://api.exemplo.com/pedidos/@{triggerBody()?['pedidoId']}/status" },
+            "runAfter": {}
+          }
+        },
+        "runAfter": { "Escolher_canal": [ "Succeeded" ] }
+      },
+      "Resumo_html": {
+        "type": "Select",
+        "inputs": { "from": "@variables('log')", "select": { "linha": "@item()" } },
+        "runAfter": { "Tentar_confirmar": [ "Succeeded" ] }
+      },
+      "Juntar_linhas": {
+        "type": "Join",
+        "inputs": { "from": "@body('Resumo_html')", "joinWith": "; " },
+        "runAfter": { "Resumo_html": [ "Succeeded" ] }
+      },
+      "Calcular_desconto": {
+        "type": "JavaScriptCode",
+        "inputs": { "code": "var t = workflowContext.actions.Juntar_linhas.outputs;\nreturn t.length;" },
+        "runAfter": { "Juntar_linhas": [ "Succeeded" ] }
+      },
+      "Notificar_fluxo_filho": {
+        "type": "Workflow",
+        "inputs": {
+          "host": { "workflow": { "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft.Logic/workflows/lgc-filho" }, "triggerName": "manual" },
+          "body": { "pedido": "@triggerBody()?['pedidoId']" }
+        },
+        "runAfter": { "Juntar_linhas": [ "Succeeded" ] }
+      },
+      "Chamar_function": {
+        "type": "Function",
+        "inputs": {
+          "function": { "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft.Web/sites/func-demo/functions/Calcular" },
+          "method": "POST",
+          "body": "@outputs('Calcular_desconto')"
+        },
+        "runAfter": { "Calcular_desconto": [ "Succeeded" ], "Notificar_fluxo_filho": [ "Succeeded" ] }
+      },
+      "Responder": {
+        "type": "Response",
+        "kind": "Http",
+        "inputs": { "statusCode": 200, "body": { "total": "@variables('total')", "resumo": "@body('Juntar_linhas')" } },
+        "runAfter": { "Chamar_function": [ "Succeeded" ] }
+      },
+      "Responder_erro": {
+        "type": "Response",
+        "kind": "Http",
+        "inputs": { "statusCode": 500, "body": "@{result('Tentar_confirmar')}" },
+        "runAfter": { "Tentar_confirmar": [ "Failed", "TimedOut" ] }
+      }
+    },
+    "outputs": {}
+  }
+}

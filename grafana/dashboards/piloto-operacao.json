@@ -1,0 +1,956 @@
+{
+  "uid": "piloto-operacao",
+  "title": "Piloto - Logic App real e operação",
+  "tags": [
+    "piloto-agentes-ia",
+    "azure",
+    "operacao"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "editable": true,
+  "refresh": "30s",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Logic App real no Azure (só leitura)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 2,
+      "title": "Execuções sincronizadas",
+      "type": "stat",
+      "description": "",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*) AS \"Execuções\" FROM azure_execucoes WHERE NOT simulada"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Execuções com falha",
+      "type": "stat",
+      "description": "Inclui execuções SIMULADAS (carregar_grafana.py --simular-falha). Dispara o alerta e abre chamado.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*) AS \"Falhas\" FROM azure_execucoes WHERE status = 'Failed'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Ações por execução: previsto",
+      "type": "stat",
+      "description": "Calculado pelo leitor só lendo o JSON da Logic App (sem executar).",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT previsto_por_execucao AS \"Previsto\" FROM azure_previsto LIMIT 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Ações por execução: medido no Azure",
+      "type": "stat",
+      "description": "BillableActionExecutions ÷ BillableTriggerExecutions (Azure Monitor).",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT medido_por_execucao AS \"Medido\" FROM azure_previsto LIMIT 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Custo estimado por mês",
+      "type": "stat",
+      "description": "Ações nativas além das 4.000 grátis do mês × preço oficial trazido pela própria Logic App.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT custo_mes_brl AS \"Custo/mês\" FROM azure_previsto LIMIT 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyBRL",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Preço por ação nativa (após a faixa grátis)",
+      "type": "stat",
+      "description": "",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 20,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT max(preco) AS \"R$ por ação\" FROM azure_precos WHERE medidor = 'Consumption Built-in Actions'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyBRL",
+          "decimals": 4
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "Execuções cobradas por dia (Azure Monitor)",
+      "type": "barchart",
+      "description": "",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT to_char(momento, 'DD/MM') AS \"Dia\", sum(total) FILTER (WHERE metrica = 'BillableActionExecutions') AS \"Ações cobradas\", sum(total) FILTER (WHERE metrica = 'BillableTriggerExecutions') AS \"Disparos do gatilho\" FROM azure_metricas GROUP BY momento ORDER BY momento"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Dia",
+        "legend": {
+          "showLegend": true,
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "title": "Últimas execuções",
+      "type": "table",
+      "description": "",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 5,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT inicio AS \"Início\", status AS \"Status\", acoes_rodaram AS \"Rodaram\", acoes_puladas AS \"Puladas\", coalesce(acoes_com_falha, '-') AS \"Ações com falha\", CASE WHEN simulada THEN 'sim' ELSE 'não' END AS \"Simulada\" FROM azure_execucoes ORDER BY inicio DESC LIMIT 20"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "Succeeded": {
+                  "text": "Sucesso",
+                  "color": "green"
+                },
+                "Failed": {
+                  "text": "Falhou",
+                  "color": "red"
+                },
+                "ok": {
+                  "text": "OK",
+                  "color": "green"
+                },
+                "falhou": {
+                  "text": "Falhou",
+                  "color": "red"
+                },
+                "em andamento": {
+                  "text": "Em andamento",
+                  "color": "blue"
+                },
+                "Aberto": {
+                  "text": "Aberto",
+                  "color": "orange"
+                },
+                "Resolvido": {
+                  "text": "Resolvido",
+                  "color": "green"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {}
+    },
+    {
+      "id": 10,
+      "title": "Preços oficiais (API de preços do Azure, trazidos pela Logic App)",
+      "type": "table",
+      "description": "",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 13,
+        "w": 24,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT medidor AS \"Medidor\", a_partir_de AS \"A partir de\", preco AS \"Preço (R$)\", unidade AS \"Unidade\", regiao AS \"Região\", consultado_em AS \"Consultado em\" FROM azure_precos ORDER BY medidor, a_partir_de"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 4
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 11,
+      "type": "row",
+      "title": "Operação do piloto",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 12,
+      "title": "Execuções registradas",
+      "type": "stat",
+      "description": "",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 21,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*) AS \"Execuções\" FROM historico"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 13,
+      "title": "Execuções com falha",
+      "type": "stat",
+      "description": "",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 21,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*) AS \"Falhas\" FROM historico WHERE status = 'falhou'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 14,
+      "title": "Chamados abertos",
+      "type": "stat",
+      "description": "",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 21,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*) AS \"Abertos\" FROM chamados WHERE status = 'Aberto'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 15,
+      "title": "Chamados resolvidos",
+      "type": "stat",
+      "description": "",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 21,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*) AS \"Resolvidos\" FROM chamados WHERE status = 'Resolvido'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 16,
+      "title": "Execuções por tarefa",
+      "type": "barchart",
+      "description": "",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 21,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT tarefa AS \"Tarefa\", count(*) FILTER (WHERE status = 'ok') AS \"OK\", count(*) FILTER (WHERE status = 'falhou') AS \"Falhou\" FROM historico GROUP BY tarefa ORDER BY 2 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "OK"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Falhou"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "xField": "Tarefa",
+        "orientation": "horizontal",
+        "stacking": "normal"
+      }
+    },
+    {
+      "id": 17,
+      "title": "Chamados abertos pelos alertas",
+      "type": "table",
+      "description": "",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 25,
+        "w": 16,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT id AS \"Chamado\", criado_em AS \"Aberto em\", prioridade AS \"Prioridade\", titulo AS \"Título\", status AS \"Status\" FROM chamados ORDER BY criado_em DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "Succeeded": {
+                  "text": "Sucesso",
+                  "color": "green"
+                },
+                "Failed": {
+                  "text": "Falhou",
+                  "color": "red"
+                },
+                "ok": {
+                  "text": "OK",
+                  "color": "green"
+                },
+                "falhou": {
+                  "text": "Falhou",
+                  "color": "red"
+                },
+                "em andamento": {
+                  "text": "Em andamento",
+                  "color": "blue"
+                },
+                "Aberto": {
+                  "text": "Aberto",
+                  "color": "orange"
+                },
+                "Resolvido": {
+                  "text": "Resolvido",
+                  "color": "green"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {}
+    },
+    {
+      "id": 18,
+      "title": "Histórico de execuções (o mesmo do hub)",
+      "type": "table",
+      "description": "",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 31,
+        "w": 24,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT inicio AS \"Início\", tarefa AS \"Tarefa\", origem AS \"Origem\", status AS \"Status\", duracao_s AS \"Duração (s)\", resumo AS \"Resultado\" FROM historico ORDER BY inicio DESC LIMIT 50"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 1,
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "Succeeded": {
+                  "text": "Sucesso",
+                  "color": "green"
+                },
+                "Failed": {
+                  "text": "Falhou",
+                  "color": "red"
+                },
+                "ok": {
+                  "text": "OK",
+                  "color": "green"
+                },
+                "falhou": {
+                  "text": "Falhou",
+                  "color": "red"
+                },
+                "em andamento": {
+                  "text": "Em andamento",
+                  "color": "blue"
+                },
+                "Aberto": {
+                  "text": "Aberto",
+                  "color": "orange"
+                },
+                "Resolvido": {
+                  "text": "Resolvido",
+                  "color": "green"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {}
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "_comentario": "Recorrências (gatilho Recurrence) e o resultado esperado, calculado à mão a partir da referência oficial: horas/minutos valem só para Day e Week; dias da semana só para Week. Frações exatas no formato 'a/b'. O caso 7 é o Exemplo 3 da própria documentação.",
+  "fonte": "https://learn.microsoft.com/azure/logic-apps/logic-apps-workflow-actions-triggers#recurrence-trigger",
+  "casos": [
+    {"id": 1, "rec": {"frequency": "Minute", "interval": 5}, "por_dia": "288", "por_mes": "8760", "texto": "a cada 5 minutos"},
+    {"id": 2, "rec": {"frequency": "Second", "interval": 30}, "por_dia": "2880", "texto": "a cada 30 segundos"},
+    {"id": 3, "rec": {"frequency": "Hour", "interval": 1}, "por_dia": "24", "texto": "a cada hora"},
+    {"id": 4, "rec": {"frequency": "Hour", "interval": 6}, "por_dia": "4", "texto": "a cada 6 horas"},
+    {"id": 5, "rec": {"frequency": "Day", "interval": 1}, "por_dia": "1", "texto": "todo dia"},
+    {"id": 6, "rec": {"frequency": "Day", "interval": 2, "schedule": {"hours": [8, 17], "minutes": [0, 30]}},
+     "por_dia": "2", "horarios": ["08:00", "08:30", "17:00", "17:30"], "texto": "a cada 2 dias, às 08:00, 08:30, 17:00 e 17:30"},
+    {"id": 7, "rec": {"frequency": "Week", "interval": 1, "schedule": {"hours": [10, 12, 14], "minutes": [30], "weekDays": ["Monday"]},
+                      "startTime": "2017-09-07T14:00:00", "timeZone": "Pacific Standard Time"},
+     "por_semana": "3", "por_dia": "3/7", "horarios": ["10:30", "12:30", "14:30"],
+     "texto": "toda semana às segundas, às 10:30, 12:30 e 14:30 — fuso Pacific Standard Time"},
+    {"id": 8, "rec": {"frequency": "Week", "interval": 2, "schedule": {"weekDays": "Monday, Wednesday, Friday", "hours": 9, "minutes": 0}},
+     "por_semana": "3/2", "por_dia": "3/14", "texto": "a cada 2 semanas às segundas, quartas e sextas, às 09:00"},
+    {"id": 9, "rec": {"frequency": "Month", "interval": 1, "startTime": "2026-01-05T08:00:00"},
+     "por_dia": "12/365", "por_mes": "1", "texto": "todo mês, às 08:00 (no dia 5)"},
+    {"id": 10, "rec": {"frequency": "Month", "interval": 3}, "por_mes": "1/3", "texto": "a cada 3 meses"},
+    {"id": 11, "rec": {"frequency": "Day", "interval": 1, "schedule": {"weekDays": ["Monday"]}},
+     "por_dia": "1", "observacao_contem": "weekDays"},
+    {"id": 12, "rec": {"frequency": "Hour", "interval": 1, "schedule": {"hours": [9]}},
+     "por_dia": "24", "observacao_contem": "ignorado"},
+    {"id": 13, "rec": {"frequency": "Day", "interval": 1, "startTime": "2026-03-01T07:15:00"}, "por_dia": "1", "texto": "todo dia, às 07:15"},
+    {"id": 14, "rec": {"frequency": "Day", "interval": 1, "schedule": {"hours": "10,12"}}, "por_dia": "2", "horarios": ["10:00", "12:00"]},
+    {"id": 15, "rec": {"frequency": "Day", "interval": 1, "schedule": {"hours": [7], "minutes": [0]}, "timeZone": "E. South America Standard Time"},
+     "por_dia": "1", "texto": "todo dia, às 07:00 — fuso E. South America Standard Time"},
+    {"id": 16, "rec": {"frequency": "Week", "interval": 1}, "por_semana": "1", "texto": "toda semana"},
+    {"id": 17, "rec": {"frequency": "Day", "interval": 1, "schedule": {"hours": [6]}, "startTime": "2026-01-01T06:45:00"},
+     "por_dia": "1", "horarios": ["06:45"]}
+  ]
+}

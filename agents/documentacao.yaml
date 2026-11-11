@@ -1,0 +1,105 @@
+# Equipe de agentes de DOCUMENTAÇÃO de Logic Apps — Piloto Agentes de IA (fase 2)
+# Referência oficial: https://docs.docker.com/ai/docker-agent/configuration/overview/
+#
+# Rodar a partir da RAIZ do projeto:
+#   docker agent run agents/documentacao.yaml
+#   docker agent run --exec agents/documentacao.yaml "Documente as Logic Apps"
+#
+# Lições da fase 1 aplicadas desde o início:
+#   - leitura do JSON, documentação e achados são feitos em CÓDIGO (tools/doc_logicapp.py);
+#   - o modelo conversa e explica a partir das ferramentas, sem inventar;
+#   - hook "stop" gera e valida a documentação sempre, mesmo se o modelo esquecer;
+#   - argumento das ferramentas lido pela variável de ambiente (funciona no Windows).
+
+models:
+  local:
+    provider: dmr
+    model: ai/qwen3
+    max_tokens: 4096
+    provider_opts:
+      context_size: 16384
+      extra_body:
+        chat_template_kwargs:
+          enable_thinking: false
+
+agents:
+  root:
+    model: local
+    description: Orquestrador que responde perguntas e coordena a documentação das Logic Apps
+    welcome_message: |
+      Olá! Eu documento Logic Apps (exemplos fictícios e as reais que estiverem em logicapps/reais).
+      Peça, por exemplo: "Documente as Logic Apps" ou "O que a lgc-relatorio-custos faz?"
+    instruction: |
+      Você coordena a documentação de automações em Azure Logic Apps. Responda em português do Brasil.
+      Nunca invente ações, conectores ou números: tudo vem das ferramentas.
+
+      - Para "documentar", "gerar documentação" ou "revisar boas práticas": delegue ao agente "documentador".
+      - Para perguntas sobre uma Logic App específica ("o que faz", "quando roda", "quais riscos"):
+        delegue ao "documentador" pedindo o resumo daquela Logic App.
+      - No fim, responda em 3 a 6 linhas usando só o que o documentador trouxe.
+        Diga que a documentação fica em docs/logicapps/ e pode ser conferida com: python tests/validar_docs.py
+    sub_agents: [documentador]
+    add_date: true
+    # Hook "stop": a cada resposta final, o código gera e valida a documentação (log em docs/logicapps/hook.log).
+    # Doc oficial: https://docs.docker.com/ai/docker-agent/configuration/hooks/
+    hooks:
+      stop:
+        - type: command
+          command: "python tools/doc_logicapp.py gerar --hook"
+          timeout: 60
+
+  documentador:
+    model: local
+    description: Lê as definições das Logic Apps, explica o que cada uma faz e aponta riscos de boas práticas
+    instruction: |
+      Você documenta Logic Apps para a equipe de automação. Responda em português do Brasil, de forma simples.
+      Use SOMENTE as ferramentas. Nunca cite ação, conector, horário ou achado que não veio delas.
+
+      - Para documentar tudo: chame "gerar_documentacao" e repasse o resultado da validação exatamente
+        ("DOCUMENTAÇÃO CONFIÁVEL" ou "REPROVADA") e a tabela do índice.
+      - Para explicar uma Logic App: se não souber o nome exato, chame "listar_logicapps" primeiro.
+        Depois chame "resumo_logicapp" e explique em 3 a 5 frases: quando roda, de onde lê os dados,
+        o que faz passo a passo e o que entrega (ex.: e-mail). Use os números dos passos (1, 2, 3.S.1...).
+      - Para riscos: chame "achados_boas_praticas" e liste por severidade (Alta, Média, Baixa),
+        com a recomendação que veio da ferramenta.
+      - Para "sincronizar com o Azure" ou "o que rodou de verdade": chame "sincronizar_azure" e repasse
+        o RESULTADO exatamente, as execuções e a comparação entre estimativa e medido.
+        Se vier "ERRO", repita a instrução que veio na mensagem (ex.: rodar az login).
+      Nunca diga que gerou ou validou algo sem ter chamado a ferramenta.
+    toolsets:
+      - type: script
+        shell:
+          listar_logicapps:
+            cmd: python tools/doc_logicapp.py listar
+            env:
+              PYTHONIOENCODING: utf-8
+            description: Lista as Logic Apps disponíveis e quando cada uma roda.
+          resumo_logicapp:
+            cmd: python tools/doc_logicapp.py resumo   # o nome chega pela variável de ambiente 'nome'
+            env:
+              PYTHONIOENCODING: utf-8
+            description: Resumo de uma Logic App (gatilho, conectores, ações em ordem, achados), lido do JSON.
+            args:
+              nome:
+                type: string
+                description: Nome exato da Logic App, como aparece em listar_logicapps
+            required: [nome]
+          achados_boas_praticas:
+            cmd: python tools/doc_logicapp.py achados
+            env:
+              PYTHONIOENCODING: utf-8
+            description: Achados de boas práticas (custo, segurança, confiabilidade, manutenção) com severidade e recomendação.
+          sincronizar_azure:
+            cmd: python tools/azure_logicapp.py sincronizar
+            env:
+              PYTHONIOENCODING: utf-8
+            description: >-
+              Lê do Azure, só leitura, a Logic App real configurada em config/azure.json: baixa a definição,
+              as últimas execuções, as execuções cobradas (métricas) e os preços oficiais, e confere se o que
+              rodou no Azure bate com a leitura do JSON. Precisa de "az login" feito antes.
+          gerar_documentacao:
+            cmd: python tools/doc_logicapp.py gerar
+            env:
+              PYTHONIOENCODING: utf-8
+            description: Gera docs/logicapps/*.md (com diagrama do fluxo) e o índice, e valida contra os JSONs.
+    add_date: true

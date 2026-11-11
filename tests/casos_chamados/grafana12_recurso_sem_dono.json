@@ -1,0 +1,56 @@
+{
+  "receiver": "Receptor de chamados do piloto",
+  "status": "firing",
+  "alerts": [
+    {
+      "status": "firing",
+      "labels": {
+        "alertname": "Recurso sem dono gerando custo",
+        "grafana_folder": "Piloto Agentes de IA",
+        "recurso": "stgbackupantigo",
+        "regra": "recurso_sem_dono",
+        "severidade": "alta"
+      },
+      "annotations": {
+        "description": "O recurso stgbackupantigo não tem dono (tag owner) e já custou R$ 732.00 no período dos dados.",
+        "summary": "Recurso sem a tag owner com custo"
+      },
+      "startsAt": "2026-11-06T12:54:20-03:00",
+      "endsAt": "0001-01-01T00:00:00Z",
+      "generatorURL": "http://localhost:3000/alerting/grafana/piloto-recurso-sem-dono/view?orgId=1",
+      "fingerprint": "50271a82124a4408",
+      "silenceURL": "http://localhost:3000/alerting/silence/new?alertmanager=grafana&matcher=__alert_rule_uid__%3Dpiloto-recurso-sem-dono&matcher=recurso%3Dstgbackupantigo&matcher=regra%3Drecurso_sem_dono&matcher=severidade%3Dalta&orgId=1",
+      "dashboardURL": "",
+      "panelURL": "",
+      "values": {
+        "A": 732,
+        "B": 1
+      },
+      "valueString": "[ var='A' labels={recurso=stgbackupantigo} value=732 ], [ var='B' labels={recurso=stgbackupantigo} value=1 ]",
+      "orgId": 1
+    }
+  ],
+  "groupLabels": {
+    "alertname": "Recurso sem dono gerando custo",
+    "regra": "recurso_sem_dono"
+  },
+  "commonLabels": {
+    "alertname": "Recurso sem dono gerando custo",
+    "grafana_folder": "Piloto Agentes de IA",
+    "recurso": "stgbackupantigo",
+    "regra": "recurso_sem_dono",
+    "severidade": "alta"
+  },
+  "commonAnnotations": {
+    "description": "O recurso stgbackupantigo não tem dono (tag owner) e já custou R$ 732.00 no período dos dados.",
+    "summary": "Recurso sem a tag owner com custo"
+  },
+  "externalURL": "http://localhost:3000/",
+  "version": "1",
+  "groupKey": "{}:{alertname=\"Recurso sem dono gerando custo\", regra=\"recurso_sem_dono\"}",
+  "truncatedAlerts": 0,
+  "orgId": 1,
+  "title": "[FIRING:1] Recurso sem dono gerando custo recurso_sem_dono (Piloto Agentes de IA stgbackupantigo alta)",
+  "state": "alerting",
+  "message": "**Firing**\n\nValue: A=732, B=1\nLabels:\n - alertname = Recurso sem dono gerando custo\n - grafana_folder = Piloto Agentes de IA\n - recurso = stgbackupantigo\n - regra = recurso_sem_dono\n - severidade = alta\nAnnotations:\n - description = O recurso stgbackupantigo não tem dono (tag owner) e já custou R$ 732.00 no período dos dados.\n - summary = Recurso sem a tag owner com custo\nSource: http://localhost:3000/alerting/grafana/piloto-recurso-sem-dono/view?orgId=1\nSilence: http://localhost:3000/alerting/silence/new?alertmanager=grafana&matcher=__alert_rule_uid__%3Dpiloto-recurso-sem-dono&matcher=recurso%3Dstgbackupantigo&matcher=regra%3Drecurso_sem_dono&matcher=severidade%3Dalta&orgId=1\n"
+}

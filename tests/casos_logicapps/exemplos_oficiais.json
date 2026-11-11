@@ -1,0 +1,811 @@
+{
+ "_comentario": "Exemplos JSON copiados da página oficial de referência (só os que são JSON válido e completo; os que têm marcadores como <time-unit> ficam de fora).",
+ "fonte": "https://learn.microsoft.com/azure/logic-apps/logic-apps-workflow-actions-triggers",
+ "copiado_em": "2026-11-06",
+ "exemplos": [
+  {
+   "linha_na_pagina": 137,
+   "secao": "APIConnection trigger",
+   "nome": "When_a_new_email_arrives",
+   "definicao": {
+    "type": "ApiConnection",
+    "inputs": {
+     "host": {
+      "connection": {
+       "name": "@parameters('$connections')['office365']['connectionId']"
+      }
+     },
+     "method": "get",
+     "path": "/Mail/OnNewEmail",
+     "queries": {
+      "fetchOnlyWithAttachment": false,
+      "folderPath": "Inbox",
+      "importance": "Any",
+      "includeAttachments": false
+     }
+    },
+    "recurrence": {
+     "frequency": "Day",
+     "interval": 1
+    }
+   },
+   "eh_gatilho": true
+  },
+  {
+   "linha_na_pagina": 214,
+   "secao": "ApiConnectionWebhook trigger",
+   "nome": "When_a_new_email_arrives_(webhook)",
+   "definicao": {
+    "type": "ApiConnectionWebhook",
+    "inputs": {
+     "body": {
+      "NotificationUrl": "@{listCallbackUrl()}"
+     },
+     "host": {
+      "connection": {
+       "name": "@parameters('$connections')['office365']['connectionId']"
+      }
+     },
+     "path": "/MailSubscription/$subscriptions",
+     "queries": {
+      "folderPath": "Inbox",
+      "hasAttachment": "Any",
+      "importance": "Any"
+     }
+    },
+    "splitOn": "@triggerBody()?['value']"
+   },
+   "eh_gatilho": true
+  },
+  {
+   "linha_na_pagina": 469,
+   "secao": "Recurrence trigger",
+   "nome": "Recurrence",
+   "definicao": {
+    "type": "Recurrence",
+    "recurrence": {
+     "frequency": "Day",
+     "interval": 1
+    }
+   },
+   "eh_gatilho": true
+  },
+  {
+   "linha_na_pagina": 483,
+   "secao": "Recurrence trigger",
+   "nome": "Recurrence",
+   "definicao": {
+    "type": "Recurrence",
+    "recurrence": {
+     "frequency": "Day",
+     "interval": 1,
+     "startTime": "2017-09-18T00:00:00Z"
+    }
+   },
+   "eh_gatilho": true
+  },
+  {
+   "linha_na_pagina": 498,
+   "secao": "Recurrence trigger",
+   "nome": "Recurrence",
+   "definicao": {
+    "type": "Recurrence",
+    "recurrence": {
+     "frequency": "Week",
+     "interval": 1,
+     "schedule": {
+      "hours": [
+       10,
+       12,
+       14
+      ],
+      "minutes": [
+       30
+      ],
+      "weekDays": [
+       "Monday"
+      ]
+     },
+     "startTime": "2017-09-07T14:00:00",
+     "timeZone": "Pacific Standard Time"
+    }
+   },
+   "eh_gatilho": true
+  },
+  {
+   "linha_na_pagina": 576,
+   "secao": "Request trigger",
+   "nome": "Request",
+   "definicao": {
+    "type": "Request",
+    "kind": "Http",
+    "inputs": {
+     "method": "POST",
+     "schema": {
+      "type": "object",
+      "properties": {
+       "customerName": {
+        "type": "String"
+       },
+       "customerAddress": {
+        "type": "Object",
+        "properties": {
+         "streetAddress": {
+          "type": "string"
+         },
+         "city": {
+          "type": "string"
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "eh_gatilho": true
+  },
+  {
+   "linha_na_pagina": 611,
+   "secao": "Trigger conditions",
+   "nome": "Recurrence",
+   "definicao": {
+    "type": "Recurrence",
+    "recurrence": {
+     "frequency": "Hour",
+     "interval": 1
+    },
+    "conditions": [
+     {
+      "expression": "@equals(triggers().code, 'InternalServerError')"
+     }
+    ]
+   },
+   "eh_gatilho": true
+  },
+  {
+   "linha_na_pagina": 678,
+   "secao": "Turn on debatching in the trigger definition",
+   "nome": "HTTP_trigger_debatch",
+   "definicao": {
+    "type": "Http",
+    "inputs": {
+     "uri": "https://mydomain.com/myAPI",
+     "method": "GET"
+    },
+    "recurrence": {
+     "frequency": "Second",
+     "interval": 1
+    },
+    "splitOn": "@triggerBody()?.Rows"
+   },
+   "eh_gatilho": true
+  },
+  {
+   "linha_na_pagina": 852,
+   "secao": "APIConnection action",
+   "nome": "Send_an_email",
+   "definicao": {
+    "type": "ApiConnection",
+    "inputs": {
+     "body": {
+      "Body": "Thank you for your membership!",
+      "Subject": "Hello and welcome!",
+      "To": "Sophie.Owen@contoso.com"
+     },
+     "host": {
+      "connection": {
+       "name": "@parameters('$connections')['office365']['connectionId']"
+      }
+     },
+     "method": "POST",
+     "path": "/Mail"
+    },
+    "runAfter": {}
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 933,
+   "secao": "Compose action",
+   "nome": "Compose",
+   "definicao": {
+    "type": "Compose",
+    "inputs": "<inputs-to-compose>",
+    "runAfter": {}
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 951,
+   "secao": "Compose action",
+   "nome": "Compose",
+   "definicao": {
+    "type": "Compose",
+    "inputs": "abcdefg 1234",
+    "runAfter": {}
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 967,
+   "secao": "Compose action",
+   "nome": "Compose",
+   "definicao": {
+    "type": "Compose",
+    "inputs": "@{variables('myString')}@{variables('myInteger')}",
+    "runAfter": {}
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 1017,
+   "secao": "Execute JavaScript Code action",
+   "nome": "Execute_JavaScript_Code",
+   "definicao": {
+    "type": "JavaScriptCode",
+    "inputs": {
+     "code": "var text = \"Hello world from \" + workflowContext.workflow.name;\r\n\r\nreturn text;"
+    },
+    "runAfter": {}
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 1033,
+   "secao": "Execute JavaScript Code action",
+   "nome": "Execute_JavaScript_Code",
+   "definicao": {
+    "type": "JavaScriptCode",
+    "inputs": {
+     "code": "var myResult = /(([^<>()\\[\\]\\\\.,;:\\s@\"]+(\\.[^<>()\\[\\]\\\\.,;:\\s@\"]+)*)|(\".+\"))@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}])|(([a-zA-Z\\-0-9]+\\.)+[a-zA-Z]{2,}))/g;\r\n\r\nvar email = workflowContext.trigger.outputs.body.Body;\r\n\r\nvar reply = workflowContext.actions.Send_approval_email.outputs.body.SelectedOption;\r\n\r\nreturn email.match(myResult) + \" - \" + reply;\r\n;",
+     "explicitDependencies": {
+      "actions": [
+       "Send_approval_email"
+      ]
+     }
+    },
+    "runAfter": {}
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 1098,
+   "secao": "Function action",
+   "nome": "GetProductID",
+   "definicao": {
+    "type": "Function",
+    "inputs": {
+     "function": {
+      "id": "/subscriptions/<XXXXXXXXXXXXXXXXXXXX>/resourceGroups/myLogicAppResourceGroup/providers/Microsoft.Web/sites/InventoryChecker/functions/GetProductID"
+     },
+     "method": "POST",
+     "headers": {
+      "x-ms-date": "@utcnow()"
+     },
+     "body": {
+      "Product_ID": "@variables('ProductID')"
+     }
+    },
+    "runAfter": {}
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 1162,
+   "secao": "HTTP action",
+   "nome": "HTTP",
+   "definicao": {
+    "type": "Http",
+    "inputs": {
+     "method": "GET",
+     "uri": "https://mynews.example.com/latest"
+    }
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 1202,
+   "secao": "Join action",
+   "nome": "Join",
+   "definicao": {
+    "type": "Join",
+    "inputs": {
+     "from": "@variables('myIntegerArray')",
+     "joinWith": ","
+    },
+    "runAfter": {}
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 1241,
+   "secao": "Parse JSON action",
+   "nome": "Parse_JSON",
+   "definicao": {
+    "type": "ParseJson",
+    "inputs": {
+     "content": {
+      "Member": {
+       "Email": "Sophie.Owen@contoso.com",
+       "FirstName": "Sophie",
+       "LastName": "Owen"
+      }
+     },
+     "schema": {
+      "type": "object",
+      "properties": {
+       "Member": {
+        "type": "object",
+        "properties": {
+         "Email": {
+          "type": "string"
+         },
+         "FirstName": {
+          "type": "string"
+         },
+         "LastName": {
+          "type": "string"
+         }
+        }
+       }
+      }
+     }
+    },
+    "runAfter": {}
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 1290,
+   "secao": "Parse JSON action",
+   "nome": "schema",
+   "definicao": {
+    "type": "object",
+    "properties": {
+     "Member": {
+      "type": "object",
+      "properties": {
+       "FirstName": {
+        "type": "string"
+       },
+       "LastName": {
+        "type": "string"
+       },
+       "Email": {
+        "type": "string"
+       }
+      }
+     }
+    }
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 1338,
+   "secao": "Query action",
+   "nome": "Filter_array",
+   "definicao": {
+    "type": "Query",
+    "inputs": {
+     "from": [
+      1,
+      3,
+      0,
+      5,
+      4,
+      2
+     ],
+     "where": "@greater(item(), 2)"
+    }
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 1382,
+   "secao": "Response action",
+   "nome": "Response",
+   "definicao": {
+    "type": "Response",
+    "inputs": {
+     "statusCode": 200,
+     "body": {
+      "ProductID": 0,
+      "Description": "Organic Apples"
+     },
+     "headers": {
+      "x-ms-date": "@utcnow()",
+      "content-type": "application/json"
+     }
+    },
+    "runAfter": {}
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 1446,
+   "secao": "Select action",
+   "nome": "Select",
+   "definicao": {
+    "type": "Select",
+    "inputs": {
+     "from": [
+      1,
+      2,
+      3
+     ],
+     "select": {
+      "number": "@item()"
+     }
+    },
+    "runAfter": {}
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 1465,
+   "secao": "Select action",
+   "nome": "Compose",
+   "definicao": {
+    "type": "Compose",
+    "inputs": "@body('Select')",
+    "runAfter": {
+     "Select": [
+      "Succeeded"
+     ]
+    }
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 1477,
+   "secao": "Select action",
+   "nome": "Send_an_email",
+   "definicao": {
+    "type": "ApiConnection",
+    "inputs": {
+     "body": {
+      "Body": "@{outputs('Compose')}",
+      "Subject": "Output array from Select and Compose actions",
+      "To": "<your-email@domain>"
+     },
+     "host": {
+      "connection": {
+       "name": "@parameters('$connections')['office365']['connectionId']"
+      }
+     },
+     "method": "post",
+     "path": "/Mail"
+    },
+    "runAfter": {
+     "Compose": [
+      "Succeeded"
+     ]
+    }
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 1551,
+   "secao": "Table action",
+   "nome": "Create_CSV_table",
+   "definicao": {
+    "type": "Table",
+    "inputs": {
+     "format": "CSV",
+     "from": "@variables('myItemArray')"
+    },
+    "runAfter": {}
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 1574,
+   "secao": "Table action",
+   "nome": "Create_HTML_table",
+   "definicao": {
+    "type": "Table",
+    "inputs": {
+     "format": "HTML",
+     "from": "@variables('myItemArray')"
+    },
+    "runAfter": {}
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 1596,
+   "secao": "Table action",
+   "nome": "Create_HTML_table",
+   "definicao": {
+    "type": "Table",
+    "inputs": {
+     "format": "HTML",
+     "from": "@variables('myItemArray')",
+     "columns": [
+      {
+       "header": "Stock_ID",
+       "value": "@item().ID"
+      },
+      {
+       "header": "Description",
+       "value": "@concat('Organic ', item().Product_Name)"
+      }
+     ]
+    },
+    "runAfter": {}
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 1628,
+   "secao": "Terminate action",
+   "nome": "Terminate",
+   "definicao": {
+    "type": "Terminate",
+    "inputs": {
+     "runStatus": "<status>",
+     "runError": {
+      "code": "<error-code-or-name>",
+      "message": "<error-message>"
+     }
+    },
+    "runAfter": {}
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 1661,
+   "secao": "Terminate action",
+   "nome": "Terminate",
+   "definicao": {
+    "type": "Terminate",
+    "inputs": {
+     "runStatus": "Failed",
+     "runError": {
+      "code": "Unexpected response",
+      "message": "The service received an unexpected response. Please try again."
+     }
+    },
+    "runAfter": {}
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 1696,
+   "secao": "Wait action",
+   "nome": "Delay_until",
+   "definicao": {
+    "type": "Wait",
+    "inputs": {
+     "until": {
+      "timestamp": "<date-time-stamp>"
+     }
+    },
+    "runAfter": {}
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 1720,
+   "secao": "Wait action",
+   "nome": "Delay",
+   "definicao": {
+    "type": "Wait",
+    "inputs": {
+     "interval": {
+      "count": 15,
+      "unit": "Minute"
+     }
+    },
+    "runAfter": {}
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 1737,
+   "secao": "Wait action",
+   "nome": "Delay_until",
+   "definicao": {
+    "type": "Wait",
+    "inputs": {
+     "until": {
+      "timestamp": "2017-10-01T00:00:00Z"
+     }
+    },
+    "runAfter": {}
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 1867,
+   "secao": "Foreach action",
+   "nome": "For_each",
+   "definicao": {
+    "type": "Foreach",
+    "actions": {
+     "Send_an_email": {
+      "type": "ApiConnection",
+      "inputs": {
+       "body": {
+        "Body": "@base64ToString(items('For_each')?['Content'])",
+        "Subject": "Review attachment",
+        "To": "Sophie.Owen@contoso.com"
+       },
+       "host": {
+        "connection": {
+         "id": "@parameters('$connections')['office365']['connectionId']"
+        }
+       },
+       "method": "post",
+       "path": "/Mail"
+      },
+      "runAfter": {}
+     }
+    },
+    "foreach": "@triggerBody()?['Attachments']",
+    "runAfter": {}
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 1936,
+   "secao": "If action",
+   "nome": "Condition",
+   "definicao": {
+    "type": "If",
+    "expression": {
+     "and": [
+      {
+       "greater": [
+        "@variables('myIntegerVariable')",
+        0
+       ]
+      }
+     ]
+    },
+    "actions": {
+     "HTTP - Check this website": {
+      "type": "Http",
+      "inputs": {
+       "method": "GET",
+       "uri": "http://this-url"
+      },
+      "runAfter": {}
+     }
+    },
+    "else": {
+     "actions": {
+      "HTTP - Check this other website": {
+       "type": "Http",
+       "inputs": {
+        "method": "GET",
+        "uri": "http://this-other-url"
+       },
+       "runAfter": {}
+      }
+     }
+    },
+    "runAfter": {}
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 2061,
+   "secao": "Switch action",
+   "nome": "Switch",
+   "definicao": {
+    "type": "Switch",
+    "expression": "@body('Send_approval_email')?['SelectedOption']",
+    "cases": {
+     "Case": {
+      "actions": {
+       "Send_an_email": {
+        "type": "ApiConnection",
+        "inputs": {
+         "Body": "Thank you for your approval.",
+         "Subject": "Response received",
+         "To": "Sophie.Owen@contoso.com"
+        },
+        "host": {
+         "connection": {
+          "name": "@parameters('$connections')['office365']['connectionId']"
+         }
+        },
+        "method": "post",
+        "path": "/Mail"
+       },
+       "runAfter": {}
+      },
+      "case": "Approve"
+     },
+     "Case_2": {
+      "actions": {
+       "Send_an_email_2": {
+        "type": "ApiConnection",
+        "inputs": {
+         "Body": "Thank you for your response.",
+         "Subject": "Response received",
+         "To": "Sophie.Owen@contoso.com"
+        },
+        "host": {
+         "connection": {
+          "name": "@parameters('$connections')['office365']['connectionId']"
+         }
+        },
+        "method": "post",
+        "path": "/Mail"
+       },
+       "runAfter": {}
+      },
+      "case": "Reject"
+     }
+    },
+    "default": {
+     "actions": {
+      "Send_an_email_3": {
+       "type": "ApiConnection",
+       "inputs": {
+        "Body": "Please respond with either 'Approve' or 'Reject'.",
+        "Subject": "Please respond",
+        "To": "Sophie.Owen@contoso.com"
+       },
+       "host": {
+        "connection": {
+         "name": "@parameters('$connections')['office365']['connectionId']"
+        }
+       },
+       "method": "post",
+       "path": "/Mail"
+      },
+      "runAfter": {}
+     }
+    },
+    "runAfter": {
+     "Send_approval_email": [
+      "Succeeded"
+     ]
+    }
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 2186,
+   "secao": "Until action",
+   "nome": "Run_until_loop_succeeds_or_expires",
+   "definicao": {
+    "type": "Until",
+    "actions": {
+     "HTTP": {
+      "type": "Http",
+      "inputs": {
+       "method": "GET",
+       "uri": "http://myurl"
+      },
+      "runAfter": {}
+     }
+    },
+    "expression": "@equals(outputs('HTTP')['statusCode'], 200)",
+    "limit": {
+     "count": 60,
+     "timeout": "PT1H"
+    },
+    "runAfter": {}
+   },
+   "eh_gatilho": false
+  },
+  {
+   "linha_na_pagina": 2226,
+   "secao": "Change asynchronous duration",
+   "nome": "<trigger-or-action-name>",
+   "definicao": {
+    "type": "Workflow | Webhook | Http | ApiConnectionWebhook | ApiConnection",
+    "inputs": {},
+    "limit": {
+     "timeout": "PT10S"
+    },
+    "runAfter": {}
+   },
+   "eh_gatilho": false
+  }
+ ]
+}

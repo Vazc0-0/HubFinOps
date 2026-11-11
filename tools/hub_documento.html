@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{titulo}} · Hub do Piloto</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap">
+<style>
+:root{--ink:#14213D;--azul:#2F6FEB;--laranja:#B4561A;--fundo:#F4F5F2;--linha:#DDE2E8;--texto:#2B3445;--suave:#6B7584;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fundo);color:var(--texto);font:16px/1.6 'IBM Plex Sans',system-ui,'Segoe UI',sans-serif}
+header{background:var(--ink);color:#fff;padding:14px 16px}
+header .in{max-width:900px;margin:0 auto;display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:space-between;align-items:center}
+header a{color:#BFD0F5;text-decoration:none;font-weight:500}
+header code{color:#9FB0CC;background:none;font:13px 'IBM Plex Mono',ui-monospace,Consolas,monospace;overflow-wrap:anywhere}
+article{max-width:900px;margin:24px auto 64px;padding:28px max(16px,3vw);background:#fff;border:1px solid var(--linha);border-radius:12px}
+h1,h2,h3,h4{font-family:'Rubik',system-ui,sans-serif;color:var(--ink);line-height:1.25;font-weight:600}
+h1{font-size:28px;margin-top:0}h2{font-size:21px;margin-top:32px;border-bottom:1px solid var(--linha);padding-bottom:6px}h3{font-size:17px;margin-top:24px}
+a{color:var(--azul)}
+code{font:.88em 'IBM Plex Mono',ui-monospace,Consolas,monospace;background:#F1F3F6;border-radius:4px;padding:1px 5px}
+pre{background:#0F1A30;color:#DCE4F2;border-radius:10px;padding:14px 16px;overflow:auto;font:13px/1.5 'IBM Plex Mono',ui-monospace,Consolas,monospace}
+pre code{background:none;padding:0;color:inherit}
+pre.mermaid{background:#fff;color:var(--texto);border:1px solid var(--linha);text-align:center}
+.tabela{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{text-align:left;color:var(--suave);font-size:12px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--linha);padding:8px 10px}
+td{border-bottom:1px solid #EEF1F4;padding:8px 10px;vertical-align:top}
+blockquote{margin:14px 0;padding:8px 16px;border-left:4px solid var(--laranja);background:#FCF4EC}
+.wiki{color:var(--laranja);font-weight:500}
+</style>
+</head>
+<body>
+<header><div class="in"><a href="/#documentos">← Voltar ao hub</a><code>{{caminho}}</code></div></header>
+<article>
+{{corpo}}
+</article>
+<script type="module">
+// Desenha os diagramas Mermaid da documentação (fluxo das Logic Apps). Sem internet, o texto do diagrama continua visível.
+try {
+  const { default: mermaid } = await import('https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.esm.min.mjs');
+  mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'strict' });
+  await mermaid.run({ querySelector: 'pre.mermaid' });
+} catch (e) { console.warn('Mermaid indisponível:', e); }
+</script>
+</body>
+</html>

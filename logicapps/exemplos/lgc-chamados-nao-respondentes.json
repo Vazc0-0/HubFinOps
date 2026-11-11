@@ -1,0 +1,147 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "$connections": {
+        "defaultValue": {},
+        "type": "Object"
+      },
+      "siteUrl": {
+        "defaultValue": "https://exemplo.sharepoint.com/sites/demo",
+        "type": "String"
+      },
+      "emailSuporte": {
+        "defaultValue": "suporte-automacao@empresa-exemplo.com",
+        "type": "String"
+      }
+    },
+    "triggers": {
+      "Recorrencia_mensal": {
+        "type": "Recurrence",
+        "recurrence": {
+          "frequency": "Month",
+          "interval": 1,
+          "startTime": "2026-01-01T09:00:00",
+          "timeZone": "E. South America Standard Time"
+        }
+      }
+    },
+    "actions": {
+      "Tentar": {
+        "type": "Scope",
+        "actions": {
+          "Ler_planilha_de_chamados": {
+            "type": "ApiConnection",
+            "inputs": {
+              "host": {
+                "connection": {
+                  "name": "@parameters('$connections')['excelonlinebusiness']['connectionId']"
+                }
+              },
+              "method": "get",
+              "path": "/drives/@{encodeURIComponent('b!demo')}/files/@{encodeURIComponent('chamados-demo.xlsx')}/tables/@{encodeURIComponent('Tabela1')}/items"
+            },
+            "runAfter": {}
+          },
+          "Filtrar_nao_respondidos": {
+            "type": "Query",
+            "inputs": {
+              "from": "@body('Ler_planilha_de_chamados')?['value']",
+              "where": "@equals(item()?['Respondido'], 'Nao')"
+            },
+            "runAfter": {
+              "Ler_planilha_de_chamados": [
+                "Succeeded"
+              ]
+            }
+          },
+          "Montar_top_5": {
+            "type": "Compose",
+            "inputs": "@take(body('Filtrar_nao_respondidos'), 5)",
+            "runAfter": {
+              "Filtrar_nao_respondidos": [
+                "Succeeded"
+              ]
+            }
+          },
+          "Tabela_top_5": {
+            "type": "Table",
+            "inputs": {
+              "format": "HTML",
+              "from": "@outputs('Montar_top_5')"
+            },
+            "runAfter": {
+              "Montar_top_5": [
+                "Succeeded"
+              ]
+            }
+          },
+          "Enviar_ranking_ao_coordenador": {
+            "type": "ApiConnection",
+            "inputs": {
+              "host": {
+                "connection": {
+                  "name": "@parameters('$connections')['office365']['connectionId']"
+                }
+              },
+              "method": "post",
+              "path": "/v2/Mail",
+              "body": {
+                "To": "coordenador@empresa-exemplo.com",
+                "Subject": "Top 5 — chamados não respondidos no mês",
+                "Body": "@{body('Tabela_top_5')}"
+              }
+            },
+            "runAfter": {
+              "Tabela_top_5": [
+                "Succeeded"
+              ]
+            }
+          }
+        },
+        "runAfter": {}
+      },
+      "Avisar_falha": {
+        "type": "ApiConnection",
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['office365']['connectionId']"
+            }
+          },
+          "method": "post",
+          "path": "/v2/Mail",
+          "body": {
+            "To": "@{parameters('emailSuporte')}",
+            "Subject": "Falha na automação de chamados",
+            "Body": "@{result('Tentar')}"
+          }
+        },
+        "runAfter": {
+          "Tentar": [
+            "Failed",
+            "TimedOut"
+          ]
+        }
+      }
+    },
+    "outputs": {}
+  },
+  "parameters": {
+    "$connections": {
+      "value": {
+        "excelonlinebusiness": {
+          "connectionId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-automacao-prod/providers/Microsoft.Web/connections/excelonlinebusiness",
+          "connectionName": "excelonlinebusiness",
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Web/locations/brazilsouth/managedApis/excelonlinebusiness"
+        },
+        "office365": {
+          "connectionId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-automacao-prod/providers/Microsoft.Web/connections/office365",
+          "connectionName": "office365",
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Web/locations/brazilsouth/managedApis/office365"
+        }
+      }
+    }
+  }
+}

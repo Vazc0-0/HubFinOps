@@ -1,0 +1,72 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "$connections": { "defaultValue": {}, "type": "Object" },
+      "siteUrl": { "defaultValue": "https://exemplo.sharepoint.com/sites/demo", "type": "String" }
+    },
+    "triggers": {
+      "Recorrencia": {
+        "type": "Recurrence",
+        "recurrence": { "frequency": "Minute", "interval": 5, "timeZone": "E. South America Standard Time" }
+      }
+    },
+    "actions": {
+      "Obter_desvios_da_semana": {
+        "type": "ApiConnection",
+        "inputs": {
+          "host": { "connection": { "name": "@parameters('$connections')['sharepointonline']['connectionId']" } },
+          "method": "get",
+          "path": "/datasets/@{encodeURIComponent(parameters('siteUrl'))}/tables/@{encodeURIComponent('Desvios de Processo - Demo')}/items",
+          "queries": { "$filter": "Created ge '@{formatDateTime(addDays(utcNow(), -7), 'yyyy-MM-dd')}'" }
+        },
+        "runAfter": {}
+      },
+      "Para_cada_analista": {
+        "type": "Foreach",
+        "foreach": "@body('Obter_desvios_da_semana')?['value']",
+        "actions": {
+          "Tem_desvios": {
+            "type": "If",
+            "expression": { "and": [ { "greater": [ "@length(item()?['Desvios'])", 0 ] } ] },
+            "actions": {
+              "Montar_tabela_HTML": {
+                "type": "Table",
+                "inputs": { "format": "HTML", "from": "@item()?['Desvios']" },
+                "runAfter": {}
+              },
+              "Enviar_email_ao_analista": {
+                "type": "ApiConnection",
+                "inputs": {
+                  "host": { "connection": { "name": "@parameters('$connections')['office365']['connectionId']" } },
+                  "method": "post",
+                  "path": "/v2/Mail",
+                  "body": {
+                    "To": "@{item()?['EmailAnalista']}",
+                    "Subject": "Seus desvios de processo da semana",
+                    "Body": "<p>Olá! Segue o resumo:</p>@{body('Montar_tabela_HTML')}",
+                    "Importance": "Normal"
+                  }
+                },
+                "runAfter": { "Montar_tabela_HTML": [ "Succeeded" ] }
+              }
+            },
+            "else": { "actions": {} },
+            "runAfter": {}
+          }
+        },
+        "runAfter": { "Obter_desvios_da_semana": [ "Succeeded" ] }
+      }
+    },
+    "outputs": {}
+  },
+  "parameters": {
+    "$connections": {
+      "value": {
+        "sharepointonline": { "connectionId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-automacao-prod/providers/Microsoft.Web/connections/sharepointonline", "connectionName": "sharepointonline", "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Web/locations/brazilsouth/managedApis/sharepointonline" },
+        "office365": { "connectionId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-automacao-prod/providers/Microsoft.Web/connections/office365", "connectionName": "office365", "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Web/locations/brazilsouth/managedApis/office365" }
+      }
+    }
+  }
+}

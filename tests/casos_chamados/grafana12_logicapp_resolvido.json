@@ -1,0 +1,56 @@
+{
+  "receiver": "Receptor de chamados do piloto",
+  "status": "resolved",
+  "alerts": [
+    {
+      "status": "resolved",
+      "labels": {
+        "alertname": "Logic App com execucao que falhou",
+        "grafana_folder": "Piloto Agentes de IA",
+        "logic_app": "la-precos-logicapps",
+        "regra": "logicapp_falha",
+        "severidade": "alta"
+      },
+      "annotations": {
+        "description": "A Logic App la-precos-logicapps tem 0 execução(ões) com falha na última sincronização.",
+        "summary": "Execução com falha na Logic App"
+      },
+      "startsAt": "2026-11-06T12:55:20-03:00",
+      "endsAt": "2026-11-06T13:00:20-03:00",
+      "generatorURL": "http://localhost:3000/alerting/grafana/piloto-logicapp-falha/view?orgId=1",
+      "fingerprint": "79faa38079df17eb",
+      "silenceURL": "http://localhost:3000/alerting/silence/new?alertmanager=grafana&matcher=__alert_rule_uid__%3Dpiloto-logicapp-falha&matcher=logic_app%3Dla-precos-logicapps&matcher=regra%3Dlogicapp_falha&matcher=severidade%3Dalta&orgId=1",
+      "dashboardURL": "",
+      "panelURL": "",
+      "values": {
+        "A": 0,
+        "B": 0
+      },
+      "valueString": "[ var='A' labels={logic_app=la-precos-logicapps} value=0 ], [ var='B' labels={logic_app=la-precos-logicapps} value=0 ]",
+      "orgId": 1
+    }
+  ],
+  "groupLabels": {
+    "alertname": "Logic App com execucao que falhou",
+    "regra": "logicapp_falha"
+  },
+  "commonLabels": {
+    "alertname": "Logic App com execucao que falhou",
+    "grafana_folder": "Piloto Agentes de IA",
+    "logic_app": "la-precos-logicapps",
+    "regra": "logicapp_falha",
+    "severidade": "alta"
+  },
+  "commonAnnotations": {
+    "description": "A Logic App la-precos-logicapps tem 0 execução(ões) com falha na última sincronização.",
+    "summary": "Execução com falha na Logic App"
+  },
+  "externalURL": "http://localhost:3000/",
+  "version": "1",
+  "groupKey": "{}:{alertname=\"Logic App com execucao que falhou\", regra=\"logicapp_falha\"}",
+  "truncatedAlerts": 0,
+  "orgId": 1,
+  "title": "[RESOLVED] Logic App com execucao que falhou logicapp_falha (Piloto Agentes de IA la-precos-logicapps alta)",
+  "state": "ok",
+  "message": "**Resolved**\n\nValue: A=0, B=0\nLabels:\n - alertname = Logic App com execucao que falhou\n - grafana_folder = Piloto Agentes de IA\n - logic_app = la-precos-logicapps\n - regra = logicapp_falha\n - severidade = alta\nAnnotations:\n - description = A Logic App la-precos-logicapps tem 0 execução(ões) com falha na última sincronização.\n - summary = Execução com falha na Logic App\nSource: http://localhost:3000/alerting/grafana/piloto-logicapp-falha/view?orgId=1\nSilence: http://localhost:3000/alerting/silence/new?alertmanager=grafana&matcher=__alert_rule_uid__%3Dpiloto-logicapp-falha&matcher=logic_app%3Dla-precos-logicapps&matcher=regra%3Dlogicapp_falha&matcher=severidade%3Dalta&orgId=1\n"
+}

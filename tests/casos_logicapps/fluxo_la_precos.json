@@ -1,0 +1,135 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "regiao": {
+        "type": "String",
+        "defaultValue": "brazilsouth"
+      }
+    },
+    "triggers": {
+      "Todo_dia_8h": {
+        "type": "Recurrence",
+        "recurrence": {
+          "frequency": "Day",
+          "interval": 1,
+          "schedule": { "hours": [ 8 ], "minutes": [ 0 ] },
+          "startTime": "2026-11-06T08:00:00",
+          "timeZone": "E. South America Standard Time"
+        }
+      }
+    },
+    "actions": {
+      "Inicializar_linhas": {
+        "type": "InitializeVariable",
+        "inputs": { "variables": [ { "name": "linhas", "type": "array", "value": [] } ] },
+        "runAfter": {}
+      },
+      "Tentar": {
+        "type": "Scope",
+        "actions": {
+          "Consultar_precos": {
+            "type": "Http",
+            "inputs": {
+              "method": "GET",
+              "uri": "https://prices.azure.com/api/retail/prices",
+              "queries": {
+                "currencyCode": "'BRL'",
+                "$filter": "serviceName eq 'Logic Apps' and armRegionName eq '@{parameters('regiao')}' and type eq 'Consumption'"
+              },
+              "retryPolicy": { "type": "exponential", "count": 3, "interval": "PT10S" }
+            },
+            "runAfter": {}
+          },
+          "Ler_precos": {
+            "type": "ParseJson",
+            "inputs": {
+              "content": "@body('Consultar_precos')",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "Items": { "type": "array" },
+                  "Count": { "type": "integer" }
+                }
+              }
+            },
+            "runAfter": { "Consultar_precos": [ "Succeeded" ] }
+          },
+          "Filtrar_consumo": {
+            "type": "Query",
+            "inputs": {
+              "from": "@body('Ler_precos')?['Items']",
+              "where": "@startsWith(item()?['meterName'], 'Consumption ')"
+            },
+            "runAfter": { "Ler_precos": [ "Succeeded" ] }
+          },
+          "Para_cada_preco": {
+            "type": "Foreach",
+            "foreach": "@body('Filtrar_consumo')",
+            "runtimeConfiguration": { "concurrency": { "repetitions": 1 } },
+            "actions": {
+              "Acrescentar_linha": {
+                "type": "AppendToArrayVariable",
+                "inputs": {
+                  "name": "linhas",
+                  "value": {
+                    "medidor": "@items('Para_cada_preco')?['meterName']",
+                    "preco": "@items('Para_cada_preco')?['retailPrice']",
+                    "a_partir_de": "@items('Para_cada_preco')?['tierMinimumUnits']",
+                    "unidade": "@items('Para_cada_preco')?['unitOfMeasure']"
+                  }
+                },
+                "runAfter": {}
+              }
+            },
+            "runAfter": { "Filtrar_consumo": [ "Succeeded" ] }
+          },
+          "Achou_precos": {
+            "type": "If",
+            "expression": { "and": [ { "greater": [ "@length(variables('linhas'))", 0 ] } ] },
+            "actions": {
+              "Resumo": {
+                "type": "Compose",
+                "inputs": {
+                  "consultado_em": "@{utcNow()}",
+                  "regiao": "@{parameters('regiao')}",
+                  "moeda": "BRL",
+                  "fonte": "https://prices.azure.com/api/retail/prices",
+                  "precos": "@variables('linhas')"
+                },
+                "runAfter": {}
+              }
+            },
+            "else": {
+              "actions": {
+                "Sem_precos": {
+                  "type": "Compose",
+                  "inputs": "A API não retornou preços de Logic Apps para a região @{parameters('regiao')}",
+                  "runAfter": {}
+                }
+              }
+            },
+            "runAfter": { "Para_cada_preco": [ "Succeeded" ] }
+          }
+        },
+        "runAfter": { "Inicializar_linhas": [ "Succeeded" ] }
+      },
+      "Registrar_falha": {
+        "type": "Compose",
+        "inputs": "@result('Tentar')",
+        "runAfter": { "Tentar": [ "Failed", "TimedOut" ] }
+      },
+      "Encerrar_com_falha": {
+        "type": "Terminate",
+        "inputs": {
+          "runStatus": "Failed",
+          "runError": { "code": "PRECOS_INDISPONIVEIS", "message": "Não foi possível consultar a API de preços do Azure." }
+        },
+        "runAfter": { "Registrar_falha": [ "Succeeded" ] }
+      }
+    },
+    "outputs": {}
+  },
+  "parameters": {}
+}

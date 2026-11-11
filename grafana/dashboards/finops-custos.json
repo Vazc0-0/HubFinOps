@@ -1,0 +1,345 @@
+{
+  "uid": "finops-custos-demo",
+  "title": "FinOps - Custos Azure (dados sintéticos)",
+  "tags": [
+    "finops",
+    "piloto-agentes-ia",
+    "demo"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "editable": true,
+  "time": {
+    "from": "2026-08-01T00:00:00.000Z",
+    "to": "2026-11-01T00:00:00.000Z"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Custo no período",
+      "type": "stat",
+      "description": "",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT sum(billed_cost) AS \"Custo\" FROM focus_costs WHERE $__timeFilter(charge_period_start)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyBRL",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 2,
+      "title": "Custo médio por dia",
+      "type": "stat",
+      "description": "",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT sum(billed_cost) / NULLIF(count(DISTINCT charge_period_start), 0) AS \"Média diária\" FROM focus_costs WHERE $__timeFilter(charge_period_start)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyBRL",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 3,
+      "title": "Recursos sem dono (sem tag owner)",
+      "type": "stat",
+      "description": "Recursos sem responsável tendem a ser esquecidos e gerar custo.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(DISTINCT resource_name) AS \"Recursos\" FROM focus_costs WHERE NOT (tags ? 'owner') AND $__timeFilter(charge_period_start)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 4,
+      "title": "Recursos monitorados",
+      "type": "stat",
+      "description": "",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(DISTINCT resource_name) AS \"Recursos\" FROM focus_costs WHERE $__timeFilter(charge_period_start)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 5,
+      "title": "Custo diário total",
+      "type": "timeseries",
+      "description": "",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT charge_period_start AS time, sum(billed_cost) AS \"Custo diário\" FROM focus_costs WHERE $__timeFilter(charge_period_start) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyBRL",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 6,
+      "title": "Custo diário por recurso",
+      "type": "timeseries",
+      "description": "Picos e mudanças de patamar aparecem aqui.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 24,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT charge_period_start AS time, resource_name AS metric, sum(billed_cost) AS value FROM focus_costs WHERE $__timeFilter(charge_period_start) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyBRL",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 7,
+      "title": "Custo por resource group",
+      "type": "barchart",
+      "description": "",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT x_resource_group_name AS \"Resource group\", sum(billed_cost) AS \"Custo\" FROM focus_costs WHERE $__timeFilter(charge_period_start) GROUP BY 1 ORDER BY 2 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyBRL",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "xField": "Resource group"
+      }
+    },
+    {
+      "id": 8,
+      "title": "Custo por recurso",
+      "type": "table",
+      "description": "",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 22,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT resource_name AS \"Recurso\", service_name AS \"Serviço\", x_resource_group_name AS \"Resource group\", coalesce(tags->>'owner', 'SEM DONO') AS \"Dono\", sum(billed_cost) AS \"Custo\" FROM focus_costs WHERE $__timeFilter(charge_period_start) GROUP BY 1, 2, 3, 4 ORDER BY 5 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyBRL",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "options": {}
+    }
+  ]
+}

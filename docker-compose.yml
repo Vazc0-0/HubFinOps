@@ -1,0 +1,56 @@
+# Ambiente local do piloto: Postgres (dados) + Grafana (painéis e alertas) + receptor de alertas (chamados).
+# Subir:   docker compose up -d
+#   Grafana ............ http://localhost:3000  (admin / admin; visitantes veem os painéis sem login, só leitura)
+#   Receptor de alertas  http://localhost:8088  (recebe os alertas do Grafana e abre chamados em chamados/)
+#   Hub ................ python tools/hub.py    (roda fora do Docker: abre http://localhost:8090)
+# Recarregar os dados de custo após gerar um CSV novo:  docker compose down -v && docker compose up -d
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: finops
+      POSTGRES_USER: finops_admin
+      POSTGRES_PASSWORD: finops_admin_demo   # só para a demo local, nunca usar em ambiente real
+    volumes:
+      - ./data:/data:ro
+      - ./grafana/postgres-init:/docker-entrypoint-initdb.d:ro
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finops_admin -d finops"]
+      interval: 5s
+      retries: 10
+
+  grafana:
+    image: grafana/grafana:12.0.0
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      # o hub mostra os painéis dentro da página: permite incorporar e ver sem login (somente leitura, só nesta máquina)
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      # endereço do receptor usado pelo contact point dos alertas (grafana/provisioning/alerting)
+      RECEPTOR_URL: http://receptor:8088/alerta
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+
+  receptor:
+    image: python:3.12-slim
+    working_dir: /app
+    command: ["python", "tools/receptor_chamados.py", "--porta", "8088"]
+    environment:
+      PYTHONIOENCODING: utf-8
+      PYTHONUNBUFFERED: "1"
+    ports:
+      - "8088:8088"
+    volumes:
+      - ./:/app
+
+volumes:
+  pgdata:

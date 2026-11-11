@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.env
+logicapps/reais/*.json
+!logicapps/reais/la-precos-logicapps.json
+apresentacao/
+relatorios/hook.log
+docs/logicapps/hook.log
+config/azure.json
+relatorios/azure/
+chamados/
+relatorios/historico.jsonl
+relatorios/execucoes/

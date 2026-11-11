@@ -1,0 +1,85 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "$connections": { "defaultValue": {}, "type": "Object" },
+      "emailEquipe": { "defaultValue": "equipe@exemplo.com", "type": "String" }
+    },
+    "triggers": {
+      "Quando_item_criado": {
+        "type": "ApiConnection",
+        "recurrence": { "frequency": "Minute", "interval": 3 },
+        "splitOn": "@triggerBody()?['value']",
+        "inputs": {
+          "host": { "connection": { "name": "@parameters('$connections')['sharepointonline']['connectionId']" } },
+          "method": "get",
+          "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('siteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent('Pedidos'))}/onnewitems"
+        }
+      }
+    },
+    "actions": {
+      "Inicializar_contador": {
+        "type": "InitializeVariable",
+        "inputs": { "variables": [ { "name": "contador", "type": "integer", "value": 0 } ] },
+        "runAfter": {}
+      },
+      "Processar": {
+        "type": "Foreach",
+        "foreach": "@triggerBody()?['Linhas']",
+        "actions": {
+          "Guardar_ultimo": {
+            "type": "SetVariable",
+            "inputs": { "name": "contador", "value": "@item()?['Id']" },
+            "runAfter": {}
+          },
+          "Contar": {
+            "type": "IncrementVariable",
+            "inputs": { "name": "contador", "value": 1 },
+            "runAfter": { "Guardar_ultimo": [ "Succeeded" ] }
+          },
+          "Anotar": {
+            "type": "AppendToStringVariable",
+            "inputs": { "name": "historico", "value": "x" },
+            "runAfter": { "Contar": [ "Succeeded" ] }
+          }
+        },
+        "runAfter": { "Inicializar_contador": [ "Succeeded" ] }
+      },
+      "Enviar_resumo": {
+        "type": "ApiConnection",
+        "inputs": {
+          "host": { "connection": { "name": "@parameters('$connections')['office365']['connectionId']" } },
+          "method": "post",
+          "path": "/v2/Mail",
+          "body": {
+            "To": "@{parameters('emailEquipe')}",
+            "Cc": "gerente@exemplo.com; @{parameters('emailEquipe')}",
+            "Subject": "Resumo",
+            "Body": "@{body('Montar_resumo')} total @{variables('contador')}"
+          }
+        },
+        "runAfter": { "Processar": [ "Succeeded" ] }
+      },
+      "Chamar_api": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "https://api.exemplo.com/x?sig=abc&cliente=@{variables('contador')}",
+          "headers": { "x-api-key": "@{parameters('chaveApi')}" },
+          "retryPolicy": { "type": "none" }
+        },
+        "runAfter": { "Enviar_resumo": [ "Succeeded" ] }
+      },
+      "Registrar": {
+        "type": "Compose",
+        "inputs": "@outputs('Guardar_ultimo')",
+        "runAfter": { "Guardar_ultimo": [ "Succeeded" ] }
+      },
+      "Ciclo_a": { "type": "Compose", "inputs": "a", "runAfter": { "Ciclo_b": [ "Succeeded" ] } },
+      "Ciclo_b": { "type": "Compose", "inputs": "b", "runAfter": { "Ciclo_a": [ "Succeeded" ] } },
+      "Item_solto": { "type": "Compose", "inputs": "@item()", "runAfter": { "Chamar_api": [ "Succeeded" ] } }
+    },
+    "outputs": {}
+  }
+}

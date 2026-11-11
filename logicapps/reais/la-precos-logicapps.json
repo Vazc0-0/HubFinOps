@@ -1,0 +1,217 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "regiao": {
+        "defaultValue": "brazilsouth",
+        "type": "String"
+      }
+    },
+    "triggers": {
+      "Todo_dia_8h": {
+        "recurrence": {
+          "frequency": "Day",
+          "interval": 1,
+          "schedule": {
+            "hours": [
+              8
+            ],
+            "minutes": [
+              0
+            ]
+          },
+          "startTime": "2026-11-06T08:00:00",
+          "timeZone": "E. South America Standard Time"
+        },
+        "evaluatedRecurrence": {
+          "frequency": "Day",
+          "interval": 1,
+          "schedule": {
+            "hours": [
+              8
+            ],
+            "minutes": [
+              0
+            ]
+          },
+          "startTime": "2026-11-06T08:00:00",
+          "timeZone": "E. South America Standard Time"
+        },
+        "type": "Recurrence"
+      }
+    },
+    "actions": {
+      "Inicializar_linhas": {
+        "runAfter": {},
+        "type": "InitializeVariable",
+        "inputs": {
+          "variables": [
+            {
+              "name": "linhas",
+              "type": "array",
+              "value": []
+            }
+          ]
+        }
+      },
+      "Tentar": {
+        "actions": {
+          "Consultar_precos": {
+            "runAfter": {},
+            "type": "Http",
+            "inputs": {
+              "method": "GET",
+              "uri": "https://prices.azure.com/api/retail/prices",
+              "queries": {
+                "currencyCode": "'BRL'",
+                "$filter": "serviceName eq 'Logic Apps' and armRegionName eq '@{parameters('regiao')}' and type eq 'Consumption'"
+              },
+              "retryPolicy": {
+                "type": "exponential",
+                "count": 3,
+                "interval": "PT10S"
+              }
+            }
+          },
+          "Ler_precos": {
+            "runAfter": {
+              "Consultar_precos": [
+                "Succeeded"
+              ]
+            },
+            "type": "ParseJson",
+            "inputs": {
+              "content": "@body('Consultar_precos')",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "Items": {
+                    "type": "array"
+                  },
+                  "Count": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "Filtrar_consumo": {
+            "runAfter": {
+              "Ler_precos": [
+                "Succeeded"
+              ]
+            },
+            "type": "Query",
+            "inputs": {
+              "from": "@body('Ler_precos')?['Items']",
+              "where": "@startsWith(item()?['meterName'], 'Consumption ')"
+            }
+          },
+          "Para_cada_preco": {
+            "foreach": "@body('Filtrar_consumo')",
+            "actions": {
+              "Acrescentar_linha": {
+                "runAfter": {},
+                "type": "AppendToArrayVariable",
+                "inputs": {
+                  "name": "linhas",
+                  "value": {
+                    "medidor": "@items('Para_cada_preco')?['meterName']",
+                    "preco": "@items('Para_cada_preco')?['retailPrice']",
+                    "a_partir_de": "@items('Para_cada_preco')?['tierMinimumUnits']",
+                    "unidade": "@items('Para_cada_preco')?['unitOfMeasure']"
+                  }
+                }
+              }
+            },
+            "runAfter": {
+              "Filtrar_consumo": [
+                "Succeeded"
+              ]
+            },
+            "type": "Foreach",
+            "runtimeConfiguration": {
+              "concurrency": {
+                "repetitions": 1
+              }
+            }
+          },
+          "Achou_precos": {
+            "actions": {
+              "Resumo": {
+                "runAfter": {},
+                "type": "Compose",
+                "inputs": {
+                  "consultado_em": "@{utcNow()}",
+                  "regiao": "@{parameters('regiao')}",
+                  "moeda": "BRL",
+                  "fonte": "https://prices.azure.com/api/retail/prices",
+                  "precos": "@variables('linhas')"
+                }
+              }
+            },
+            "runAfter": {
+              "Para_cada_preco": [
+                "Succeeded"
+              ]
+            },
+            "else": {
+              "actions": {
+                "Sem_precos": {
+                  "runAfter": {},
+                  "type": "Compose",
+                  "inputs": "A API não retornou preços de Logic Apps para a região @{parameters('regiao')}"
+                }
+              }
+            },
+            "expression": {
+              "and": [
+                {
+                  "greater": [
+                    "@length(variables('linhas'))",
+                    0
+                  ]
+                }
+              ]
+            },
+            "type": "If"
+          }
+        },
+        "runAfter": {
+          "Inicializar_linhas": [
+            "Succeeded"
+          ]
+        },
+        "type": "Scope"
+      },
+      "Registrar_falha": {
+        "runAfter": {
+          "Tentar": [
+            "Failed",
+            "TimedOut"
+          ]
+        },
+        "type": "Compose",
+        "inputs": "@result('Tentar')"
+      },
+      "Encerrar_com_falha": {
+        "runAfter": {
+          "Registrar_falha": [
+            "Succeeded"
+          ]
+        },
+        "type": "Terminate",
+        "inputs": {
+          "runStatus": "Failed",
+          "runError": {
+            "code": "PRECOS_INDISPONIVEIS",
+            "message": "Não foi possível consultar a API de preços do Azure."
+          }
+        }
+      }
+    },
+    "outputs": {}
+  },
+  "parameters": {}
+}

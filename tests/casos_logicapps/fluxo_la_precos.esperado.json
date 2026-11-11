@@ -1,0 +1,53 @@
+{
+  "_comentario": "Gabarito escrito à mão da Logic App de teste que vai para o Azure (azure/la-precos-logicapps.json). Serve também para conferir o JSON que voltar do Azure (logicapps/reais/la-precos-logicapps.json): a leitura tem que ser a mesma.",
+  "gatilho": {
+    "nome": "Todo_dia_8h", "tipo": "Recurrence", "conector": null,
+    "texto_contem": ["todo dia, às 08:00", "E. South America Standard Time"],
+    "por_dia": "1"
+  },
+  "ordem": [
+    ["1", "Inicializar_linhas", "InitializeVariable", null, null],
+    ["2", "Tentar", "Scope", null, null],
+    ["2.1", "Consultar_precos", "Http", "Tentar", null],
+    ["2.2", "Ler_precos", "ParseJson", "Tentar", null],
+    ["2.3", "Filtrar_consumo", "Query", "Tentar", null],
+    ["2.4", "Para_cada_preco", "Foreach", "Tentar", null],
+    ["2.4.1", "Acrescentar_linha", "AppendToArrayVariable", "Para_cada_preco", null],
+    ["2.5", "Achou_precos", "If", "Tentar", null],
+    ["2.5.S.1", "Resumo", "Compose", "Achou_precos", "Sim"],
+    ["2.5.N.1", "Sem_precos", "Compose", "Achou_precos", "Não"],
+    ["3", "Registrar_falha", "Compose", null, null],
+    ["4", "Encerrar_com_falha", "Terminate", null, null]
+  ],
+  "usa": {
+    "Inicializar_linhas": [], "Tentar": [],
+    "Consultar_precos": ["parametro:regiao"],
+    "Ler_precos": ["acao:Consultar_precos"],
+    "Filtrar_consumo": ["acao:Ler_precos", "item:Filtrar_consumo"],
+    "Para_cada_preco": ["acao:Filtrar_consumo"],
+    "Acrescentar_linha": ["item:Para_cada_preco"],
+    "Achou_precos": ["variavel:linhas"],
+    "Resumo": ["parametro:regiao", "variavel:linhas"],
+    "Sem_precos": ["parametro:regiao"],
+    "Registrar_falha": ["acao:Tentar"],
+    "Encerrar_com_falha": []
+  },
+  "paralelo": {},
+  "variaveis": { "linhas": { "tipo": "array", "criada_em": "Inicializar_linhas", "alterada_em": ["Acrescentar_linha"] } },
+  "conectores": [],
+  "trata_erro": true,
+  "achados": [],
+  "cobranca": {
+    "fixas_por_execucao": 8,
+    "conector_fixas": 0,
+    "por_item_de_loop": { "Para_cada_preco": 1 },
+    "so_em_caso_de_falha": ["Encerrar_com_falha", "Registrar_falha"],
+    "execucoes_por_mes": "365/12"
+  },
+  "detalhes": {
+    "Consultar_precos": { "metodo": "GET", "uri": "https://prices.azure.com/api/retail/prices" },
+    "Ler_precos": { "campos": { "Items": "array", "Count": "integer" } },
+    "Para_cada_preco": { "sequencial": true, "paralelismo": 1 },
+    "Encerrar_com_falha": { "status": "Failed" }
+  }
+}

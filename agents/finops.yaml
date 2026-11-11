@@ -1,0 +1,131 @@
+# Equipe de agentes FinOps — Piloto Agentes de IA
+# Referência oficial: https://docs.docker.com/ai/docker-agent/configuration/overview/
+#
+# Rodar a partir da RAIZ do projeto (os comandos usam caminhos relativos):
+#   docker agent run agents/finops.yaml
+#   docker agent run --exec agents/finops.yaml "Analise os custos e gere o relatório"
+#
+# Modelo local via Docker Model Runner (nada sai da máquina):
+#   docker model pull ai/qwen3
+
+models:
+  local:
+    provider: dmr
+    model: ai/qwen3
+    max_tokens: 4096
+    provider_opts:
+      context_size: 16384
+      # Desliga o modo "thinking" do qwen3: respostas bem mais rápidas (doc oficial do provider dmr)
+      extra_body:
+        chat_template_kwargs:
+          enable_thinking: false
+
+agents:
+  root:
+    model: local
+    description: Orquestrador FinOps que coordena a análise de custos Azure
+    welcome_message: |
+      Olá! Sou o orquestrador FinOps (dados SINTÉTICOS de demonstração).
+      Peça, por exemplo: "Analise os custos e gere o relatório".
+    instruction: |
+      Você coordena uma pequena equipe de análise de custos Azure. Responda sempre em português do Brasil.
+      Os dados são sintéticos (demonstração); nunca invente números.
+
+      Fluxo padrão quando pedirem uma análise:
+      1. Delegue ao agente "analista_custos" a tarefa de levantar o resumo de custos e as anomalias,
+         com a explicação de cada uma.
+      2. Delegue ao agente "relator" a geração do relatório (ele calcula, salva e valida sozinho).
+      3. Responda ao usuário com um resumo curto (3 a 5 linhas) e diga onde o relatório foi salvo.
+         Lembre que o relatório pode ser conferido com: python tests/validar_relatorio.py
+
+      Para perguntas simples sobre um recurso específico, delegue só ao "analista_custos".
+    sub_agents: [analista_custos, relator]
+    add_date: true
+    # Hook "stop": roda sempre que o orquestrador termina de responder.
+    # Garante, por código, que o relatório é gerado, salvo e validado,
+    # mesmo que o modelo esqueça de chamar a ferramenta ou diga que fez sem fazer.
+    # Doc oficial: https://docs.docker.com/ai/docker-agent/configuration/hooks/
+    hooks:
+      stop:
+        - type: command
+          command: "python tools/gerar_relatorio.py --hook"
+          timeout: 60
+
+  analista_custos:
+    model: local
+    description: Analista de custos que consulta os dados FOCUS e explica anomalias
+    instruction: |
+      Você é um analista FinOps. Responda em português do Brasil, de forma objetiva.
+      Use SOMENTE as ferramentas para obter números; nunca estime ou invente valores.
+
+      Ao analisar:
+      1. Chame "resumo_custos" para ter a visão geral.
+      2. Chame "detectar_anomalias".
+      3. Para cada anomalia, chame "detalhar_recurso" e explique em linguagem simples:
+         o que aconteceu, quando, quanto custou a mais e uma causa provável pelo tipo:
+         - pico: algo ligado/executando além do normal por alguns dias (ex.: VM redimensionada, loop de retentativas);
+         - mudanca_de_patamar: uma configuração mudou e o custo ficou mais alto de forma permanente (ex.: recorrência mais frequente);
+         - recurso_orfao: recurso sem dono (sem tag owner) gerando custo crescente.
+      4. Sugira uma ação concreta para cada anomalia.
+         O CUSTO EXTRA e a PRIORIDADE de cada anomalia vêm prontos em "detectar_anomalias": copie exatamente,
+         nunca recalcule, e nunca use o total geral como custo de um recurso só.
+      Devolva tudo em texto organizado por anomalia.
+    toolsets:
+      - type: script
+        shell:
+          resumo_custos:
+            cmd: python tools/cost_query.py resumo
+            env:
+              PYTHONIOENCODING: utf-8
+            description: Custo por mês, por resource group e top 5 recursos dos últimos 30 dias.
+          detectar_anomalias:
+            cmd: python tools/cost_query.py anomalias
+            env:
+              PYTHONIOENCODING: utf-8
+            description: Lista anomalias de custo (picos, mudanças de patamar e recursos sem dono) com datas e valores.
+          detalhar_recurso:
+            cmd: python tools/cost_query.py recurso   # o nome chega pela variável de ambiente 'nome'
+            env:
+              PYTHONIOENCODING: utf-8
+            description: Custo diário dos últimos 30 dias e tags de um recurso.
+            args:
+              nome:
+                type: string
+                description: Nome exato do recurso
+                enum:
+                  - lgc-desvios-processo
+                  - lgc-chamados-nao-respondentes
+                  - lgc-relatorio-custos
+                  - func-rma-integracao
+                  - func-monitor-custos
+                  - vm-relatorios-dev
+                  - vm-jump-admin
+                  - stgautomacaoprod
+                  - sqldb-automacao
+                  - apim-integracoes
+                  - appi-automacao
+                  - stgbackupantigo
+            required: [nome]
+
+  relator:
+    model: local
+    description: Gera, salva e valida o relatório FinOps para gestores
+    instruction: |
+      Você é responsável pelo relatório FinOps. Responda em português do Brasil.
+
+      1. Chame a ferramenta "gerar_relatorio". Ela calcula os números, SALVA o arquivo
+         relatorios/relatorio-finops.md e roda a validação automática.
+      2. Responda com:
+         - o caminho do arquivo;
+         - o resultado da validação, exatamente como veio ("RELATÓRIO CONFIÁVEL" ou "REPROVADO");
+         - 3 linhas de resumo copiando números da saída da ferramenta.
+      Nunca diga que salvou ou validou algo sem ter chamado a ferramenta. Nunca invente números.
+    toolsets:
+      - type: script
+        shell:
+          gerar_relatorio:
+            cmd: python tools/gerar_relatorio.py
+            env:
+              PYTHONIOENCODING: utf-8
+            description: Gera e salva relatorios/relatorio-finops.md a partir dos dados e valida o resultado.
+    add_date: true

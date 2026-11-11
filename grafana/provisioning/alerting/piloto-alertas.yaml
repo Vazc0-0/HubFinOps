@@ -1,0 +1,120 @@
+# Alertas do Piloto Agentes de IA: cada alerta disparado vira um chamado com diagnóstico
+# (receptor em tools/receptor_chamados.py). Formato oficial de provisionamento por arquivo:
+# https://grafana.com/docs/grafana/latest/alerting/set-up/provision-alerting-resources/file-provisioning/
+# RECEPTOR_URL vem do docker-compose.yml (no compose: http://receptor:8088/alerta).
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: Receptor de chamados do piloto
+    receivers:
+      - uid: receptor-chamados
+        type: webhook
+        disableResolveMessage: false
+        settings:
+          url: ${RECEPTOR_URL}
+          httpMethod: POST
+
+policies:
+  - orgId: 1
+    receiver: Receptor de chamados do piloto
+    group_by: [alertname, regra]
+    group_wait: 10s
+    group_interval: 1m
+    repeat_interval: 4h
+
+groups:
+  - orgId: 1
+    name: Piloto - chamados automaticos
+    folder: Piloto Agentes de IA
+    interval: 1m
+    rules:
+      - uid: piloto-recurso-sem-dono
+        title: Recurso sem dono gerando custo
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: focus-pg
+            model:
+              refId: A
+              format: table
+              rawQuery: true
+              editorMode: code
+              rawSql: "SELECT resource_name AS recurso, SUM(billed_cost)::float AS custo FROM focus_costs WHERE NOT (tags ? 'owner') GROUP BY resource_name"
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              datasource: {type: __expr__, uid: __expr__}
+              conditions:
+                - evaluator: {type: gt, params: [0]}
+        noDataState: OK
+        execErrState: OK
+        for: 0s
+        labels: {regra: recurso_sem_dono, severidade: alta}
+        annotations:
+          summary: "Recurso sem a tag owner com custo"
+          description: "O recurso {{ $labels.recurso }} não tem dono (tag owner) e já custou R$ {{ printf \"%.2f\" $values.A.Value }} no período dos dados."
+
+      - uid: piloto-logicapp-falha
+        title: Logic App com execucao que falhou
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: focus-pg
+            model:
+              refId: A
+              format: table
+              rawQuery: true
+              editorMode: code
+              rawSql: "SELECT logic_app, (count(*) FILTER (WHERE status = 'Failed'))::float AS falhas FROM azure_execucoes GROUP BY logic_app"
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              datasource: {type: __expr__, uid: __expr__}
+              conditions:
+                - evaluator: {type: gt, params: [0]}
+        noDataState: OK
+        execErrState: OK
+        for: 0s
+        labels: {regra: logicapp_falha, severidade: alta}
+        annotations:
+          summary: "Execução com falha na Logic App"
+          description: "A Logic App {{ $labels.logic_app }} tem {{ printf \"%.0f\" $values.A.Value }} execução(ões) com falha na última sincronização."
+
+      - uid: piloto-custo-divergente
+        title: Custo medido diferente do previsto
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: focus-pg
+            model:
+              refId: A
+              format: table
+              rawQuery: true
+              editorMode: code
+              rawSql: "SELECT logic_app, abs(medido_por_execucao - previsto_por_execucao)::float AS diferenca FROM azure_previsto WHERE medido_por_execucao IS NOT NULL"
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              datasource: {type: __expr__, uid: __expr__}
+              conditions:
+                - evaluator: {type: gt, params: [0.5]}
+        noDataState: OK
+        execErrState: OK
+        for: 0s
+        labels: {regra: custo_divergente, severidade: media}
+        annotations:
+          summary: "Ações cobradas por execução diferentes da previsão"
+          description: "Na Logic App {{ $labels.logic_app }} o Azure mediu {{ printf \"%.1f\" $values.A.Value }} ação(ões) por execução a mais ou a menos do que o leitor previu."

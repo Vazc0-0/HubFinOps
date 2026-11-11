@@ -1,0 +1,79 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "$connections": { "defaultValue": {}, "type": "Object" },
+      "limiteDiario": { "defaultValue": 150, "type": "Int" },
+      "emailGestor": { "defaultValue": "gestor@empresa-exemplo.com", "type": "String" }
+    },
+    "triggers": {
+      "Todo_dia_7h": {
+        "type": "Recurrence",
+        "recurrence": { "frequency": "Day", "interval": 1, "schedule": { "hours": [ 7 ], "minutes": [ 0 ] }, "timeZone": "E. South America Standard Time" }
+      }
+    },
+    "actions": {
+      "Chamar_function_de_custos": {
+        "type": "Http",
+        "inputs": {
+          "method": "GET",
+          "uri": "https://func-monitor-custos-demo.azurewebsites.net/api/relatorio?code=CHAVE-FICTICIA-0000",
+          "retryPolicy": { "type": "none" }
+        },
+        "runAfter": {}
+      },
+      "Ler_resposta": {
+        "type": "ParseJson",
+        "inputs": {
+          "content": "@body('Chamar_function_de_custos')",
+          "schema": { "type": "object", "properties": { "custoOntem": { "type": "number" }, "topRecursos": { "type": "array" } } }
+        },
+        "runAfter": { "Chamar_function_de_custos": [ "Succeeded" ] }
+      },
+      "Passou_do_limite": {
+        "type": "If",
+        "expression": { "and": [ { "greater": [ "@body('Ler_resposta')?['custoOntem']", "@parameters('limiteDiario')" ] } ] },
+        "actions": {
+          "Tabela_top_recursos": {
+            "type": "Table",
+            "inputs": { "format": "HTML", "from": "@body('Ler_resposta')?['topRecursos']" },
+            "runAfter": {}
+          },
+          "Alertar_gestor": {
+            "type": "ApiConnection",
+            "inputs": {
+              "host": { "connection": { "name": "@parameters('$connections')['office365']['connectionId']" } },
+              "method": "post",
+              "path": "/v2/Mail",
+              "body": {
+                "To": "@{parameters('emailGestor')}",
+                "Subject": "Alerta: custo de ontem acima do limite",
+                "Body": "<p>Custo de ontem: R$ @{body('Ler_resposta')?['custoOntem']}</p>@{body('Tabela_top_recursos')}"
+              }
+            },
+            "runAfter": { "Tabela_top_recursos": [ "Succeeded" ] }
+          }
+        },
+        "else": {
+          "actions": {
+            "Registrar_ok": {
+              "type": "Compose",
+              "inputs": "Custo dentro do limite em @{formatDateTime(utcNow(), 'dd/MM/yyyy')}",
+              "runAfter": {}
+            }
+          }
+        },
+        "runAfter": { "Ler_resposta": [ "Succeeded" ] }
+      }
+    },
+    "outputs": {}
+  },
+  "parameters": {
+    "$connections": {
+      "value": {
+        "office365": { "connectionId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-automacao-prod/providers/Microsoft.Web/connections/office365", "connectionName": "office365", "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Web/locations/brazilsouth/managedApis/office365" }
+      }
+    }
+  }
+}
