@@ -147,7 +147,7 @@ Docker do PC). Fora do Docker, `python tools/hub.py` continua funcionando como a
 
 | Arquivo | O que é |
 |---|---|
-| `tools/hub.py`, `tools/hub_pagina.html`, `tools/hub_documento.html` | O hub (porta só em 127.0.0.1; só executa pedidos da própria página) |
+| `tools/hub.py`, `tools/hub_painel.html`, `tools/hub_pagina.html`, `tools/hub_documento.html` | O hub (porta só em 127.0.0.1; só executa pedidos da própria página). `/` = painel FinOps (escuro/claro, dados de `/api/finops`); `/operacao` = execuções, histórico, chamados, Grafana e documentos |
 | `docker/Dockerfile` | Imagem do hub e do receptor: Python + `psql` + fusos horários |
 | `tools/preparar_ambiente.py` | Cria o `.env` com o segredo que assina os alertas (`.env.example` mostra o formato) |
 | `tools/rodar.py` | Roda as tarefas e grava log + histórico |

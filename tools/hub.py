@@ -1,5 +1,8 @@
 """Hub do Piloto Agentes de IA: uma página local com tudo junto.
 
+  - Painel FinOps (página inicial, /): custo por ambiente (tenant), previsão × orçamento, ranking, economia;
+    modo escuro e claro. Os números vêm de /api/finops, calculados por tools/finops_tenants.py.
+  Painel de operação (/operacao):
   - Visão geral: último resultado de cada coisa (testes, FinOps, Logic Apps, Azure, chamados, serviços)
   - Executar: botões que rodam as tarefas (as mesmas de tools/rodar.py) com o log ao vivo
   - Histórico: tudo o que rodou, de onde veio (hub, terminal, hook do agente, alerta do Grafana) e o resultado
@@ -26,7 +29,7 @@ import time
 import urllib.parse
 import urllib.request
 import webbrowser
-from datetime import datetime
+from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -165,6 +168,41 @@ def tenants():
             "lista": [{k: a[k] for k in ("nome", "ambiente", "custo_ultimos_30_dias", "previsao_mes", "orcamento_mensal", "pct_orcamento",
                                          "estoura_orcamento", "economia_potencial_mensal", "economia_realizada_mensal",
                                          "cobertura_tags_pct")} for a in analises]}
+
+
+def avaliacao_atual():
+    """Última rodada completa da avaliação dos agentes (todas as perguntas de evals/casos.json)."""
+    casos = json.loads((ROOT / "evals" / "casos.json").read_text(encoding="utf-8"))["casos"]
+    for arq in sorted((ROOT / "evals" / "resultados").glob("*.json"), reverse=True):
+        r = _seguro(lambda a=arq: json.loads(a.read_text(encoding="utf-8")), {})
+        res = (r or {}).get("resumo") or {}
+        if res.get("perguntas") == len(casos):
+            return {"quando": r.get("quando"), "modelo": r.get("modelo"), **res}
+    return None
+
+
+def painel_finops():
+    """Tudo o que o painel FinOps mostra, calculado em código e separado por ambiente (tenant)."""
+    import finops_tenants as ft
+    dados = ft.carregar()
+    corte = dados["corte"]
+    dias = [corte - timedelta(days=29 - i) for i in range(30)]
+    fim_mes = (corte.replace(day=1) + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+    ambientes = []
+    for t in dados["tenants"]:
+        a = ft.analisar(dados, t)
+        serie = [round(sum(s.get(d, 0.0) for (tid, _), s in dados["custos"].items() if tid == t["id"]), 2) for d in dias]
+        ambientes.append({
+            "id": a["ambiente"], "nome": ft.NOME_AMBIENTE.get(a["ambiente"], a["nome"]), "tenant": a["nome"],
+            "orcamento": a["orcamento_mensal"], "previsao": a["previsao_mes"], "custo30": a["custo_ultimos_30_dias"],
+            "custo_mes": a["custo_mes_ate_corte"], "realizada": a["economia_realizada_mensal"], "serie": serie,
+            "recursos": a["custo_por_recurso"], "app": a["showback_app"], "cc": a["showback_centro_custo"],
+            "aumento": a["aumentos"][0] if a["aumentos"] else None,
+            "acoes": [{"recurso": o["recurso"], "tipo": ft.NOME_OPORTUNIDADE[o["tipo"]], "valor": o["economia_mensal"],
+                       "evidencia": o["evidencia"], "acao": o["acao"], "dono": o["dono"]} for o in a["oportunidades"]]})
+    return {"corte": str(corte), "dias": [str(d) for d in dias], "dias_no_mes": fim_mes.day,
+            "demonstracao": "PILOTO_TENANTS_DIR" not in os.environ, "ambientes": ambientes,
+            "avaliacao": _seguro(avaliacao_atual)}
 
 
 def chamados():
@@ -339,7 +377,11 @@ class Hub(BaseHTTPRequestHandler):
         u = urllib.parse.urlparse(self.path)
         q = urllib.parse.parse_qs(u.query)
         if u.path == "/":
+            return self._envia(200, _pagina("hub_painel.html", "<h1>hub_painel.html não encontrado</h1>"), "text/html; charset=utf-8")
+        if u.path == "/operacao":
             return self._envia(200, _pagina("hub_pagina.html", "<h1>hub_pagina.html não encontrado</h1>"), "text/html; charset=utf-8")
+        if u.path == "/api/finops":
+            return self._envia(200, json.dumps(painel_finops(), ensure_ascii=False, default=str), "application/json; charset=utf-8")
         if u.path == "/api/estado":
             return self._envia(200, json.dumps(estado(), ensure_ascii=False, default=str), "application/json; charset=utf-8")
         if u.path.startswith("/api/log/"):

@@ -212,6 +212,15 @@ def main():
         confere(status_de(f"{HUB}/api/executar/grafana") == 403, "hub recusa execução sem o cabeçalho da página (403)")
         confere(status_de(f"{HUB}/api/executar/grafana", cabecalhos={"X-Piloto-Hub": "1", "Host": "exemplo.com"}) == 403,
                 "hub recusa execução com Host de fora (403)")
+        def pagina(caminho):
+            with urllib.request.urlopen(f"{HUB}{caminho}", timeout=15) as r:
+                return r.read().decode("utf-8")
+        confere("Hub FinOps" in pagina("/") and "/api/finops" in pagina("/"), "página inicial é o painel FinOps")
+        confere("Hub do Piloto" in pagina("/operacao"), "painel de operação continua em /operacao")
+        fin = chama(f"{HUB}/api/finops", auth=False)
+        confere(len(fin["ambientes"]) == 3 and all(len(a["serie"]) == 30 for a in fin["ambientes"]),
+                f"/api/finops traz os 3 ambientes com 30 dias: {[a['nome'] for a in fin['ambientes']]}")
+        confere(get_status(f"{HUB}/api/finops", {"Host": "exemplo.com"}) == 403, "/api/finops recusa Host de fora")
         for proibido in ("config/azure.json", ".env", ".git/config"):
             confere(get_status(f"{HUB}/ver?arquivo={proibido}") == 404, f"hub não mostra {proibido}")
         confere(get_status(f"{HUB}/api/estado", {"Host": "exemplo.com"}) == 403, "hub recusa leitura com Host de fora (DNS rebinding)")

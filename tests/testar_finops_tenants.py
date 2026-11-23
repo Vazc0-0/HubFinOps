@@ -182,6 +182,26 @@ for texto, esperado in (("dev", "Contoso Desenvolvimento"), ("desenvolvimento", 
 for texto in ("Acme", "", "contoso", "qa", "Contoso Homologação", "de"):
     confere(ft.achar_tenant(dados, texto) is None, f"'{texto}' não devia achar nenhum tenant")
 
+# 7. o painel do hub (/api/finops) mostra os mesmos números do gabarito, separados por ambiente
+import hub  # noqa: E402
+
+P = hub.painel_finops()
+confere(P["corte"] == GAB["corte"] and len(P["dias"]) == 30 and P["dias"][-1] == GAB["corte"], f"painel: dias {P['dias'][:1]}…")
+por_id = {t["ambiente"]: t["id"] for t in dados["tenants"]}
+for amb in P["ambientes"]:
+    g = GAB["tenants"][por_id[amb["id"]]]
+    for campo, chave in (("previsao", "previsao_mes"), ("orcamento", "orcamento_mensal"), ("custo30", "custo_ultimos_30_dias"),
+                         ("realizada", "economia_realizada_mensal")):
+        confere(perto(amb[campo], g[chave]), f"painel {amb['nome']}: {campo} = {amb[campo]} (gabarito {g[chave]})")
+    confere(perto(sum(amb["serie"]), g["custo_ultimos_30_dias"], 0.05), f"painel {amb['nome']}: soma da série {sum(amb['serie'])}")
+    confere({(o["recurso"], o["valor"]) for o in amb["acoes"]} == {(o["recurso"], o["economia_mensal"]) for o in g["oportunidades"]},
+            f"painel {amb['nome']}: ações {amb['acoes']}")
+    confere(set(amb["recursos"]) <= set(g["recursos"]), f"ISOLAMENTO no painel: {amb['nome']} mostra recurso de outro ambiente")
+    for nome_app, v in amb["app"].items():
+        confere(v >= 0 and nome_app, f"painel {amb['nome']}: app {nome_app}")
+confere(perto(sum(sum(a["app"].values()) for a in P["ambientes"]), sum(g["custo_ultimos_30_dias"] for g in GAB["tenants"].values()), 0.1),
+        "painel: soma por app = custo total")
+
 total = ok + len(falhas)
 print(f"Teste FinOps por tenant: {ok}/{total} verificações")
 for f in falhas:

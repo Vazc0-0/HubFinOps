@@ -252,6 +252,7 @@ def analisar(dados, tenant):
             "showback_centro_custo": dict(sorted(((k, round(v, 2)) for k, v in por_cc.items()), key=lambda x: -x[1])),
             "showback_app": dict(sorted(((k, round(v, 2)) for k, v in por_app.items()), key=lambda x: -x[1])),
             "top_recursos": sorted(custo_mes_rec.items(), key=lambda x: -x[1])[:5],
+            "custo_por_recurso": dict(sorted(custo_mes_rec.items(), key=lambda x: -x[1])),
             "oportunidades": oportunidades,
             "economia_potencial_mensal": round(sum(o["economia_mensal"] for o in oportunidades), 2),
             "nao_sao_oportunidades": nao, "realizadas": realizadas,

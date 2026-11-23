@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="pt-BR" data-tema="escuro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hub FinOps · Visão geral</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<script>
+  // aplica o tema salvo antes de desenhar a página (evita piscar)
+  try { const t = localStorage.getItem('hub-tema'); if (t === 'claro' || t === 'escuro') document.documentElement.dataset.tema = t; } catch (e) {}
+</script>
+<style>
+/* Painel FinOps: os números vêm de /api/finops (tools/finops_tenants.py). Cores de cada ambiente iguais em todos os gráficos. */
+:root, [data-tema="escuro"]{
+  --bg:#0B0C0E; --frame:#141518; --frame-borda:#23252B; --nav:#0F1012; --nav-borda:#1F2126;
+  --card:#1C1D21; --card-borda:#2A2C32; --texto:#F3F4F6; --texto2:#C9CCD4; --muted:#A1A5B0; --faint:#8B8F9A;
+  --grade:#2A2C32; --eixo:#3A3C44; --ico-ativo:#26282E; --sub:#141518; --trilho:#2E3037; --chip:#2A2C32;
+  --ok:#34D399; --alerta:#FB923C; --eco:#22D3EE; --k-custo:#34D399; --k-prev:#A78BFA; --k-eco:#22D3EE; --ico-fundo:#2A2C32;
+  --producao:#818CF8; --desenvolvimento:#FBBF24; --integracao:#2DD4BF; --area:.28;
+  color-scheme: dark;
+}
+[data-tema="claro"]{
+  --bg:#E7EAF0; --frame:#F7F8FB; --frame-borda:#DCE0E8; --nav:#FFFFFF; --nav-borda:#E3E6ED;
+  --card:#FFFFFF; --card-borda:#E3E6ED; --texto:#0F172A; --texto2:#334155; --muted:#5B6472; --faint:#6B7280;
+  --grade:#E8EBF0; --eixo:#CBD5E1; --ico-ativo:#EEF0F5; --sub:#F3F5F9; --trilho:#E5E7EB; --chip:#EEF0F5;
+  --ok:#047857; --alerta:#C2410C; --eco:#0E7490; --k-custo:#059669; --k-prev:#7C3AED; --k-eco:#0891B2; --ico-fundo:#F1F3F8;
+  --producao:#4F46E5; --desenvolvimento:#D97706; --integracao:#0D9488; --area:.22;
+  color-scheme: light;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--texto);font:14px/1.5 Inter,'Segoe UI',system-ui,sans-serif;transition:background .25s,color .25s}
+a{color:inherit}
+button,select,input{font:inherit}
+:focus-visible{outline:2px solid var(--k-prev);outline-offset:2px}
+.casca{min-height:100vh;padding:18px}
+.quadro{display:flex;flex-wrap:wrap;background:var(--frame);border:1px solid var(--frame-borda);border-radius:22px;overflow:hidden;min-height:calc(100vh - 36px);transition:background .25s,border-color .25s}
+nav.icones{flex:0 0 64px;background:var(--nav);border-right:1px solid var(--nav-borda);padding:18px 0;display:flex;flex-direction:column;align-items:center;gap:8px}
+.logo{width:40px;height:40px;border-radius:12px;background:var(--ico-ativo);display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+.ico{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--faint);background:transparent;border:0;cursor:pointer;text-decoration:none;transition:background .15s,color .15s}
+.ico:hover{background:rgba(127,127,140,.16);color:var(--texto)}
+.ico[aria-current="page"]{background:var(--ico-ativo);color:var(--texto)}
+.ico.tema{margin-top:auto;border:1px solid var(--card-borda);color:var(--texto2)}
+[data-tema="escuro"] .so-claro,[data-tema="claro"] .so-escuro{display:none}
+main{flex:999 1 640px;min-width:0;padding:20px 22px 24px;display:flex;flex-direction:column;gap:14px}
+.topo{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+h1{margin:0;font-size:26px;font-weight:800;letter-spacing:-.3px}
+.sub{font-size:14px;color:var(--muted);margin-top:2px}
+.selos{margin-left:auto;display:flex;flex-wrap:wrap;gap:8px}
+.selo{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:var(--card);border:1px solid var(--card-borda);font-size:12px;color:var(--texto2);text-decoration:none}
+button.selo{cursor:pointer;font-weight:600;color:var(--texto)}
+.ponto{width:8px;height:8px;border-radius:4px;flex:none}
+.grade4{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.grade2{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px}
+.grade3{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--card-borda);border-radius:16px;padding:16px 18px;min-width:0;transition:background .25s,border-color .25s}
+.kpi{border-top:4px solid var(--cor);padding:14px 16px}
+.kpi .linha{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.kpi .rot{font-size:13px;color:var(--texto2);font-weight:500}
+.kpi .val{font-size:26px;font-weight:800;margin-top:6px;white-space:nowrap}
+.kpi .det{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+.kpi .icone{flex:none;width:42px;height:42px;border-radius:12px;background:var(--ico-fundo);color:var(--cor);display:flex;align-items:center;justify-content:center}
+.forte{font-weight:700}
+.bom{color:var(--ok)} .ruim{color:var(--alerta)}
+fieldset.filtros{margin:0;display:flex;flex-wrap:wrap;gap:6px 20px;align-content:flex-start}
+fieldset.filtros legend{font-size:12px;color:var(--muted);padding:0;float:left;width:100%;margin-bottom:4px}
+fieldset.filtros label{display:flex;align-items:center;gap:8px;min-height:32px;font-size:13px;cursor:pointer}
+fieldset.filtros input{width:16px;height:16px;margin:0;cursor:pointer}
+h2{margin:0;font-size:15px;font-weight:600}
+.cab{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.cab .dir{margin-left:auto;display:flex;gap:4px}
+.chip{min-height:30px;padding:0 12px;border-radius:8px;border:1px solid var(--card-borda);background:transparent;color:var(--muted);font-weight:600;font-size:12px;cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--eixo);background:var(--chip);color:var(--texto)}
+select.sel{min-height:34px;padding:0 10px;border-radius:8px;border:1px solid var(--eixo);background:var(--sub);color:var(--texto);font-weight:500;font-size:13px}
+.grafico{display:flex;gap:8px;margin-top:14px}
+.eixo-y{display:flex;flex-direction:column;justify-content:space-between;height:190px;font-size:10.5px;color:var(--faint);text-align:right;min-width:62px;white-space:nowrap}
+.area-graf{flex:1;min-width:0;position:relative}
+.area-graf svg{display:block;overflow:visible;cursor:crosshair}
+.rot-meta{position:absolute;right:0;font-size:11px;color:var(--texto2)}
+.eixo-x{display:flex;justify-content:space-between;gap:8px;margin:6px 0 0 70px;font-size:10.5px;color:var(--faint)}
+.legenda{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:12px;color:var(--texto2)}
+.legenda span{display:flex;align-items:center;gap:6px}
+.quad{width:10px;height:10px;border-radius:3px}
+.dica{margin-top:8px;min-height:18px;font-size:13px;color:var(--texto2)}
+ol.rank{margin:16px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px}
+ol.rank li{display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr);align-items:center;gap:12px;font-size:12.5px}
+ol.rank .nome{text-align:right;color:var(--texto2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ol.rank .barras{display:flex;align-items:center;gap:8px;min-width:0}
+ol.rank .trilho{display:flex;gap:2px;flex:none;min-width:3px;transition:width .6s cubic-bezier(.2,.7,.2,1)}
+ol.rank .seg{display:block;height:16px;border-radius:3px;min-width:2px}
+ol.rank .v{font-size:11.5px;white-space:nowrap}
+.rosca{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin-top:12px}
+.rosca ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;font-size:12.5px}
+.rosca li{display:flex;align-items:center;gap:8px}
+.frase{margin:10px 0 0;font-size:12.5px;line-height:1.55;color:var(--texto2)}
+ul.acoes{margin:12px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px}
+.acao{width:100%;min-height:44px;display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:10px;border:0;cursor:pointer;color:var(--texto);background:transparent;text-align:left;transition:background .15s}
+.acao:hover,.acao[aria-expanded="true"]{background:var(--sub)}
+.acao .t{flex:1;min-width:0}
+.acao .t b{display:block;font-weight:600;font-size:12.5px}
+.acao .t small{display:block;font-size:11px;color:var(--muted)}
+.acao .v{font-weight:700;font-size:12.5px;color:var(--eco);white-space:nowrap}
+.evid{margin:2px 4px 8px 22px;padding:8px 10px;border-radius:8px;background:var(--sub);font-size:11.5px;line-height:1.5;color:var(--texto2)}
+.destaque{margin-top:auto;padding:10px 12px;border-radius:10px;background:var(--sub);font-size:12px;line-height:1.5}
+.coluna{display:flex;flex-direction:column}
+.erro{padding:16px;border-radius:12px;background:var(--card);border:1px solid var(--alerta);color:var(--texto)}
+@media (max-width:640px){ .casca{padding:0} .quadro{border-radius:0} nav.icones{flex:1 1 100%;flex-direction:row;flex-wrap:wrap;justify-content:center;padding:8px;border-right:0;border-bottom:1px solid var(--nav-borda)} .logo{margin:0 8px 0 0} .ico.tema{margin:0} .grade2{grid-template-columns:1fr} }
+@media (prefers-reduced-motion:reduce){ *{transition:none!important} }
+</style>
+</head>
+<body>
+<div class="casca">
+<div class="quadro">
+  <nav class="icones" aria-label="Navegação">
+    <div class="logo" aria-hidden="true">
+      <svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" style="stroke:var(--grade)" stroke-width="4"/><path d="M12 3a9 9 0 0 1 9 9" fill="none" style="stroke:var(--producao)" stroke-width="4"/><path d="M21 12a9 9 0 0 1-6 8.5" fill="none" style="stroke:var(--integracao)" stroke-width="4"/><path d="M15 20.5a9 9 0 0 1-5.5.2" fill="none" style="stroke:var(--desenvolvimento)" stroke-width="4"/></svg>
+    </div>
+    <a class="ico" href="/" aria-label="Painel FinOps" title="Painel FinOps" aria-current="page"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></a>
+    <a class="ico" href="/operacao#visao" aria-label="Operação (testes, histórico, execuções)" title="Operação"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></a>
+    <a class="ico" href="/operacao#executar" aria-label="Executar tarefas" title="Executar tarefas"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4l12 8-12 8z"/></svg></a>
+    <a class="ico" href="/operacao#chamados" aria-label="Chamados dos alertas" title="Chamados"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></a>
+    <a class="ico" href="/operacao#grafana" aria-label="Painéis do Grafana" title="Grafana"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></a>
+    <a class="ico" href="/operacao#documentos" aria-label="Documentos e relatórios" title="Documentos"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></a>
+    <button type="button" class="ico tema" id="tema-lateral" aria-label="Alternar modo claro e escuro" title="Alternar modo claro e escuro">
+      <svg class="so-escuro" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg class="so-claro" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </nav>
+
+  <main>
+    <div class="topo">
+      <div>
+        <h1>Hub FinOps</h1>
+        <div class="sub">Visão Geral · Custos do Azure por ambiente</div>
+      </div>
+      <div class="selos">
+        <span class="selo" id="selo-dados"><span class="ponto" style="background:var(--ok)"></span>carregando…</span>
+        <a class="selo" id="selo-agente" href="/operacao#documentos" hidden></a>
+        <button type="button" class="selo" id="tema-topo"><span class="so-escuro">Modo claro</span><span class="so-claro">Modo escuro</span></button>
+      </div>
+    </div>
+
+    <div id="erro" class="erro" hidden></div>
+
+    <div class="grade4">
+      <div id="kpis" style="display:contents"></div>
+      <fieldset class="card filtros" id="filtros">
+        <legend>Ambientes (filtra o painel inteiro)</legend>
+      </fieldset>
+    </div>
+
+    <div class="grade2">
+      <section class="card" aria-labelledby="t-graf">
+        <div class="cab">
+          <h2 id="t-graf">Custo ao longo do tempo</h2>
+          <div class="dir" role="group" aria-label="Modo do gráfico">
+            <button type="button" class="chip" data-modo="acumulado" aria-pressed="true">Acumulado no mês</button>
+            <button type="button" class="chip" data-modo="diario" aria-pressed="false">Diário</button>
+          </div>
+        </div>
+        <div class="grafico">
+          <div class="eixo-y" aria-hidden="true"><span id="y-topo"></span><span id="y-meio"></span><span>R$ 0</span></div>
+          <div class="area-graf">
+            <svg id="graf" width="100%" height="190" viewBox="0 0 600 190" preserveAspectRatio="none" role="img"></svg>
+            <div class="rot-meta" id="rot-meta"></div>
+          </div>
+        </div>
+        <div class="eixo-x" aria-hidden="true"><span id="x0"></span><span id="x1"></span><span id="x2"></span></div>
+        <div class="legenda" id="leg-graf"></div>
+        <div class="dica" id="dica" aria-live="polite"></div>
+      </section>
+
+      <section class="card" aria-labelledby="t-rank">
+        <div class="cab">
+          <h2 id="t-rank">Ranking de custo por:</h2>
+          <div class="dir">
+            <select class="sel" id="rank-por" aria-label="Ranking por">
+              <option value="recursos">Recurso</option>
+              <option value="app">App</option>
+              <option value="cc">Centro de custo</option>
+            </select>
+          </div>
+        </div>
+        <ol class="rank" id="ranking"></ol>
+        <div class="legenda" id="leg-rank"></div>
+      </section>
+    </div>
+
+    <div class="grade3">
+      <section class="card" aria-labelledby="t-rosca">
+        <h2 id="t-rosca">Representatividade do custo</h2>
+        <div class="sub" style="font-size:12px">Por ambiente · últimos 30 dias</div>
+        <div class="rosca" id="rosca"></div>
+      </section>
+      <section class="card" aria-labelledby="t-meta">
+        <h2 id="t-meta">Previsão × orçamento</h2>
+        <div id="medidor"></div>
+      </section>
+      <section class="card coluna" aria-labelledby="t-eco">
+        <h2 id="t-eco">Onde economizar</h2>
+        <div class="sub" style="font-size:12px">Clique numa ação para ver a evidência</div>
+        <ul class="acoes" id="acoes"></ul>
+        <div class="destaque" id="destaque-eco"></div>
+      </section>
+    </div>
+  </main>
+</div>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const rs = (v, c = 2) => 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: c, maximumFractionDigits: c });
+const mil = (v) => v >= 1000 ? 'R$ ' + (v / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mil' : rs(v, 0);
+const pct = (v) => Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%';
+const dm = (iso) => iso.slice(8, 10) + '/' + iso.slice(5, 7);
+const corDe = (id) => `var(--${id})`;
+const reduzido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+let D = null;
+const E = { ativos: null, modo: 'acumulado', rank: 'recursos', aberto: null, t: 1 };
+const W = 600, H = 190;
+
+// ---------------------------------------------------------------- tema
+function trocaTema() {
+  const novo = document.documentElement.dataset.tema === 'claro' ? 'escuro' : 'claro';
+  document.documentElement.dataset.tema = novo;
+  try { localStorage.setItem('hub-tema', novo); } catch (e) {}
+}
+$('#tema-lateral').onclick = trocaTema;
+$('#tema-topo').onclick = trocaTema;
+
+// ---------------------------------------------------------------- animação dos números
+let raf = 0;
+function anima() {
+  cancelAnimationFrame(raf);
+  if (reduzido) { E.t = 1; desenha(); return; }
+  const ini = performance.now();
+  const passo = (agora) => {
+    const p = Math.min(1, (agora - ini) / 800);
+    E.t = 1 - Math.pow(1 - p, 3);
+    desenha();
+    if (p < 1) raf = requestAnimationFrame(passo);
+  };
+  raf = requestAnimationFrame(passo);
+}
+
+// ---------------------------------------------------------------- controles (desenhados uma vez)
+function montaControles() {
+  $('#filtros').insertAdjacentHTML('beforeend', D.ambientes.map((a) => `
+    <label><input type="checkbox" data-amb="${esc(a.id)}" checked style="accent-color:${corDe(a.id)}">
+      <span class="ponto" style="background:${corDe(a.id)}"></span>${esc(a.nome)}</label>`).join(''));
+  document.querySelectorAll('#filtros input').forEach((cb) => cb.onchange = () => {
+    const id = cb.dataset.amb;
+    const novo = { ...E.ativos, [id]: cb.checked };
+    if (!Object.values(novo).some(Boolean)) { cb.checked = true; return; } // sempre um ambiente marcado
+    E.ativos = novo; E.aberto = null; anima();
+  });
+  document.querySelectorAll('[data-modo]').forEach((b) => b.onclick = () => {
+    E.modo = b.dataset.modo;
+    document.querySelectorAll('[data-modo]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    anima();
+  });
+  $('#rank-por').onchange = (e) => { E.rank = e.target.value; anima(); };
+  $('#graf').addEventListener('mousemove', (ev) => {
+    const r = ev.currentTarget.getBoundingClientRect();
+    mostraDia(Math.round((ev.clientX - r.left) / r.width * 29));
+  });
+  $('#graf').addEventListener('mouseleave', () => mostraDia(null));
+}
+
+// ---------------------------------------------------------------- desenho
+let G = null; // dados do gráfico atual (para a dica do mouse)
+
+function desenha() {
+  const t = E.t;
+  const sel = D.ambientes.filter((a) => E.ativos[a.id]);
+  const soma = (f) => sel.reduce((x, a) => x + f(a), 0);
+  const c30 = soma((a) => a.custo30), prev = soma((a) => a.previsao), orc = soma((a) => a.orcamento), real = soma((a) => a.realizada);
+  const acoes = sel.flatMap((a) => a.acoes.map((o) => ({ ...o, amb: a }))).sort((x, y) => y.valor - x.valor);
+  const eco = acoes.reduce((x, o) => x + o.valor, 0);
+  const pOrc = 100 * prev / orc;
+  const estoura = sel.filter((a) => a.previsao > a.orcamento);
+
+  // indicadores
+  const icones = {
+    custo: '<path d="M12 2v20"/><path d="M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+    prev: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/>',
+    eco: '<path d="M19 5c-7 0-13 4-13 11 0 1.5.3 2.7.8 3.6C12 19 19 14 19 5z"/><path d="M6.8 19.6C9 15 12 12 15 10"/>'
+  };
+  const kpi = (cor, ico, rot, val, det1, det2, cls) => `
+    <div class="card kpi" style="--cor:var(${cor})"><div class="linha"><div style="min-width:0">
+      <div class="rot">${rot}</div><div class="val">${val}</div>
+      <div class="det">${det1}<br><span class="${cls}">${det2}</span></div></div>
+      <div class="icone"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icones[ico]}</svg></div></div></div>`;
+  $('#kpis').innerHTML =
+    kpi('--k-custo', 'custo', 'Custo (30 dias)', mil(c30 * t),
+        `${sel.length} ${sel.length === 1 ? 'ambiente' : 'ambientes'} · ${rs(c30 / 30, 0)} por dia`,
+        estoura.length ? esc(estoura.map((a) => a.nome).join(', ')) + ' acima do orçamento' : 'todos dentro do orçamento',
+        'forte ' + (estoura.length ? 'ruim' : 'bom')) +
+    kpi('--k-prev', 'prev', 'Previsão do mês', mil(prev * t), 'orçamento ' + mil(orc),
+        pct(pOrc) + ' do orçamento' + (pOrc > 100 ? ' · estoura' : ''), 'forte ' + (pOrc > 100 ? 'ruim' : 'bom')) +
+    kpi('--k-eco', 'eco', 'Economia possível', mil(eco * t) + '/mês',
+        `${mil(eco * 12)} por ano · ${acoes.length} ${acoes.length === 1 ? 'ação' : 'ações'}`, 'já economizado: ' + rs(real) + '/mês', '');
+
+  // legendas
+  const leg = sel.map((a) => `<span><span class="quad" style="background:${corDe(a.id)}"></span>${esc(a.nome)}</span>`).join('');
+  $('#leg-rank').innerHTML = leg;
+
+  // gráfico empilhado por ambiente
+  const iMes = D.dias.findIndex((d) => d.slice(0, 7) === D.corte.slice(0, 7));
+  let porAmb = {}, n, topo, eixoX, nomeDia, metaTxt, metaY;
+  if (E.modo === 'diario') {
+    n = 30; sel.forEach((a) => { porAmb[a.id] = a.serie; });
+    const tot = D.dias.map((_, i) => sel.reduce((x, a) => x + a.serie[i], 0));
+    topo = Math.ceil(Math.max(orc / 30, ...tot) * 1.1 / 50) * 50;
+    eixoX = [dm(D.dias[0]), dm(D.dias[15]), dm(D.dias[29])];
+    nomeDia = (i) => dm(D.dias[i]); metaTxt = 'Orçamento por dia';
+  } else {
+    sel.forEach((a) => { let acc = 0; porAmb[a.id] = a.serie.slice(iMes).map((v) => (acc += v)); });
+    n = 30 - iMes;
+    topo = Math.ceil(Math.max(orc, prev) * 1.08 / 1000) * 1000;
+    const mes = D.corte.slice(5, 7);
+    eixoX = ['01/' + mes, '15/' + mes, D.dias_no_mes + '/' + mes];
+    nomeDia = (i) => dm(D.dias[iMes + i]); metaTxt = 'Orçamento';
+  }
+  const passos = E.modo === 'diario' ? 29 : D.dias_no_mes - 1;
+  const x = (i) => W * i / passos;
+  const y = (v) => H - H * v / topo * t;
+  let base = new Array(n).fill(0);
+  let svg = `<line x1="0" y1="0" x2="600" y2="0" style="stroke:var(--grade)" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"/>
+             <line x1="0" y1="95" x2="600" y2="95" style="stroke:var(--grade)" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"/>`;
+  sel.forEach((a) => {
+    const sup = base.map((b, i) => b + porAmb[a.id][i]);
+    const cima = sup.map((v, i) => x(i).toFixed(1) + ',' + y(v).toFixed(1));
+    const baixo = base.map((v, i) => x(i).toFixed(1) + ',' + y(v).toFixed(1)).reverse();
+    svg += `<polygon points="${cima.concat(baixo).join(' ')}" style="fill:${corDe(a.id)};fill-opacity:var(--area)"/>
+            <polyline points="${cima.join(' ')}" fill="none" style="stroke:${corDe(a.id)}" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
+    base = sup;
+  });
+  const total = base, ult = n - 1;
+  svg += `<line x1="0" y1="190" x2="600" y2="190" style="stroke:var(--eixo)" vector-effect="non-scaling-stroke"/>`;
+  if (E.modo === 'diario') {
+    metaY = y(orc / 30);
+    svg += `<line x1="0" y1="${metaY.toFixed(1)}" x2="600" y2="${metaY.toFixed(1)}" style="stroke:var(--texto2)" stroke-width="1.6" stroke-dasharray="6 5" vector-effect="non-scaling-stroke"/>`;
+  } else {
+    metaY = y(orc);
+    svg += `<line x1="0" y1="${y(0).toFixed(1)}" x2="600" y2="${metaY.toFixed(1)}" style="stroke:var(--texto2)" stroke-width="1.6" stroke-dasharray="6 5" vector-effect="non-scaling-stroke"/>
+            <line x1="${x(ult).toFixed(1)}" y1="${y(total[ult]).toFixed(1)}" x2="600" y2="${y(prev).toFixed(1)}" style="stroke:var(--texto)" stroke-width="2" stroke-dasharray="2 5" vector-effect="non-scaling-stroke"/>`;
+  }
+  svg += `<line id="cursor" x1="0" y1="0" x2="0" y2="190" visibility="hidden" style="stroke:var(--faint)" vector-effect="non-scaling-stroke"/>`;
+  $('#graf').innerHTML = svg;
+  $('#graf').setAttribute('aria-label', E.modo === 'diario'
+    ? 'Custo diário por ambiente nos últimos 30 dias, contra o orçamento por dia'
+    : 'Custo acumulado do mês por ambiente, contra o orçamento, com projeção até o fim do mês');
+  $('#rot-meta').textContent = metaTxt;
+  $('#rot-meta').style.top = Math.max(0, metaY - 18).toFixed(0) + 'px';
+  $('#y-topo').textContent = mil(topo); $('#y-meio').textContent = mil(topo / 2);
+  [0, 1, 2].forEach((k) => { $('#x' + k).textContent = eixoX[k]; });
+  $('#leg-graf').innerHTML = leg + `<span><span style="width:16px;border-top:2px dashed var(--texto2)"></span>${metaTxt}</span>`;
+  G = { sel, porAmb, total, ult, x, nomeDia, modo: E.modo, prev, orc };
+  if (t === 1) mostraDia(null);
+
+  // ranking: barra pintada (ou dividida) pelo ambiente de onde vem o custo
+  const itens = {};
+  const nomesRepetidos = new Set();
+  if (E.rank === 'recursos') {
+    const vistos = {};
+    sel.forEach((a) => Object.keys(a.recursos).forEach((nm) => { if (vistos[nm]) nomesRepetidos.add(nm); vistos[nm] = 1; }));
+  }
+  sel.forEach((a) => Object.entries(a[E.rank]).forEach(([nm, v]) => {
+    const chave = E.rank === 'recursos' && nomesRepetidos.has(nm) ? nm + ' · ' + a.nome : nm; // mesmo nome em 2 ambientes = 2 recursos
+    itens[chave] = itens[chave] || { total: 0, partes: [] };
+    itens[chave].total += v; itens[chave].partes.push({ a, v });
+  }));
+  const lista = Object.entries(itens).sort((p, q) => q[1].total - p[1].total).slice(0, 8);
+  const maxR = lista.length ? lista[0][1].total : 1;
+  $('#ranking').innerHTML = lista.map(([nm, it]) => `
+    <li><span class="nome" title="${esc(nm)}">${esc(nm)}</span>
+      <span class="barras"><span class="trilho" style="width:${(78 * it.total / maxR * t).toFixed(1)}%">
+        ${it.partes.map((p) => `<span class="seg" title="${esc(nm + ' · ' + p.a.nome + ': ' + rs(p.v))}" style="background:${corDe(p.a.id)};flex:${p.v.toFixed(2)} 1 0"></span>`).join('')}
+      </span><span class="v">${mil(it.total)}</span></span></li>`).join('');
+
+  // rosca
+  const C = 2 * Math.PI * 56;
+  let off = 0, fatias = '', itensRosca = '';
+  sel.forEach((a) => {
+    const fr = a.custo30 / c30, len = C * fr * t;
+    fatias += `<circle cx="80" cy="80" r="56" fill="none" style="stroke:${corDe(a.id)}" stroke-width="26" stroke-dasharray="${len.toFixed(1)} ${C.toFixed(1)}" stroke-dashoffset="${(-off).toFixed(1)}" transform="rotate(-90 80 80)"/>`;
+    itensRosca += `<li><span class="ponto" style="width:10px;height:10px;border-radius:5px;background:${corDe(a.id)}"></span>${esc(a.nome)}<strong style="margin-left:6px">${pct(100 * fr)}</strong></li>`;
+    off += len;
+  });
+  $('#rosca').innerHTML = `
+    <svg width="150" height="150" viewBox="0 0 160 160" role="img" aria-label="${esc(sel.map((a) => a.nome + ' ' + pct(100 * a.custo30 / c30)).join(', '))}">
+      <circle cx="80" cy="80" r="56" fill="none" style="stroke:var(--grade)" stroke-width="26"/>${fatias}
+      <text x="80" y="78" text-anchor="middle" font-size="15" font-weight="800" style="fill:var(--texto)">${mil(c30)}</text>
+      <text x="80" y="95" text-anchor="middle" font-size="10" style="fill:var(--muted)">30 dias</text>
+    </svg><ul>${itensRosca}</ul>`;
+
+  // medidor de previsão × orçamento
+  const L = Math.PI * 85, acima = pOrc > 100;
+  $('#medidor').innerHTML = `
+    <svg width="100%" height="128" viewBox="0 0 220 128" role="img" aria-label="Previsão em ${pct(pOrc)} do orçamento" style="display:block;margin-top:10px">
+      <path d="M 25 112 A 85 85 0 0 1 195 112" fill="none" style="stroke:var(--trilho)" stroke-width="26"/>
+      <path d="M 25 112 A 85 85 0 0 1 195 112" fill="none" style="stroke:var(${acima ? '--alerta' : '--k-prev'})" stroke-width="26" stroke-dasharray="${(L * Math.min(pOrc, 100) / 100 * t).toFixed(1)} ${L.toFixed(1)}"/>
+      <text x="110" y="100" text-anchor="middle" font-size="22" font-weight="800" style="fill:var(--texto)">${pct(pOrc * t)}</text>
+      <text x="20" y="126" text-anchor="middle" font-size="9" style="fill:var(--muted)">R$ 0</text>
+      <text x="200" y="126" text-anchor="middle" font-size="9" style="fill:var(--muted)">${mil(orc)}</text>
+    </svg>
+    <p class="frase">Em ${dm(D.corte)}, a previsão do mês é ${rs(prev)} e está
+      <span class="forte ${acima ? 'ruim' : 'bom'}">${acima ? pct(pOrc - 100) + ' acima' : pct(100 - pOrc) + ' abaixo'}</span>
+      do orçamento de ${rs(orc)}.</p>`;
+
+  // onde economizar
+  $('#acoes').innerHTML = acoes.slice(0, 5).map((o) => {
+    const id = o.amb.id + '|' + o.recurso, aberto = E.aberto === id;
+    return `<li><button type="button" class="acao" data-id="${esc(id)}" aria-expanded="${aberto}">
+        <span class="ponto" style="background:${corDe(o.amb.id)}"></span>
+        <span class="t"><b>${esc(o.recurso)}</b><small>${esc(o.tipo)} · ${esc(o.amb.nome)}</small></span>
+        <span class="v">${rs(o.valor, 0)}</span></button>
+      ${aberto ? `<div class="evid"><b>Evidência:</b> ${esc(o.evidencia)}<br><b>O que fazer:</b> ${esc(o.acao)}<br><b>Dono:</b> ${esc(o.dono)}</div>` : ''}</li>`;
+  }).join('');
+  document.querySelectorAll('.acao').forEach((b) => b.onclick = () => { E.aberto = E.aberto === b.dataset.id ? null : b.dataset.id; desenha(); });
+  const maior = acoes[0];
+  $('#destaque-eco').textContent = maior
+    ? `${maior.recurso} responde por ${pct(100 * maior.valor / eco)} da economia possível. Somando tudo: ${rs(eco, 0)} por mês, ${pct(100 * eco / c30)} do custo.`
+    : 'Nenhuma oportunidade nos ambientes selecionados.';
+}
+
+function mostraDia(i) {
+  if (!G) return;
+  const cur = document.getElementById('cursor');
+  if (i === null || i < 0 || i > G.ult) {
+    if (cur) cur.setAttribute('visibility', 'hidden');
+    $('#dica').textContent = G.modo === 'diario'
+      ? 'Passe o mouse no gráfico para ver o custo de cada dia.'
+      : `Linha pontilhada: projeção até o fim do mês (${rs(G.prev, 0)}) contra o orçamento de ${rs(G.orc, 0)}.`;
+    return;
+  }
+  if (cur) { cur.setAttribute('x1', G.x(i)); cur.setAttribute('x2', G.x(i)); cur.setAttribute('visibility', 'visible'); }
+  $('#dica').textContent = `${G.nomeDia(i)}: ${rs(G.total[i])} ${G.modo === 'diario' ? 'no dia' : 'acumulado'} · `
+    + G.sel.map((a) => a.nome + ' ' + rs(G.porAmb[a.id][i], 0)).join(' · ');
+}
+
+// ---------------------------------------------------------------- carga
+async function carrega() {
+  try {
+    const r = await fetch('/api/finops');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    D = await r.json();
+  } catch (e) {
+    $('#erro').hidden = false;
+    $('#erro').textContent = 'Não consegui ler os dados de custo (/api/finops): ' + e.message + '. Rode python tools/hub.py na raiz do projeto.';
+    return;
+  }
+  E.ativos = Object.fromEntries(D.ambientes.map((a) => [a.id, true]));
+  $('#selo-dados').innerHTML = `<span class="ponto" style="background:var(--ok)"></span>${D.demonstracao ? 'Dados de demonstração' : 'Dados reais'} · até ${esc(D.corte.split('-').reverse().join('/'))}`;
+  if (D.avaliacao) {
+    const av = D.avaliacao;
+    $('#selo-agente').hidden = false;
+    $('#selo-agente').textContent = `Agente: ${av.acertos}/${av.perguntas} certas · ${av.com_invencao} ${av.com_invencao === 1 ? 'invenção' : 'invenções'}`;
+    $('#selo-agente').title = `Última avaliação completa: ${av.quando} (${av.modelo})`;
+  }
+  montaControles();
+  anima();
+}
+carrega();
+</script>
+</body>
+</html>

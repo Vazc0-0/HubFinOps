@@ -8,10 +8,14 @@ e medido por uma avaliação com gabarito.**
 ![Docker Agent](https://img.shields.io/badge/Docker_Agent-modelo_local_qwen3-2496ED?logo=docker&logoColor=white)
 ![Grafana](https://img.shields.io/badge/Grafana-13-F46800?logo=grafana&logoColor=white)
 ![Azure Logic Apps](https://img.shields.io/badge/Azure-Logic_Apps-0078D4?logo=microsoftazure&logoColor=white)
-![Avaliação](https://img.shields.io/badge/avaliação_qwen3-13%2F13_sem_invenção-1F8F5A)
+![Avaliação](https://img.shields.io/badge/avaliação_qwen3-19%2F20_sem_invenção-1F8F5A)
 ![Leitor](https://img.shields.io/badge/leitor_de_Logic_Apps-451.914_verificações-1F8F5A)
 
-![Hub em funcionamento](docs/img/hub-demo.gif)
+![Painel FinOps do hub](docs/img/hub-painel-escuro.png)
+
+*Painel FinOps do hub (`http://localhost:8090`): custo por ambiente, previsão × orçamento, ranking por recurso, app ou centro de
+custo, e onde economizar. Cada ambiente tem a mesma cor em todos os gráficos; os filtros valem para a tela inteira; tem modo
+claro. Os números vêm de `/api/finops`, calculados em código por `tools/finops_tenants.py`.*
 
 > *English summary:* a hands-on project with [Docker Agent](https://docs.docker.com/ai/docker-agent/) teams running on a
 > **local model** (qwen3 via Docker Model Runner). One team analyses Azure costs (FOCUS format) and writes a FinOps report;
@@ -46,7 +50,7 @@ e medido por uma avaliação com gabarito.**
 | **Logic App real no Azure** | Uma Logic App de teste na minha conta de estudante, ligada **só para leitura** e sincronizada sozinha a cada 6 h. O custo previsto pelo leitor é conferido com o medido. |
 | **Comparação de versões** | O que mudou entre duas versões de uma Logic App: fluxo, custo previsto, riscos e pontos de atenção antes de publicar. |
 | **Grafana** | Painéis de custo e de operação (com histórico) e 4 alertas que viram **chamados com diagnóstico** (simulando um Jira). |
-| **Hub** | Página local que junta tudo: executar tarefas com log ao vivo, histórico, resultados, chamados, Grafana, métodos de teste e documentos. |
+| **Hub** | Página local em duas partes: o **painel FinOps** (página inicial, escuro ou claro, interativo, com os números de `/api/finops`) e a **operação** (`/operacao`): executar tarefas com log ao vivo, histórico, resultados, chamados, Grafana, métodos de teste e documentos. |
 
 ## Por que assim: código calcula, IA explica
 
@@ -92,9 +96,11 @@ flowchart LR
 
 ## Telas
 
-| Visão geral do hub | Painel de operação no Grafana |
+| Painel FinOps no modo claro | Painel de operação no Grafana |
 |---|---|
-| ![Visão geral](docs/img/hub-visao-geral.png) | ![Grafana](docs/img/grafana-operacao.png) |
+| ![Painel FinOps no modo claro](docs/img/hub-painel-claro.png) | ![Grafana](docs/img/grafana-operacao.png) |
+| **Operação do hub (`/operacao`)** | **Hub em funcionamento** |
+| ![Operação](docs/img/hub-visao-geral.png) | ![Hub em funcionamento](docs/img/hub-demo.gif) |
 | **Avaliação: comparação de modelos** | **Comparação de versões de uma Logic App** |
 | ![Avaliação](docs/img/avaliacao-resumo.png) | ![Comparação](docs/img/hub-comparacao.png) |
 | **Executar com log ao vivo** | **Chamados abertos pelos alertas** |
@@ -111,7 +117,7 @@ python tools/rodar.py ci
 
 # 2. Subir tudo: Postgres + Grafana + receptor de alertas + hub
 python tools/preparar_ambiente.py      # só na primeira vez: cria o .env com o segredo que assina os alertas
-docker compose up -d --build           # hub em http://localhost:8090 · Grafana em http://localhost:3000 (admin / admin)
+docker compose up -d --build           # painel FinOps em http://localhost:8090 (operação em /operacao) · Grafana em http://localhost:3000 (admin / admin)
 python tools/carregar_grafana.py       # ou pelo hub: Executar → Carregar dados no Grafana
 
 # 3. Conversar com os agentes (modelo local)
@@ -138,7 +144,7 @@ que usa o Docker) aparecem como **Só no PC**, com o comando para rodar no termi
 | Receptor de alertas | **36 / 36** verificações com alertas reais do Grafana, incluindo a assinatura (sem assinatura, segredo errado, alterado ou velho → recusado) |
 | Agendador e histórico | **24 / 24** verificações: comando do Agendador de Tarefas, rodada que para no primeiro erro, carga que acumula no Postgres |
 | Comparação de versões | **24 / 24** verificações com mudanças de gabarito e versões do Azure lidas de um servidor falso |
-| FinOps por ambiente | **99 / 99** verificações: cada número dos 3 ambientes igual ao gabarito, nenhum dado de um ambiente no relatório de outro e mudanças nos dados mudando o resultado do jeito certo |
+| FinOps por ambiente | **131 / 131** verificações: cada número dos 3 ambientes igual ao gabarito (também os que o painel do hub mostra), nenhum dado de um ambiente no relatório de outro e mudanças nos dados mudando o resultado do jeito certo |
 | Ambiente de ponta a ponta | Alerta real e assinado do Grafana vira chamado; alerta falso é recusado; tarefa roda pelo hub; sincronização atrasada abre chamado |
 | Sabotagem | Cada bateria foi estragada de propósito de vários jeitos e reprovou em todos |
 
