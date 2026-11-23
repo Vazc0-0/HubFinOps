@@ -5,7 +5,10 @@ Confere, pela API do Grafana e do receptor, que:
   1. o Grafana subiu e o datasource conecta no Postgres;
   2. os 2 painéis e as 3 regras de alerta foram provisionados pelos arquivos;
   3. o usuário só-leitura do Grafana enxerga os dados de custo e as tabelas do piloto;
-  4. um alerta de verdade dispara no Grafana e o receptor abre o chamado certo, com diagnóstico.
+  4. um alerta de verdade dispara no Grafana, vai ASSINADO (HMAC) e o receptor abre o chamado certo;
+     alerta sem assinatura é recusado;
+  5. o hub (container) responde, só aceita execução vinda da própria página e roda uma tarefa de verdade
+     (carregar os dados no Postgres pelo psql do container).
 
 Uso:  python tests/testar_ambiente.py            (espera até 4 min pelo alerta)
 Termina com "RESULTADO: AMBIENTE OK" ou "RESULTADO: AMBIENTE COM PROBLEMAS".
@@ -17,11 +20,13 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 GRAFANA = os.environ.get("GRAFANA_URL", "http://localhost:3000")
 RECEPTOR = os.environ.get("RECEPTOR_URL_LOCAL", "http://localhost:8088")
+HUB = os.environ.get("HUB_URL", "http://localhost:8090")
 AUTH = "Basic " + base64.b64encode(os.environ.get("GRAFANA_AUTH", "admin:admin").encode()).decode()
 CHAMADOS = Path(os.environ.get("PILOTO_CHAMADOS_DIR", ROOT / "chamados"))
 ESPERA_ALERTA_S = int(os.environ.get("ESPERA_ALERTA_S", "240"))
@@ -36,11 +41,20 @@ def confere(ok, msg):
     return ok
 
 
-def chama(url, corpo=None, auth=True):
-    req = urllib.request.Request(url, data=json.dumps(corpo).encode() if corpo is not None else None,
-                                 headers={"Content-Type": "application/json", **({"Authorization": AUTH} if auth else {})})
+def chama(url, corpo=None, auth=True, cabecalhos=None, metodo=None):
+    req = urllib.request.Request(url, data=json.dumps(corpo).encode() if corpo is not None else None, method=metodo,
+                                 headers={"Content-Type": "application/json", **({"Authorization": AUTH} if auth else {}),
+                                          **(cabecalhos or {})})
     with urllib.request.urlopen(req, timeout=15) as r:
         return json.loads(r.read().decode("utf-8") or "null")
+
+
+def status_de(url, corpo=None, cabecalhos=None):
+    try:
+        chama(url, corpo, auth=False, cabecalhos=cabecalhos, metodo="POST")
+        return 200
+    except urllib.error.HTTPError as e:
+        return e.code
 
 
 def espera(titulo, teste, limite_s, passo_s=5):
@@ -97,8 +111,14 @@ def main():
         except (urllib.error.HTTPError, KeyError, IndexError) as e:
             confere(False, f"tabela {tabela} acessível ({e})")
 
-    print("4. Alerta de verdade → chamado")
+    print("4. Alerta de verdade → chamado (assinado)")
     confere(bool(chama(f"{RECEPTOR}/", auth=False)), "receptor no ar")
+    falso = {"status": "firing", "alerts": [{"status": "firing", "labels": {"alertname": "x", "regra": "recurso_sem_dono"},
+                                             "fingerprint": "falso"}]}
+    confere(status_de(f"{RECEPTOR}/alerta", falso) == 401, "receptor recusa alerta sem assinatura (401)")
+    confere(status_de(f"{RECEPTOR}/alerta", falso, {"X-Grafana-Alerting-Signature": "0" * 64,
+                                                    "X-Grafana-Alerting-Signature-Timestamp": str(int(time.time()))}) == 401,
+            "receptor recusa assinatura falsa (401)")
 
     def chamado_sem_dono():
         for p in sorted(CHAMADOS.glob("CH-*.json")):
@@ -113,6 +133,34 @@ def main():
         confere(c["prioridade"] == "Alta" and c["status"] == "Aberto", f"prioridade {c['prioridade']}, status {c['status']}")
         confere(any("sem a tag `owner`" in d for d in c["diagnostico"]), "diagnóstico calculado em código")
         confere(c["origem"].startswith("Alerta do Grafana"), "origem: Grafana")
+        confere(not any(p.read_text(encoding="utf-8").count('"falso"') for p in CHAMADOS.glob("CH-*.json")),
+                "nenhum chamado veio do alerta sem assinatura")
+
+    print("5. Hub no container")
+    est = espera("o hub responder", lambda: chama(f"{HUB}/api/estado", auth=False), 60)
+    if confere(bool(est), "hub no ar"):
+        confere(est["servicos"] == {"grafana": True, "receptor": True}, f"hub enxerga Grafana e receptor: {est['servicos']}")
+        confere(est["grafana"]["url"].startswith("http://localhost"), f"painéis apontam para o navegador: {est['grafana']['url']}")
+        tarefas = {t["id"]: t for t in est["tarefas"]}
+        if os.environ.get("HUB_EM_CONTAINER", "1") == "1":
+            confere(bool(tarefas["azure"]["indisponivel"]), "tarefa Azure aparece como 'só no PC' (sem az no container)")
+        confere(status_de(f"{HUB}/api/executar/grafana") == 403, "hub recusa execução sem o cabeçalho da página (403)")
+        confere(status_de(f"{HUB}/api/executar/grafana", cabecalhos={"X-Piloto-Hub": "1", "Host": "exemplo.com"}) == 403,
+                "hub recusa execução com Host de fora (403)")
+        inicio = time.time()
+        confere(status_de(f"{HUB}/api/executar/grafana", cabecalhos={"X-Piloto-Hub": "1"}) == 200, "hub aceita execução da página")
+
+        def carga_concluida():
+            for h in chama(f"{HUB}/api/estado", auth=False)["historico"]:
+                if h.get("tarefa") == "Carregar dados no Grafana" and h.get("origem") == "hub" and h.get("status") != "em andamento":
+                    try:
+                        if datetime.fromisoformat(h["inicio"]).timestamp() >= inicio - 5:
+                            return h
+                    except (KeyError, ValueError):
+                        pass
+            return None
+        h = espera("a tarefa rodar no hub", carga_concluida, 90)
+        confere(bool(h) and h["status"] == "ok", f"tarefa rodou pelo hub com psql do container: {(h or {}).get('resumo')}")
 
     print()
     if falhas:

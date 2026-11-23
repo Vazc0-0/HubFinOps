@@ -66,11 +66,13 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
-      - name: Subir Postgres + Grafana + receptor
-        run: docker compose up -d --wait
+      - name: Criar o .env com um segredo aleatório para assinar os alertas
+        run: python tools/preparar_ambiente.py
+      - name: Subir Postgres + Grafana + receptor + hub
+        run: docker compose up -d --build --wait
       - name: Carregar os dados do piloto no Postgres
         run: python tools/carregar_grafana.py
-      - name: Grafana provisionado, dados visíveis e alerta real virando chamado
+      - name: Grafana provisionado, alerta assinado virando chamado e hub no container
         run: python tests/testar_ambiente.py
       - name: Logs dos containers
         if: failure()

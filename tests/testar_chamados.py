@@ -16,6 +16,8 @@ import os
 import sys
 import tempfile
 import threading
+import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -122,10 +124,50 @@ with urllib.request.urlopen(req, timeout=10) as resp:
 confere(resp.status == 200 and corpo["resultado"][0][0] == "criado", f"HTTP: {resp.status} {corpo}")
 srv.shutdown()
 
+# 7b. com segredo: só aceita alerta assinado pelo Grafana (HMAC-SHA256 com carimbo de tempo)
+SEG = "segredo-de-teste-1234567890"
+r.Receptor.segredo = SEG
+srv = r.ThreadingHTTPServer(("127.0.0.1", 0), r.Receptor)
+threading.Thread(target=srv.serve_forever, daemon=True).start()
+url = f"http://127.0.0.1:{srv.server_address[1]}/alerta"
+
+
+def posta(corpo, cabecalhos):
+    req = urllib.request.Request(url, data=corpo, headers={"Content-Type": "application/json", **cabecalhos}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return resp.status
+    except urllib.error.HTTPError as e:
+        return e.code
+
+
+assinado = copy.deepcopy(carrega("grafana12_recurso_sem_dono.json"))
+assinado["alerts"][0]["fingerprint"] = "assinado"
+corpo = json.dumps(assinado).encode()
+agora = str(int(time.time()))
+confere(posta(corpo, {}) == 401, "alerta sem assinatura foi aceito")
+confere(posta(corpo, {r.CAB_ASSINATURA: r.assinar("outro-segredo-qualquer-123", corpo, agora), r.CAB_HORARIO: agora}) == 401,
+        "alerta assinado com outro segredo foi aceito")
+velho = str(int(time.time()) - 3600)
+confere(posta(corpo, {r.CAB_ASSINATURA: r.assinar(SEG, corpo, velho), r.CAB_HORARIO: velho}) == 401,
+        "alerta com carimbo de 1 h atrás (reenvio) foi aceito")
+alterado = corpo.replace(b"stgbackupantigo", b"stgoutrorecurso")
+confere(posta(alterado, {r.CAB_ASSINATURA: r.assinar(SEG, corpo, agora), r.CAB_HORARIO: agora}) == 401,
+        "alerta alterado depois de assinado foi aceito")
+confere(posta(corpo, {r.CAB_ASSINATURA: r.assinar(SEG, corpo, agora), r.CAB_HORARIO: agora}) == 200,
+        "alerta assinado certo foi recusado")
+ms = str(int(time.time() * 1000))
+assinado["alerts"][0]["fingerprint"] = "assinado-ms"
+corpo2 = json.dumps(assinado).encode()
+confere(posta(corpo2, {r.CAB_ASSINATURA: r.assinar(SEG, corpo2, ms), r.CAB_HORARIO: ms}) == 200,
+        "alerta assinado com carimbo em milissegundos foi recusado")
+srv.shutdown()
+r.Receptor.segredo = None
+
 # 8. tudo registrado no histórico (o que o hub mostra)
 hist = [json.loads(l) for l in (TMP / "historico.jsonl").read_text(encoding="utf-8").splitlines()]
 criados = {h["resumo"].split()[0] for h in hist if h.get("status") == "ok" and h.get("resumo", "").startswith("CH-")}
-confere(len(criados) == 4, f"histórico: esperados 4 chamados registrados, vieram {len(criados)}")
+confere(len(criados) == 6, f"histórico: esperados 6 chamados registrados, vieram {len(criados)}")
 
 total = ok + len(falhas)
 print(f"Teste do receptor de alertas: {ok}/{total} verificações")

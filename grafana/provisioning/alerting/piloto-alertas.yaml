@@ -14,6 +14,11 @@ contactPoints:
         settings:
           url: ${RECEPTOR_URL}
           httpMethod: POST
+          # cada alerta vai assinado (HMAC-SHA256 do "carimbo:corpo"); o receptor recusa o que não confere
+          hmacConfig:
+            secret: $PILOTO_WEBHOOK_SEGREDO
+            header: X-Grafana-Alerting-Signature
+            timestampHeader: X-Grafana-Alerting-Signature-Timestamp
 
 policies:
   - orgId: 1

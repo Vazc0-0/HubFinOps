@@ -12,9 +12,13 @@
 Uso (na raiz do projeto):  python tools/hub.py          -> abre http://localhost:8090 no navegador
                            python tools/hub.py --sem-abrir
 Só escuta em 127.0.0.1 (esta máquina). Os botões só rodam as tarefas da lista de tools/rodar.py.
+No docker compose ele roda num container (HUB_HOST=0.0.0.0), mas a porta só é publicada em 127.0.0.1.
+Pedidos para executar tarefas só valem vindos da própria página (cabeçalho X-Piloto-Hub e Host local):
+outro site aberto no navegador não consegue disparar tarefas.
 """
 import html
 import json
+import os
 import re
 import sys
 import threading
@@ -32,8 +36,10 @@ import rodar  # noqa: E402
 
 ROOT = historico.ROOT
 PORTA = 8090
-GRAFANA = "http://localhost:3000"
-RECEPTOR = "http://localhost:8088"
+GRAFANA = os.environ.get("GRAFANA_URL", "http://localhost:3000")  # usado pelo hub (no compose: http://grafana:3000)
+GRAFANA_NAVEGADOR = os.environ.get("GRAFANA_URL_NAVEGADOR", "http://localhost:3000")  # usado pela página no navegador
+RECEPTOR = os.environ.get("RECEPTOR_URL_HUB", "http://localhost:8088")
+HOSTS_LOCAIS = {"localhost", "127.0.0.1", "[::1]"}
 EXTENSOES = {".md": "text/markdown", ".pdf": "application/pdf", ".json": "application/json", ".log": "text/plain",
              ".png": "image/png", ".csv": "text/csv"}
 RODANDO = {}  # tarefa -> id da execução em andamento (iniciada pelo hub)
@@ -72,7 +78,8 @@ def finops():
     rel = ROOT / "relatorios" / "relatorio-finops.md"
     return {"anomalias": itens, "total": round(sum(i["custo_extra"] for i in itens), 2),
             "relatorio": "relatorios/relatorio-finops.md" if rel.exists() else None,
-            "relatorio_em": datetime.fromtimestamp(rel.stat().st_mtime).isoformat(timespec="seconds") if rel.exists() else None}
+            "relatorio_em": (datetime.fromtimestamp(rel.stat().st_mtime).astimezone().isoformat(timespec="seconds")
+                             if rel.exists() else None)}
 
 
 def logicapps():
@@ -133,7 +140,7 @@ def azure():
                                    "rodaram": sum(1 for s in e["acoes"].values() if s != "Skipped"),
                                    "total": len(e["acoes"])} for e in execs][:10],
                     "simuladas": len([s for s in sim if s["logic_app"] == la]),
-                    "sincronizado_em": datetime.fromtimestamp(arq.stat().st_mtime).isoformat(timespec="seconds")})
+                    "sincronizado_em": datetime.fromtimestamp(arq.stat().st_mtime).astimezone().isoformat(timespec="seconds")})
     precos = az / "precos_logicapps.json"
     return {"logic_apps": out, "precos": json.loads(precos.read_text(encoding="utf-8")) if precos.exists() else None,
             "configurado": (ROOT / "config" / "azure.json").exists()}
@@ -156,7 +163,7 @@ def documentos():
               "Guias": [p for p in (ROOT / "README.md", ROOT / "azure" / "LEIA-ME.md", ROOT / "logicapps" / "reais" / "LEIA-ME.md")
                         if p.exists()]}
     return {g: [{"nome": p.name, "caminho": p.relative_to(ROOT).as_posix(),
-                 "alterado_em": datetime.fromtimestamp(p.stat().st_mtime).isoformat(timespec="seconds")} for p in ps]
+                 "alterado_em": datetime.fromtimestamp(p.stat().st_mtime).astimezone().isoformat(timespec="seconds")} for p in ps]
             for g, ps in grupos.items()}
 
 
@@ -171,14 +178,15 @@ def estado():
         except (KeyError, ValueError):
             pass
     tarefas = [{"id": k, "titulo": t, "descricao": d, "grupo": g, "comando": " ".join("python" if c == rodar.PY else c for c in cmd),
-                "rodando": k in RODANDO, "ultimo": ultimo(hist, t)} for k, (t, cmd, d, g) in rodar.TAREFAS.items()]
-    return {"gerado_em": datetime.now().isoformat(timespec="seconds"),
+                "rodando": k in RODANDO, "ultimo": ultimo(hist, t), "indisponivel": rodar.falta(k)}
+               for k, (t, cmd, d, g) in rodar.TAREFAS.items()]
+    return {"gerado_em": datetime.now().astimezone().isoformat(timespec="seconds"),
             "servicos": {"grafana": servico(f"{GRAFANA}/api/health"), "receptor": servico(f"{RECEPTOR}/")},
             "tarefas": tarefas, "historico": hist, "em_andamento": [h for h in hist if h.get("status") == "em andamento"],
             "finops": _seguro(finops), "logicapps": _seguro(logicapps, []), "azure": _seguro(azure),
             "ranking_logicapps": _seguro(ranking_logicapps, {"itens": []}), "chamados": _seguro(chamados, []),
             "documentos": _seguro(documentos, {}),
-            "grafana": {"url": GRAFANA, "paineis": [
+            "grafana": {"url": GRAFANA_NAVEGADOR, "paineis": [
                 {"uid": "piloto-operacao", "titulo": "Logic App real e operação do piloto"},
                 {"uid": "finops-custos-demo", "titulo": "FinOps: custos Azure (dados sintéticos)"}]}}
 
@@ -193,6 +201,9 @@ def executar(tarefa):
     def alvo():
         try:
             for t in (rodar.SEQUENCIA_TUDO if tarefa == "tudo" else [tarefa]):
+                if rodar.falta(t):  # ex.: Azure no hub em Docker: registra o motivo e segue
+                    historico.evento(rodar.TAREFAS[t][0], "pulada", rodar.falta(t), origem="hub")
+                    continue
                 rodar.rodar(t, origem="hub")
         finally:
             with TRAVA:
@@ -313,12 +324,22 @@ class Hub(BaseHTTPRequestHandler):
                                .replace("{{corpo}}", corpo), "text/html; charset=utf-8")
         return self._envia(404, "Não encontrado", "text/plain; charset=utf-8")
 
+    def _pedido_local(self):
+        """Só a própria página pode executar: Host local (contra DNS rebinding) e cabeçalho próprio.
+        Um site qualquer não consegue mandar esse cabeçalho sem a permissão de CORS, que o hub nunca dá."""
+        host = (self.headers.get("Host") or "").rsplit(":", 1)[0].lower()
+        return host in HOSTS_LOCAIS and self.headers.get("X-Piloto-Hub") == "1"
+
     def do_POST(self):
         u = urllib.parse.urlparse(self.path)
         if u.path.startswith("/api/executar/"):
+            if not self._pedido_local():
+                return self._envia(403, json.dumps({"erro": "pedido fora da página do hub"}), "application/json")
             t = u.path.rsplit("/", 1)[-1]
             if t != "tudo" and t not in rodar.TAREFAS:
                 return self._envia(400, json.dumps({"erro": "tarefa desconhecida"}), "application/json")
+            if t != "tudo" and rodar.falta(t):
+                return self._envia(409, json.dumps({"erro": rodar.falta(t)}, ensure_ascii=False), "application/json; charset=utf-8")
             iniciou = executar(t)
             return self._envia(200, json.dumps({"iniciou": iniciou}), "application/json")
         return self._envia(404, "Não encontrado", "text/plain; charset=utf-8")
@@ -334,7 +355,7 @@ def main(argv):
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
     porta = int(argv[argv.index("--porta") + 1]) if "--porta" in argv else PORTA
-    srv = ThreadingHTTPServer(("127.0.0.1", porta), Hub)
+    srv = ThreadingHTTPServer((os.environ.get("HUB_HOST", "127.0.0.1"), porta), Hub)
     url = f"http://localhost:{porta}"
     print(f"Hub do piloto no ar: {url}   (Ctrl+C para parar)")
     if "--sem-abrir" not in argv:

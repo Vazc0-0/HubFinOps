@@ -9,6 +9,7 @@ O hub (tools/hub.py) usa este mesmo arquivo para os botões "Executar".
 """
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -47,6 +48,21 @@ TAREFAS = {
                         "Faz as 13 perguntas com resposta conhecida às duas equipes e mede acertos e invenções. "
                         "Precisa do Docker Desktop e do modelo local; demora alguns minutos.", "IA"),
 }
+# tarefas que dependem de um programa da máquina (no hub em Docker eles não existem: rode no terminal do PC)
+REQUER = {"azure": ("az", "a Azure CLI (az login)"), "avaliar_agentes": ("docker", "o Docker Desktop com o modelo local")}
+
+
+def falta(tarefa):
+    """Motivo para a tarefa não rodar aqui (programa ausente) ou None."""
+    if tarefa not in REQUER:
+        return None
+    prog, nome = REQUER[tarefa]
+    if shutil.which(prog):
+        return None
+    cmd = " ".join("python" if c == PY else c for c in TAREFAS[tarefa][1])
+    return f"Precisa de {nome}, que não existe aqui. Rode no terminal do PC: {cmd}"
+
+
 # o que roda sem Docker, sem Azure e sem modelo: é o que o GitHub Actions roda a cada push
 SEQUENCIA_CI = ["testes", "gabarito_finops", "chamados_teste", "avaliador_teste", "relatorio_finops", "docs_logicapps"]
 SEQUENCIA_TUDO = SEQUENCIA_CI + ["azure", "grafana"]

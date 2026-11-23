@@ -12,12 +12,20 @@ grafana/provisioning/alerting/). Este receptor:
 É uma simulação do Jira: o chamado fica em arquivo. Ligar a um Jira de verdade é trocar a etapa 4
 por uma chamada à API do Jira (fica para quando houver acesso).
 
+Segurança: o Grafana assina cada alerta com HMAC-SHA256 (hmacConfig do contact point, doc oficial do
+webhook do Grafana) usando o segredo PILOTO_WEBHOOK_SEGREDO. O receptor recusa (401) alerta sem assinatura,
+com assinatura errada ou com carimbo de tempo velho (mais de 5 min: evita reenviar um alerta capturado).
+Sem o segredo, o receptor não sobe (a não ser com --sem-assinatura, só para teste local).
+
 Uso:  python tools/receptor_chamados.py [--porta 8088]      (no docker compose ele sobe sozinho)
 """
+import hashlib
+import hmac
 import json
 import os
 import sys
 import threading
+import time
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -29,6 +37,33 @@ ROOT = historico.ROOT
 PASTA = Path(os.environ.get("PILOTO_CHAMADOS_DIR", ROOT / "chamados"))
 TRAVA = threading.Lock()
 PRIORIDADE_ORDEM = {"Alta": 0, "Média": 1, "Baixa": 2}
+CAB_ASSINATURA = "X-Grafana-Alerting-Signature"
+CAB_HORARIO = "X-Grafana-Alerting-Signature-Timestamp"
+VALIDADE_S = 300
+
+
+def assinar(segredo, corpo, horario=None):
+    """Mesma conta do Grafana: HMAC-SHA256(horario + ":" + corpo) em hexadecimal (ou só do corpo, sem horário)."""
+    msg = (f"{horario}:".encode() + corpo) if horario else corpo
+    return hmac.new(segredo.encode("utf-8"), msg, hashlib.sha256).hexdigest()
+
+
+def confere_assinatura(segredo, corpo, assinatura, horario, agora=None):
+    """None se a assinatura vale; senão, o motivo da recusa."""
+    if not assinatura:
+        return "alerta sem assinatura"
+    if not horario:
+        return "alerta sem carimbo de tempo"
+    try:
+        t = float(horario)
+    except ValueError:
+        return "carimbo de tempo inválido"
+    t = t / 1000 if t > 1e11 else t  # a doc não diz se é segundo ou milissegundo: aceita os dois
+    if abs((agora or time.time()) - t) > VALIDADE_S:
+        return "carimbo de tempo velho (possível reenvio)"
+    if not hmac.compare_digest(assinar(segredo, corpo, horario), assinatura.strip().lower()):
+        return "assinatura não confere"
+    return None
 
 
 def brl(v):
@@ -226,6 +261,8 @@ def listar():
 
 # ----------------------------------------------------------------- servidor HTTP
 class Receptor(BaseHTTPRequestHandler):
+    segredo = None  # definido em servir(); None = não confere assinatura (testes)
+
     def log_message(self, fmt, *args):
         sys.stderr.write(f"[receptor] {self.address_string()} {fmt % args}\n")
 
@@ -246,8 +283,14 @@ class Receptor(BaseHTTPRequestHandler):
         if not self.path.startswith("/alerta"):
             return self._json(404, {"erro": "use POST /alerta"})
         tam = int(self.headers.get("Content-Length") or 0)
+        bruto = self.rfile.read(tam)
+        if self.segredo:
+            motivo = confere_assinatura(self.segredo, bruto, self.headers.get(CAB_ASSINATURA), self.headers.get(CAB_HORARIO))
+            if motivo:
+                historico.evento("Alerta do Grafana → chamado", "recusado", motivo, origem="receptor")
+                return self._json(401, {"erro": motivo})
         try:
-            payload = json.loads(self.rfile.read(tam).decode("utf-8"))
+            payload = json.loads(bruto.decode("utf-8"))
         except ValueError:
             return self._json(400, {"erro": "JSON inválido"})
         if os.environ.get("PILOTO_GUARDAR_PAYLOAD"):  # para capturar exemplos reais do Grafana nos testes
@@ -261,9 +304,11 @@ class Receptor(BaseHTTPRequestHandler):
         return self._json(200, {"resultado": r})
 
 
-def servir(porta=8088, host="0.0.0.0"):
+def servir(porta=8088, host="0.0.0.0", segredo=None):
+    Receptor.segredo = segredo
     srv = ThreadingHTTPServer((host, porta), Receptor)
-    print(f"Receptor de alertas ouvindo em http://{host}:{porta}/alerta (chamados em {PASTA})", flush=True)
+    aviso = "alertas assinados (HMAC)" if segredo else "SEM conferir assinatura (só para teste)"
+    print(f"Receptor de alertas ouvindo em http://{host}:{porta}/alerta (chamados em {PASTA}; {aviso})", flush=True)
     srv.serve_forever()
 
 
@@ -271,4 +316,9 @@ if __name__ == "__main__":
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
     porta = int(sys.argv[sys.argv.index("--porta") + 1]) if "--porta" in sys.argv else 8088
-    servir(porta)
+    segredo = os.environ.get("PILOTO_WEBHOOK_SEGREDO", "").strip()
+    if (len(segredo) < 16 or "troque" in segredo) and "--sem-assinatura" not in sys.argv:
+        print("ERRO: defina PILOTO_WEBHOOK_SEGREDO (16+ caracteres: rode python tools/preparar_ambiente.py)"
+              " ou use --sem-assinatura só para teste.")
+        sys.exit(2)
+    servir(porta, segredo=segredo or None)

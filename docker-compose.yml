@@ -1,9 +1,16 @@
-# Ambiente local do piloto: Postgres (dados) + Grafana (painéis e alertas) + receptor de alertas (chamados).
-# Subir:   docker compose up -d
+# Ambiente local do piloto: Postgres (dados) + Grafana (painéis e alertas) + receptor de alertas (chamados) + hub.
+# Primeira vez:   python tools/preparar_ambiente.py      (cria o .env com o segredo que assina os alertas)
+# Subir:          docker compose up -d --build
+#   Hub ................ http://localhost:8090  (executar tarefas, histórico, resultados, chamados e Grafana)
 #   Grafana ............ http://localhost:3000  (admin / admin; visitantes veem os painéis sem login, só leitura)
-#   Receptor de alertas  http://localhost:8088  (recebe os alertas do Grafana e abre chamados em chamados/)
-#   Hub ................ python tools/hub.py    (roda fora do Docker: abre http://localhost:8090)
+#   Receptor de alertas  http://localhost:8088  (só aceita alertas assinados pelo Grafana; abre chamados em chamados/)
+# As portas só abrem nesta máquina (127.0.0.1): ninguém na rede alcança o hub, o Grafana ou o receptor.
 # Recarregar os dados de custo após gerar um CSV novo:  docker compose down -v && docker compose up -d
+x-fuso: &fuso
+  TZ: ${TZ:-America/Sao_Paulo}   # horários do histórico e dos chamados no fuso local
+x-segredo: &segredo
+  PILOTO_WEBHOOK_SEGREDO: ${PILOTO_WEBHOOK_SEGREDO:?rode antes - python tools/preparar_ambiente.py - para criar o .env}
+
 services:
   postgres:
     image: postgres:19
@@ -26,8 +33,9 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
+      <<: *segredo   # assina os alertas (hmacConfig do contact point em grafana/provisioning/alerting)
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
       # o hub mostra os painéis dentro da página: permite incorporar e ver sem login (somente leitura, só nesta máquina)
@@ -39,18 +47,59 @@ services:
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 5s
+      retries: 20
 
   receptor:
-    image: python:3.15-slim
+    image: piloto-python:local
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
     working_dir: /app
     command: ["python", "tools/receptor_chamados.py", "--porta", "8088"]
     environment:
+      <<: [*segredo, *fuso]
       PYTHONIOENCODING: utf-8
       PYTHONUNBUFFERED: "1"
     ports:
-      - "8088:8088"
+      - "127.0.0.1:8088:8088"
     volumes:
       - ./:/app
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8088/', timeout=3)"]
+      interval: 5s
+      retries: 10
+
+  hub:
+    image: piloto-python:local   # mesma imagem do receptor (docker/Dockerfile)
+    working_dir: /app
+    command: ["python", "tools/hub.py", "--sem-abrir"]
+    depends_on:
+      grafana:
+        condition: service_healthy
+      receptor:
+        condition: service_healthy
+    environment:
+      <<: *fuso
+      PYTHONIOENCODING: utf-8
+      PYTHONUNBUFFERED: "1"
+      HUB_HOST: 0.0.0.0                       # dentro do container; a porta publicada continua só em 127.0.0.1
+      GRAFANA_URL: http://grafana:3000         # o hub consulta o Grafana pela rede interna do compose
+      GRAFANA_URL_NAVEGADOR: http://localhost:3000   # a página no navegador mostra os painéis por aqui
+      RECEPTOR_URL_HUB: http://receptor:8088
+      # tarefa "Carregar dados no Grafana": psql do container do hub falando com o Postgres
+      PILOTO_PSQL: psql -h postgres -U finops_admin -d finops
+      PGPASSWORD: finops_admin_demo
+    ports:
+      - "127.0.0.1:8090:8090"
+    volumes:
+      - ./:/app
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8090/api/estado', timeout=5)"]
+      interval: 5s
+      retries: 20
 
 volumes:
   pgdata:

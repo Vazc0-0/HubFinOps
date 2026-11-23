@@ -50,8 +50,10 @@ Daí vieram as regras do projeto:
 | Bateria do leitor de Logic Apps | **451.914 / 451.914** verificações: agendas, 28 expressões, gatilhos, fluxos com gabarito escrito à mão, exemplos JSON da documentação oficial, 2.000 fluxos aleatórios e mutações |
 | Sabotagem dos testes | O leitor foi estragado de propósito de vários jeitos e a bateria reprovou em todos |
 | Previsto × medido (Azure real) | **15 ações cobradas por execução previstas** só lendo o JSON e **15 medidas** pelo Azure Monitor |
-| Receptor de alertas | **30 / 30** verificações com alertas reais capturados do Grafana 12 |
+| Receptor de alertas | **36 / 36** verificações com alertas reais capturados do Grafana, incluindo assinatura: sem assinatura, segredo errado, alerta alterado e reenvio velho são recusados |
 | Relatório FinOps | Acha as 4 anomalias do gabarito, com valores conferidos pelo validador |
+| Avaliação dos agentes (qwen3 local) | **13 / 13** perguntas certas, **nenhuma invenção**, inclusive nas 2 perguntas armadilha ([resultados](evals/resultados/RESUMO.md)) |
+| Comparação com gemma3 | **0 / 13**: o modelo não chama as ferramentas, escreve a chamada como texto. A avaliação detecta e mostra isso |
 
 ## Testes automáticos (CI)
 
@@ -61,14 +63,15 @@ A cada `push`, o [GitHub Actions](.github/workflows/ci.yml) roda quatro verifica
 |---|---|
 | **Qualidade do código** | `ruff` sem erros (armadilhas comuns, imports, estilo) |
 | **Testes** no Linux e no Windows, Python 3.10 e 3.13 | bateria do leitor de Logic Apps, gabarito FinOps, receptor de alertas, relatório e documentação validados; e a documentação versionada continua igual ao que o código gera |
-| **Ambiente Docker de ponta a ponta** | sobe Postgres + Grafana + receptor, confere painéis, alertas e permissões do usuário só-leitura, e espera um **alerta real do Grafana virar chamado** com o diagnóstico certo |
+| **Ambiente Docker de ponta a ponta** | sobe Postgres + Grafana + receptor + hub, confere painéis, alertas e permissões do usuário só-leitura, espera um **alerta real e assinado do Grafana virar chamado** com o diagnóstico certo, confere que alerta sem assinatura é recusado e roda uma tarefa pelo hub |
 | **Segredos** | `gitleaks` confere que nenhuma chave ou senha real entrou no histórico |
 
 Na sua máquina, o mesmo conjunto roda com:
 
 ```bash
 python tools/rodar.py ci              # testes (não precisa de Docker)
-docker compose up -d --wait           # e, com o ambiente no ar:
+python tools/preparar_ambiente.py     # uma vez: cria o .env com o segredo dos alertas
+docker compose up -d --build --wait   # e, com o ambiente no ar:
 python tests/testar_ambiente.py       # RESULTADO: AMBIENTE OK
 ```
 
@@ -86,8 +89,18 @@ já se sabe ([`evals/casos.json`](evals/casos.json)) e mede quanto ele acerta e 
   das ferramentas** conta como inventado, mesmo que a resposta tenha acertado o resto.
 - **Perguntas armadilha:** duas perguntas citam um recurso e uma Logic App que não existem. O certo é dizer que não
   encontrou; responder com números é invenção.
+- **Ferramenta em texto:** quando o modelo escreve `transfer_task(...)` na resposta em vez de chamar a ferramenta, a
+  avaliação avisa. É o sinal de um modelo sem suporte a chamada de ferramentas.
 - O corretor é testado com respostas boas e ruins conhecidas (`tests/testar_avaliador.py`, roda no CI), incluindo o
-  relatório alucinado da primeira tentativa.
+  relatório alucinado da primeira tentativa e respostas reais dos modelos.
+
+| Modelo | Acertos | Invenção | Ferramenta em texto | Tempo médio |
+|---|---|---|---|---|
+| `ai/qwen3` | 13 / 13 | 0 | 0 / 13 | 39 s |
+| `ai/gemma3` | 0 / 13 | 0 | 13 / 13 | 6 s |
+
+A rodada do qwen3 foi gravada como 12 / 13: a resposta sobre riscos estava certa, mas escrevia `SEM_TRATAMENTO_DE_ERRO`
+e o corretor ainda não aceitava o sublinhado. Corrigida com `--corrigir`, dá 13 / 13, e a resposta virou caso de teste.
 
 ```bash
 python evals/avaliar.py                          # 13 perguntas com o modelo dos YAMLs (ai/qwen3)
@@ -145,12 +158,10 @@ flowchart LR
 # 1. Rodar todos os testes (não precisa de Docker)
 python tools/rodar.py ci                    # leitor, gabarito, receptor, relatório e documentação
 
-# 2. Subir Postgres + Grafana + receptor de alertas
-docker compose up -d                        # Grafana em http://localhost:3000 (admin / admin)
-python tools/carregar_grafana.py
-
-# 3. Abrir o hub
-python tools/hub.py                         # http://localhost:8090
+# 2. Subir tudo: Postgres + Grafana + receptor de alertas + hub
+python tools/preparar_ambiente.py           # só na primeira vez: cria o .env com o segredo que assina os alertas
+docker compose up -d --build                # hub em http://localhost:8090 · Grafana em http://localhost:3000 (admin / admin)
+python tools/carregar_grafana.py            # ou pelo hub: Executar → Carregar dados no Grafana
 
 # 4. Rodar os agentes com o modelo local
 docker model pull ai/qwen3
@@ -158,7 +169,18 @@ docker agent run agents/finops.yaml         # "Analise os custos e gere o relat�
 docker agent run agents/documentacao.yaml   # "Documente as Logic Apps"
 ```
 
-Também dá para rodar tudo pelo terminal: `python tools/rodar.py tudo`.
+Também dá para rodar tudo pelo terminal: `python tools/rodar.py tudo`. O hub também roda fora do Docker, com
+`python tools/hub.py`. No container, as tarefas que precisam de programas do PC (sincronizar com o Azure, que usa o
+`az login`, e a avaliação dos agentes, que usa o Docker) aparecem como **Só no PC**, com o comando para rodar no terminal.
+
+### Segurança do ambiente local
+
+- **Portas só nesta máquina:** hub, Grafana e receptor publicam a porta em `127.0.0.1`. Ninguém na rede alcança.
+- **Alertas assinados:** o Grafana assina cada alerta com HMAC-SHA256 (`hmacConfig` do contact point). O receptor
+  recusa alerta sem assinatura, com segredo errado, alterado no caminho ou com carimbo de tempo de mais de 5 minutos.
+  O segredo fica no `.env`, fora do Git.
+- **Hub só obedece à própria página:** executar uma tarefa exige um cabeçalho que só a página do hub manda e um `Host`
+  local. Outro site aberto no navegador não consegue disparar tarefas.
 
 ### Logic App real (opcional)
 
@@ -184,6 +206,7 @@ python tools/carregar_grafana.py --limpar-simulacao  # o alerta volta ao normal 
 ```text
 agents/        equipes do Docker Agent (FinOps e documentação)
 tools/         ferramentas em Python, receptor de alertas e hub
+docker/        imagem do hub e do receptor (Python + cliente do Postgres)
 tests/         validadores e baterias de teste, com casos e gabaritos (testar_ambiente.py: Docker de ponta a ponta)
 .github/       testes automáticos (CI) e Dependabot
 data/          gerador de custos no formato FOCUS + gabarito das anomalias
@@ -199,6 +222,7 @@ Guia detalhado de cada parte (todos os comandos, arquivos e o gabarito das anoma
 
 ## Limites conhecidos
 
+- A avaliação tem 13 perguntas e uma rodada por modelo: mostra a tendência, não é uma medida estatística. Use `--repetir` para ver a variação.
 - O modelo local é pequeno: por isso a redação dos números fica em código. Com um modelo maior, dá para devolver a redação ao agente mantendo os validadores.
 - O que um trecho de JavaScript (ação *Execute JavaScript Code*) lê de outras ações não é analisado; a documentação avisa quando isso acontece.
 - Os chamados são arquivos locais. Ligar no Jira de verdade é o próximo passo.
@@ -208,7 +232,7 @@ Guia detalhado de cada parte (todos os comandos, arquivos e o gabarito das anoma
 - [Docker Agent](https://docs.docker.com/ai/docker-agent/) · [Docker Model Runner (provider dmr)](https://docs.docker.com/ai/docker-agent/providers/dmr/) · [Ferramenta script](https://docs.docker.com/ai/docker-agent/tools/script/)
 - [Workflow Definition Language](https://learn.microsoft.com/azure/logic-apps/workflow-definition-language-schema) · [Gatilhos e ações](https://learn.microsoft.com/azure/logic-apps/logic-apps-workflow-actions-triggers) · [Tratamento de erros](https://learn.microsoft.com/azure/logic-apps/error-exception-handling)
 - [Cobrança das Logic Apps](https://learn.microsoft.com/azure/logic-apps/logic-apps-pricing) · [Métricas das Logic Apps](https://learn.microsoft.com/azure/logic-apps/monitor-logic-apps-reference#metrics) · [Esquema FOCUS do Azure](https://learn.microsoft.com/azure/cost-management-billing/dataset-schema/cost-usage-details-focus)
-- [Alertas do Grafana por arquivo](https://grafana.com/docs/grafana/latest/alerting/set-up/provision-alerting-resources/file-provisioning/) · [Webhook do Grafana](https://grafana.com/docs/grafana/latest/alerting/configure-notifications/manage-contact-points/integrations/webhook-notifier/) · [Datasource PostgreSQL](https://grafana.com/docs/grafana/v12.4/datasources/postgres/configure/)
+- [Assinatura HMAC do webhook do Grafana](https://grafana.com/docs/grafana/latest/alerting/configure-notifications/manage-contact-points/integrations/webhook-notifier/) · [Alertas do Grafana por arquivo](https://grafana.com/docs/grafana/latest/alerting/set-up/provision-alerting-resources/file-provisioning/) · [Webhook do Grafana](https://grafana.com/docs/grafana/latest/alerting/configure-notifications/manage-contact-points/integrations/webhook-notifier/) · [Datasource PostgreSQL](https://grafana.com/docs/grafana/v12.4/datasources/postgres/configure/)
 
 ## Licença
 

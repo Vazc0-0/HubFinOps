@@ -1,4 +1,4 @@
-# Avisa (com pull request) quando sair versão nova das actions e das imagens do docker-compose.
+# Avisa (com pull request) quando sair versão nova das actions, das imagens do docker-compose e do Dockerfile.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -7,5 +7,9 @@ updates:
       interval: monthly
   - package-ecosystem: docker-compose
     directory: /
+    schedule:
+      interval: monthly
+  - package-ecosystem: docker          # imagem do hub e do receptor (docker/Dockerfile)
+    directory: /docker
     schedule:
       interval: monthly

@@ -37,8 +37,9 @@ Todos os comandos rodam **na raiz do projeto**.
 python data/generate_costs.py
 python tests/validar_gabarito.py        # deve terminar com "RESULTADO: PASSOU"
 
-# 2. Grafana + Postgres
-docker compose up -d
+# 2. Grafana + Postgres + receptor + hub
+python tools/preparar_ambiente.py       # só na primeira vez: cria o .env com o segredo dos alertas
+docker compose up -d --build
 #    -> http://localhost:3000  (admin / admin)
 #    -> Dashboards > Piloto Agentes de IA > "FinOps - Custos Azure (dados sintéticos)"
 
@@ -131,26 +132,30 @@ python tools/azure_logicapp.py sincronizar   # termina com "AZURE E LEITURA BATE
 ## Hub (tudo numa página)
 
 ```bash
-docker compose up -d                 # Postgres + Grafana (painéis e alertas) + receptor de alertas
-python tools/carregar_grafana.py     # leva Azure, preços, histórico e chamados para o Grafana
-python tools/hub.py                  # abre http://localhost:8090
+python tools/preparar_ambiente.py    # só na primeira vez: cria o .env com o segredo que assina os alertas
+docker compose up -d --build         # Postgres + Grafana + receptor + hub (http://localhost:8090)
+python tools/carregar_grafana.py     # leva Azure, preços, histórico e chamados para o Grafana (ou pelo hub)
 ```
 
 O hub mostra, numa página só: o último resultado de cada parte, botões para rodar cada tarefa com o log ao vivo,
 o histórico de tudo o que já rodou (hub, terminal, hooks dos agentes e alertas), os resultados (Logic App real,
 FinOps, documentação), os chamados abertos pelos alertas, os painéis do Grafana, os métodos de teste e os documentos.
 As mesmas tarefas rodam pelo terminal: `python tools/rodar.py tudo` (ou `testes`, `azure`, `grafana`...).
+No container, "Sincronizar com o Azure" e "Avaliação dos agentes" aparecem como **Só no PC** (precisam do `az` e do
+Docker do PC). Fora do Docker, `python tools/hub.py` continua funcionando como antes.
 
 | Arquivo | O que é |
 |---|---|
-| `tools/hub.py`, `tools/hub_pagina.html`, `tools/hub_documento.html` | O hub (servidor local só em 127.0.0.1) |
+| `tools/hub.py`, `tools/hub_pagina.html`, `tools/hub_documento.html` | O hub (porta só em 127.0.0.1; só executa pedidos da própria página) |
+| `docker/Dockerfile` | Imagem do hub e do receptor: Python + `psql` + fusos horários |
+| `tools/preparar_ambiente.py` | Cria o `.env` com o segredo que assina os alertas (`.env.example` mostra o formato) |
 | `tools/rodar.py` | Roda as tarefas e grava log + histórico |
 | `tools/historico.py` | Histórico único em `relatorios/historico.jsonl` (logs em `relatorios/execucoes/`) |
 | `tools/carregar_grafana.py` | Carrega no Postgres: execuções e métricas do Azure, preços, previsto × medido, histórico, chamados |
 | `grafana/dashboards/piloto-operacao.json` | Painel "Logic App real e operação do piloto" (gerado por `grafana/build_dashboard_operacao.py`) |
 | `grafana/provisioning/alerting/piloto-alertas.yaml` | 3 alertas: recurso sem dono, Logic App com falha, custo medido ≠ previsto |
-| `tools/receptor_chamados.py` | Recebe os alertas do Grafana (webhook) e abre chamados com diagnóstico em `chamados/` |
-| `tests/testar_chamados.py` | Testa o receptor com alertas reais do Grafana 12 (`tests/casos_chamados/`) |
+| `tools/receptor_chamados.py` | Recebe os alertas do Grafana (webhook **assinado com HMAC-SHA256**) e abre chamados com diagnóstico em `chamados/` |
+| `tests/testar_chamados.py` | Testa o receptor com alertas reais do Grafana (`tests/casos_chamados/`) e a assinatura (sem, errada, alterada, velha) |
 
 Para testar o alerta de falha sem quebrar a Logic App: `python tools/carregar_grafana.py --simular-falha`
 (abre um chamado em ~1 minuto) e depois `--limpar-simulacao` (o chamado é marcado como resolvido).
