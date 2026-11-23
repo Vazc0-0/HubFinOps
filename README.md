@@ -75,6 +75,34 @@ python tests/testar_ambiente.py       # RESULTADO: AMBIENTE OK
 O [Dependabot](.github/dependabot.yml) abre pull requests quando saem versões novas das actions e das imagens Docker.
 Opcional: `pip install pre-commit==4.6.2 && pre-commit install` roda o `ruff` e o `gitleaks` antes de cada commit.
 
+## Avaliação dos agentes
+
+Os testes acima conferem o **código**. A avaliação confere o **agente**: faz às duas equipes 13 perguntas cuja resposta
+já se sabe ([`evals/casos.json`](evals/casos.json)) e mede quanto ele acerta e quanto ele **inventa**.
+
+- **Acerto:** a resposta precisa trazer os nomes e valores do gabarito (ex.: `stgbackupantigo` e R$ 732,00).
+  Números são comparados como números, em formato brasileiro ou americano.
+- **Invenção:** qualquer recurso com cara de nuvem (`vm-…`, `stg…`, `lgc-…`) ou valor em R$ que **não aparece na saída
+  das ferramentas** conta como inventado, mesmo que a resposta tenha acertado o resto.
+- **Perguntas armadilha:** duas perguntas citam um recurso e uma Logic App que não existem. O certo é dizer que não
+  encontrou; responder com números é invenção.
+- O corretor é testado com respostas boas e ruins conhecidas (`tests/testar_avaliador.py`, roda no CI), incluindo o
+  relatório alucinado da primeira tentativa.
+
+```bash
+python evals/avaliar.py                          # 13 perguntas com o modelo dos YAMLs (ai/qwen3)
+python evals/avaliar.py --so finops              # só uma equipe
+python evals/avaliar.py --caso finops-sem-dono   # uma pergunta
+python evals/avaliar.py --modelo dmr/ai/gemma3   # outro modelo local, mesmas perguntas, para comparar
+python evals/avaliar.py --repetir 3              # cada pergunta 3 vezes (o modelo varia de uma vez para outra)
+```
+
+Precisa do Docker Desktop com o modelo baixado (`docker model pull ai/qwen3`). As ferramentas rodam com
+`--safety restricted` e uma lista de permissões só com as ferramentas de leitura e geração de cada equipe; a
+sincronização com o Azure fica de fora. Cada rodada grava `evals/resultados/<data>-<modelo>.md` com as respostas
+completas, e [`evals/resultados/RESUMO.md`](evals/resultados/RESUMO.md) junta todas as rodadas numa tabela para
+comparar modelos.
+
 ## Arquitetura
 
 ```mermaid
@@ -163,6 +191,7 @@ azure/         definição e modelo ARM da Logic App de teste + passo a passo
 grafana/       provisionamento: datasource, painéis e alertas
 docs/          documentação gerada das Logic Apps e imagens deste README
 relatorios/    relatórios gerados (inclui as tentativas que falharam)
+evals/         avaliação dos agentes: perguntas com gabarito, corretor e resultados por modelo
 ```
 
 Guia detalhado de cada parte (todos os comandos, arquivos e o gabarito das anomalias): [`docs/guia-completo.md`](docs/guia-completo.md).

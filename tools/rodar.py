@@ -30,6 +30,9 @@ TAREFAS = {
     "chamados_teste": ("Teste do receptor de alertas", [PY, "tests/testar_chamados.py"],
                        "Envia alertas de exemplo (formato do Grafana) ao receptor e confere os chamados criados.",
                        "Testes"),
+    "avaliador_teste": ("Teste do corretor da avaliação", [PY, "tests/testar_avaliador.py"],
+                        "Confere o corretor das respostas dos agentes com respostas boas e ruins conhecidas "
+                        "(inclusive valores e recursos inventados).", "Testes"),
     "relatorio_finops": ("Relatório FinOps", [PY, "tools/gerar_relatorio.py"],
                          "Gera relatorios/relatorio-finops.md em código e valida contra os dados.", "Gerar"),
     "docs_logicapps": ("Documentação das Logic Apps", [PY, "tools/doc_logicapp.py", "gerar"],
@@ -40,10 +43,13 @@ TAREFAS = {
     "grafana": ("Carregar dados no Grafana", [PY, "tools/carregar_grafana.py"],
                 "Leva execuções do Azure, preços, histórico e chamados para o Postgres do Grafana "
                 "(precisa do docker compose rodando).", "Grafana"),
+    "avaliar_agentes": ("Avaliação dos agentes", [PY, "evals/avaliar.py"],
+                        "Faz as 13 perguntas com resposta conhecida às duas equipes e mede acertos e invenções. "
+                        "Precisa do Docker Desktop e do modelo local; demora alguns minutos.", "IA"),
 }
-SEQUENCIA_TUDO = ["testes", "gabarito_finops", "chamados_teste", "relatorio_finops", "docs_logicapps", "azure", "grafana"]
 # o que roda sem Docker, sem Azure e sem modelo: é o que o GitHub Actions roda a cada push
-SEQUENCIA_CI = ["testes", "gabarito_finops", "chamados_teste", "relatorio_finops", "docs_logicapps"]
+SEQUENCIA_CI = ["testes", "gabarito_finops", "chamados_teste", "avaliador_teste", "relatorio_finops", "docs_logicapps"]
+SEQUENCIA_TUDO = SEQUENCIA_CI + ["azure", "grafana"]
 SEQUENCIAS = {"tudo": SEQUENCIA_TUDO, "ci": SEQUENCIA_CI}
 
 

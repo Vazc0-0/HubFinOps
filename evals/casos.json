@@ -1,0 +1,85 @@
+{
+  "sobre": "Perguntas com resposta conhecida para medir os agentes. Cada exigência é um texto (sem diferenciar maiúsculas e acentos), um número (aceita 732, 732,00, R$ 732,00 ou 1.615,92 / 1615.92) ou {\"qualquer\": [...]} quando vale uma de várias formas. As respostas certas foram tiradas das ferramentas (tools/cost_query.py e tools/doc_logicapp.py) e dos gabaritos (data/anomalias_esperadas.json e logicapps/achados_esperados.json).",
+  "casos": [
+    {
+      "id": "finops-anomalias",
+      "equipe": "finops",
+      "pergunta": "Quais anomalias de custo existem nos dados? Liste só o nome do recurso e o tipo de cada uma.",
+      "deve_conter": ["lgc-desvios-processo", "func-rma-integracao", "vm-relatorios-dev", "stgbackupantigo"]
+    },
+    {
+      "id": "finops-sem-dono",
+      "equipe": "finops",
+      "pergunta": "Qual recurso está sem dono e qual é o custo extra atribuído a ele?",
+      "deve_conter": ["stgbackupantigo", 732.00]
+    },
+    {
+      "id": "finops-pico-vm",
+      "equipe": "finops",
+      "pergunta": "Quanto a vm-relatorios-dev custou a mais no pico de outubro e qual a prioridade?",
+      "deve_conter": [513.81, "alta"]
+    },
+    {
+      "id": "finops-total-outubro",
+      "equipe": "finops",
+      "pergunta": "Qual foi o custo total de outubro de 2026?",
+      "deve_conter": [4762.83]
+    },
+    {
+      "id": "finops-patamar",
+      "equipe": "finops",
+      "pergunta": "O que aconteceu com o custo da lgc-desvios-processo e desde quando?",
+      "deve_conter": [{"qualquer": ["patamar", "subiu", "aumentou", "aumento"]}, {"qualquer": ["15/09", "2026-09-15", "15 de setembro"]}]
+    },
+    {
+      "id": "finops-armadilha",
+      "equipe": "finops",
+      "pergunta": "Quanto custou o recurso db-producao no último mês?",
+      "deve_conter": [{"qualquer": ["nao encontr", "nao existe", "nao ha", "nao consta", "nao aparece", "nao esta", "nao tem", "inexistente", "nao foi encontrado", "nao possui"]}],
+      "armadilha": "db-producao"
+    },
+    {
+      "id": "finops-relatorio",
+      "equipe": "finops",
+      "pergunta": "Gere o relatório FinOps e diga se ele foi validado.",
+      "deve_conter": ["relatorio-finops.md", "confiavel"]
+    },
+    {
+      "id": "docs-quando-roda",
+      "equipe": "documentacao",
+      "pergunta": "Quando roda a lgc-relatorio-custos?",
+      "deve_conter": [{"qualquer": ["07:00", "7h", "7:00", "07h"]}, {"qualquer": ["todo dia", "diariamente", "diaria", "todos os dias"]}]
+    },
+    {
+      "id": "docs-riscos",
+      "equipe": "documentacao",
+      "pergunta": "Quais riscos de boas práticas tem a lgc-relatorio-custos?",
+      "deve_conter": [{"qualquer": ["segredo", "chave", "code="]}, "retentativa", {"qualquer": ["tratamento de erro", "trata erro", "trata erros", "tratamento de erros"]}]
+    },
+    {
+      "id": "docs-cinco-minutos",
+      "equipe": "documentacao",
+      "pergunta": "Qual Logic App roda a cada 5 minutos?",
+      "deve_conter": ["lgc-desvios-processo"]
+    },
+    {
+      "id": "docs-conectores",
+      "equipe": "documentacao",
+      "pergunta": "Quais conectores a lgc-chamados-nao-respondentes usa?",
+      "deve_conter": ["excel", "outlook"]
+    },
+    {
+      "id": "docs-email-fixo",
+      "equipe": "documentacao",
+      "pergunta": "Alguma Logic App tem e-mail de destinatário escrito direto no fluxo? Qual?",
+      "deve_conter": ["lgc-chamados-nao-respondentes"]
+    },
+    {
+      "id": "docs-armadilha",
+      "equipe": "documentacao",
+      "pergunta": "O que a Logic App lgc-folha-pagamento faz?",
+      "deve_conter": [{"qualquer": ["nao encontr", "nao existe", "nao ha", "nao consta", "nao aparece", "nao esta", "nao tem", "inexistente", "nao foi encontrad", "nao possui"]}],
+      "armadilha": "lgc-folha-pagamento"
+    }
+  ]
+}
