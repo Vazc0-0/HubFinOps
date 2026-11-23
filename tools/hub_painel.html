@@ -29,6 +29,7 @@
   color-scheme: light;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--texto);font:14px/1.5 Inter,'Segoe UI',system-ui,sans-serif;transition:background .25s,color .25s}
 a{color:inherit}
 button,select,input{font:inherit}
@@ -103,6 +104,24 @@ ul.acoes{margin:12px 0 0;padding:0;list-style:none;display:flex;flex-direction:c
 .evid{margin:2px 4px 8px 22px;padding:8px 10px;border-radius:8px;background:var(--sub);font-size:11.5px;line-height:1.5;color:var(--texto2)}
 .destaque{margin-top:auto;padding:10px 12px;border-radius:10px;background:var(--sub);font-size:12px;line-height:1.5}
 .coluna{display:flex;flex-direction:column}
+.abas{display:flex;flex-wrap:wrap;gap:6px;padding:4px;border-radius:12px;background:var(--card);border:1px solid var(--card-borda);width:max-content;max-width:100%}
+.aba{display:flex;align-items:center;gap:8px;min-height:36px;padding:0 14px;border-radius:9px;color:var(--muted);font-weight:600;font-size:13px;text-decoration:none;transition:background .15s,color .15s}
+.aba:hover{color:var(--texto);background:rgba(127,127,140,.12)}
+.aba[aria-current="page"]{background:var(--chip);color:var(--texto);box-shadow:inset 0 -2px 0 var(--cor-aba)}
+.tenant{display:inline-flex;align-items:center;gap:8px;padding:5px 12px;border-radius:999px;font-size:12px;font-weight:700;color:var(--texto);background:color-mix(in srgb,var(--cor-amb) 18%,transparent);border:1px solid color-mix(in srgb,var(--cor-amb) 55%,transparent);vertical-align:middle}
+.faixa{height:4px;background:var(--cor-amb);flex:1 1 100%}
+.aviso{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 16px;border-radius:14px;font-size:13.5px;line-height:1.5;border:1px solid}
+.aviso.ruim{background:color-mix(in srgb,var(--alerta) 12%,transparent);border-color:color-mix(in srgb,var(--alerta) 45%,transparent);color:var(--texto)}
+.aviso.bom{background:color-mix(in srgb,var(--ok) 10%,transparent);border-color:color-mix(in srgb,var(--ok) 40%,transparent);color:var(--texto)}
+.aviso .bola{flex:none;width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;color:#fff}
+.aviso.ruim .bola{background:var(--alerta)} .aviso.bom .bola{background:var(--ok)}
+.contas .barra{height:8px;border-radius:4px;background:var(--trilho);margin-top:6px;overflow:hidden}
+.contas .barra span{display:block;height:8px;border-radius:4px}
+.contas dl{margin:14px 0 0;display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:12.5px}
+.contas dt{color:var(--muted)} .contas dd{margin:0}
+.botao{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--eixo);background:var(--sub);color:var(--texto);font-weight:600;font-size:13px;text-decoration:none}
+.botao:hover{background:var(--chip)}
+.rosca a{text-decoration:none} .rosca a:hover{text-decoration:underline}
 .erro{padding:16px;border-radius:12px;background:var(--card);border:1px solid var(--alerta);color:var(--texto)}
 @media (max-width:640px){ .casca{padding:0} .quadro{border-radius:0} nav.icones{flex:1 1 100%;flex-direction:row;flex-wrap:wrap;justify-content:center;padding:8px;border-right:0;border-bottom:1px solid var(--nav-borda)} .logo{margin:0 8px 0 0} .ico.tema{margin:0} .grade2{grid-template-columns:1fr} }
 @media (prefers-reduced-motion:reduce){ *{transition:none!important} }
@@ -111,6 +130,7 @@ ul.acoes{margin:12px 0 0;padding:0;list-style:none;display:flex;flex-direction:c
 <body>
 <div class="casca">
 <div class="quadro">
+  <div class="faixa" id="faixa" hidden></div>
   <nav class="icones" aria-label="Navegação">
     <div class="logo" aria-hidden="true">
       <svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" style="stroke:var(--grade)" stroke-width="4"/><path d="M12 3a9 9 0 0 1 9 9" fill="none" style="stroke:var(--producao)" stroke-width="4"/><path d="M21 12a9 9 0 0 1-6 8.5" fill="none" style="stroke:var(--integracao)" stroke-width="4"/><path d="M15 20.5a9 9 0 0 1-5.5.2" fill="none" style="stroke:var(--desenvolvimento)" stroke-width="4"/></svg>
@@ -129,9 +149,9 @@ ul.acoes{margin:12px 0 0;padding:0;list-style:none;display:flex;flex-direction:c
 
   <main>
     <div class="topo">
-      <div>
-        <h1>Hub FinOps</h1>
-        <div class="sub">Visão Geral · Custos do Azure por ambiente</div>
+      <div style="min-width:0">
+        <h1><span id="titulo">Hub FinOps</span> <span class="tenant" id="tenant-selo" hidden></span></h1>
+        <div class="sub" id="subtitulo">Visão Geral · Custos do Azure por ambiente</div>
       </div>
       <div class="selos">
         <span class="selo" id="selo-dados"><span class="ponto" style="background:var(--ok)"></span>carregando…</span>
@@ -140,6 +160,8 @@ ul.acoes{margin:12px 0 0;padding:0;list-style:none;display:flex;flex-direction:c
       </div>
     </div>
 
+    <nav class="abas" id="abas" aria-label="Escolha o tenant"></nav>
+    <div id="aviso" class="aviso" role="status" hidden></div>
     <div id="erro" class="erro" hidden></div>
 
     <div class="grade4">
@@ -187,10 +209,15 @@ ul.acoes{margin:12px 0 0;padding:0;list-style:none;display:flex;flex-direction:c
     </div>
 
     <div class="grade3">
-      <section class="card" aria-labelledby="t-rosca">
+      <section class="card" aria-labelledby="t-rosca" id="card-rosca">
         <h2 id="t-rosca">Representatividade do custo</h2>
-        <div class="sub" style="font-size:12px">Por ambiente · últimos 30 dias</div>
+        <div class="sub" style="font-size:12px">Por ambiente · últimos 30 dias · clique para abrir o ambiente</div>
         <div class="rosca" id="rosca"></div>
+      </section>
+      <section class="card contas" aria-labelledby="t-contas" id="card-contas" hidden>
+        <h2 id="t-contas">Prestação de contas</h2>
+        <div class="sub" style="font-size:12px">Tags, economia já feita e relatório deste tenant</div>
+        <div id="contas"></div>
       </section>
       <section class="card" aria-labelledby="t-meta">
         <h2 id="t-meta">Previsão × orçamento</h2>
@@ -217,6 +244,7 @@ const dm = (iso) => iso.slice(8, 10) + '/' + iso.slice(5, 7);
 const corDe = (id) => `var(--${id})`;
 const reduzido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+const AMB = location.pathname.startsWith('/ambiente/') ? decodeURIComponent(location.pathname.split('/')[2] || '') : null;
 let D = null;
 const E = { ativos: null, modo: 'acumulado', rank: 'recursos', aberto: null, t: 1 };
 const W = 600, H = 190;
@@ -301,7 +329,10 @@ function desenha() {
     kpi('--k-prev', 'prev', 'Previsão do mês', mil(prev * t), 'orçamento ' + mil(orc),
         pct(pOrc) + ' do orçamento' + (pOrc > 100 ? ' · estoura' : ''), 'forte ' + (pOrc > 100 ? 'ruim' : 'bom')) +
     kpi('--k-eco', 'eco', 'Economia possível', mil(eco * t) + '/mês',
-        `${mil(eco * 12)} por ano · ${acoes.length} ${acoes.length === 1 ? 'ação' : 'ações'}`, 'já economizado: ' + rs(real) + '/mês', '');
+        `${mil(eco * 12)} por ano · ${acoes.length} ${acoes.length === 1 ? 'ação' : 'ações'}`, AMB ? 'ainda não feita' : 'já economizado: ' + rs(real) + '/mês', '') +
+    (AMB ? kpi('--k-custo', 'custo', 'Já economizado', mil(real * t) + '/mês',
+        sel[0].realizadas.length ? `${sel[0].realizadas.length} ${sel[0].realizadas.length === 1 ? 'ação feita' : 'ações feitas'}` : 'nenhuma ação feita ainda',
+        'medido antes × depois', '') : '');
 
   // legendas
   const leg = sel.map((a) => `<span><span class="quad" style="background:${corDe(a.id)}"></span>${esc(a.nome)}</span>`).join('');
@@ -373,7 +404,7 @@ function desenha() {
     itens[chave] = itens[chave] || { total: 0, partes: [] };
     itens[chave].total += v; itens[chave].partes.push({ a, v });
   }));
-  const lista = Object.entries(itens).sort((p, q) => q[1].total - p[1].total).slice(0, 8);
+  const lista = Object.entries(itens).filter(([, it]) => it.total >= 0.5).sort((p, q) => q[1].total - p[1].total).slice(0, 8);
   const maxR = lista.length ? lista[0][1].total : 1;
   $('#ranking').innerHTML = lista.map(([nm, it]) => `
     <li><span class="nome" title="${esc(nm)}">${esc(nm)}</span>
@@ -381,13 +412,14 @@ function desenha() {
         ${it.partes.map((p) => `<span class="seg" title="${esc(nm + ' · ' + p.a.nome + ': ' + rs(p.v))}" style="background:${corDe(p.a.id)};flex:${p.v.toFixed(2)} 1 0"></span>`).join('')}
       </span><span class="v">${mil(it.total)}</span></span></li>`).join('');
 
+  if (AMB) desenhaContas(sel[0], t);
   // rosca
   const C = 2 * Math.PI * 56;
   let off = 0, fatias = '', itensRosca = '';
   sel.forEach((a) => {
     const fr = a.custo30 / c30, len = C * fr * t;
     fatias += `<circle cx="80" cy="80" r="56" fill="none" style="stroke:${corDe(a.id)}" stroke-width="26" stroke-dasharray="${len.toFixed(1)} ${C.toFixed(1)}" stroke-dashoffset="${(-off).toFixed(1)}" transform="rotate(-90 80 80)"/>`;
-    itensRosca += `<li><span class="ponto" style="width:10px;height:10px;border-radius:5px;background:${corDe(a.id)}"></span>${esc(a.nome)}<strong style="margin-left:6px">${pct(100 * fr)}</strong></li>`;
+    itensRosca += `<li><span class="ponto" style="width:10px;height:10px;border-radius:5px;background:${corDe(a.id)}"></span><a href="/ambiente/${encodeURIComponent(a.id)}">${esc(a.nome)}</a><strong style="margin-left:6px">${pct(100 * fr)}</strong></li>`;
     off += len;
   });
   $('#rosca').innerHTML = `
@@ -427,6 +459,24 @@ function desenha() {
     : 'Nenhuma oportunidade nos ambientes selecionados.';
 }
 
+function desenhaContas(a, t) {
+  const cor = a.tags_pct >= 98 ? 'var(--ok)' : 'var(--alerta)';
+  const feitas = a.realizadas.length
+    ? a.realizadas.map((r) => `<dd>${esc(r.acao)} (<b>${esc(r.recurso)}</b>) em ${esc(dm(r.implementada_em))}: <b>${rs(r.economia)}/mês</b> ${r.comprovada ? '· comprovada nos dados' : '· ainda há custo depois'}</dd>`).join('')
+    : '<dd>nenhuma ação registrada</dd>';
+  $('#contas').innerHTML = `
+    <div style="margin-top:14px;display:flex;justify-content:space-between;font-size:13px"><span>Custo com dono e centro de custo</span><b>${pct(a.tags_pct * t)}</b></div>
+    <div class="barra"><span style="width:${(a.tags_pct * t).toFixed(1)}%;background:${cor}"></span></div>
+    <dl>
+      <dt>Sem tags</dt><dd>${a.sem_tags.length ? a.sem_tags.map((n) => '<b>' + esc(n) + '</b>').join(', ') : 'nenhum recurso'}</dd>
+      <dt>Já feito</dt>${feitas}
+      <dt>Assinatura</dt><dd>${esc(a.assinaturas.join(', '))}</dd>
+    </dl>
+    <div style="margin-top:14px">${a.relatorio
+      ? `<a class="botao" href="/ver?arquivo=${encodeURIComponent(a.relatorio)}">Abrir relatório executivo</a>`
+      : '<span class="sub" style="font-size:12px">Relatório executivo ainda não gerado: Operação › Executar › Relatórios executivos por ambiente.</span>'}</div>`;
+}
+
 function mostraDia(i) {
   if (!G) return;
   const cur = document.getElementById('cursor');
@@ -442,10 +492,46 @@ function mostraDia(i) {
     + G.sel.map((a) => a.nome + ' ' + rs(G.porAmb[a.id][i], 0)).join(' · ');
 }
 
+// ---------------------------------------------------------------- abas e identificação do tenant
+function montaCabecalho() {
+  $('#abas').innerHTML = [{ id: null, nome: 'Visão geral' }, ...D.lista_ambientes].map((x) => {
+    const atual = (x.id || null) === AMB;
+    return `<a class="aba" href="${x.id ? '/ambiente/' + encodeURIComponent(x.id) : '/'}" ${atual ? 'aria-current="page"' : ''}
+      style="--cor-aba:${x.id ? corDe(x.id) : 'var(--texto2)'}">${x.id ? `<span class="ponto" style="background:${corDe(x.id)}"></span>` : ''}${esc(x.nome)}</a>`;
+  }).join('');
+  if (!AMB) return;
+  const a = D.ambientes[0];
+  document.title = 'Hub FinOps · ' + a.nome;
+  document.documentElement.style.setProperty('--cor-amb', corDe(a.id));
+  $('#faixa').hidden = false;
+  $('#titulo').textContent = a.tenant;
+  $('#tenant-selo').hidden = false;
+  $('#tenant-selo').innerHTML = `<span class="ponto" style="background:${corDe(a.id)}"></span>Você está vendo: ${esc(a.nome)}`;
+  $('#subtitulo').textContent = `Tenant ${a.tenant_id} · assinatura ${a.assinaturas.join(', ')}`;
+  $('#filtros').hidden = true;
+  $('#card-rosca').hidden = true;
+  $('#card-contas').hidden = false;
+  const estoura = a.previsao > a.orcamento, x = a.aumento;
+  let txt;
+  if (estoura && x) {
+    txt = `<b>Vai fechar o mês ${pct(100 * a.previsao / a.orcamento - 100)} acima do orçamento.</b> Causa: <b>${esc(x.recurso)}</b>, `
+      + (x.recurso_novo ? `recurso novo desde ${esc(dm(x.desde))} que custa ${rs(x.media_diaria_agora)} por dia.`
+                        : `subiu de ${rs(x.media_diaria_antes)} para ${rs(x.media_diaria_agora)} por dia${x.desde ? ' desde ' + esc(dm(x.desde)) : ''}.`);
+  } else if (estoura) {
+    txt = `<b>Vai fechar o mês ${pct(100 * a.previsao / a.orcamento - 100)} acima do orçamento.</b>`;
+  } else {
+    txt = `<b>Dentro do orçamento (${pct(100 * a.previsao / a.orcamento)}).</b> `
+      + (a.acoes.length ? `${a.acoes.length} ${a.acoes.length === 1 ? 'oportunidade' : 'oportunidades'} de economia: ${rs(a.acoes.reduce((s, o) => s + o.valor, 0))} por mês.` : 'Nenhum desperdício encontrado.');
+  }
+  const av = $('#aviso');
+  av.hidden = false; av.className = 'aviso ' + (estoura ? 'ruim' : 'bom');
+  av.innerHTML = `<span class="bola" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 7v6"/><path d="M12 17h.01"/></svg></span><span style="flex:1 1 320px">${txt}</span>`;
+}
+
 // ---------------------------------------------------------------- carga
 async function carrega() {
   try {
-    const r = await fetch('/api/finops');
+    const r = await fetch('/api/finops' + (AMB ? '?ambiente=' + encodeURIComponent(AMB) : ''));
     if (!r.ok) throw new Error('HTTP ' + r.status);
     D = await r.json();
   } catch (e) {
@@ -454,6 +540,7 @@ async function carrega() {
     return;
   }
   E.ativos = Object.fromEntries(D.ambientes.map((a) => [a.id, true]));
+  montaCabecalho();
   $('#selo-dados').innerHTML = `<span class="ponto" style="background:var(--ok)"></span>${D.demonstracao ? 'Dados de demonstração' : 'Dados reais'} · até ${esc(D.corte.split('-').reverse().join('/'))}`;
   if (D.avaliacao) {
     const av = D.avaliacao;

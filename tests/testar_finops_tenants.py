@@ -202,6 +202,18 @@ for amb in P["ambientes"]:
 confere(perto(sum(sum(a["app"].values()) for a in P["ambientes"]), sum(g["custo_ultimos_30_dias"] for g in GAB["tenants"].values()), 0.1),
         "painel: soma por app = custo total")
 
+# 8. página de um ambiente: o hub só manda os dados daquele tenant
+for t in dados["tenants"]:
+    so = hub.painel_finops(t["ambiente"])
+    confere([a["id"] for a in so["ambientes"]] == [t["ambiente"]], f"página {t['ambiente']}: recebeu {[a['id'] for a in so['ambientes']]}")
+    texto = json.dumps(so["ambientes"], ensure_ascii=False)
+    outros = [x for x in dados["tenants"] if x["id"] != t["id"]]
+    exclusivos = set().union(*(por_tenant[x["id"]] for x in outros)) - por_tenant[t["id"]]
+    vazou = (sorted(n for n in exclusivos if n in texto) + [x["nome"] for x in outros if x["nome"] in texto]
+             + [x["id"] for x in outros if x["id"] in texto])
+    confere(not vazou, f"ISOLAMENTO na página {t['ambiente']}: {vazou}")
+confere(hub.ambientes_validos() == {"producao", "desenvolvimento", "integracao"}, f"ambientes do hub: {hub.ambientes_validos()}")
+
 total = ok + len(falhas)
 print(f"Teste FinOps por tenant: {ok}/{total} verificações")
 for f in falhas:

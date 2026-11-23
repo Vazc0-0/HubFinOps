@@ -221,6 +221,11 @@ def main():
         confere(len(fin["ambientes"]) == 3 and all(len(a["serie"]) == 30 for a in fin["ambientes"]),
                 f"/api/finops traz os 3 ambientes com 30 dias: {[a['nome'] for a in fin['ambientes']]}")
         confere(get_status(f"{HUB}/api/finops", {"Host": "exemplo.com"}) == 403, "/api/finops recusa Host de fora")
+        confere("Hub FinOps" in pagina("/ambiente/desenvolvimento"), "página do ambiente de desenvolvimento")
+        confere(get_status(f"{HUB}/ambiente/nao-existe") == 404 and get_status(f"{HUB}/api/finops?ambiente=nao-existe") == 404,
+                "ambiente que não existe dá 404")
+        so_dev = chama(f"{HUB}/api/finops?ambiente=desenvolvimento", auth=False)
+        confere([a["id"] for a in so_dev["ambientes"]] == ["desenvolvimento"], "página de um ambiente só recebe os dados dele")
         for proibido in ("config/azure.json", ".env", ".git/config"):
             confere(get_status(f"{HUB}/ver?arquivo={proibido}") == 404, f"hub não mostra {proibido}")
         confere(get_status(f"{HUB}/api/estado", {"Host": "exemplo.com"}) == 403, "hub recusa leitura com Host de fora (DNS rebinding)")

@@ -1,7 +1,8 @@
 """Hub do Piloto Agentes de IA: uma página local com tudo junto.
 
   - Painel FinOps (página inicial, /): custo por ambiente (tenant), previsão × orçamento, ranking, economia;
-    modo escuro e claro. Os números vêm de /api/finops, calculados por tools/finops_tenants.py.
+    modo escuro e claro. Uma página por ambiente em /ambiente/<producao|desenvolvimento|integracao>, que só
+    recebe os dados daquele tenant (/api/finops?ambiente=...). Os números vêm de /api/finops, calculados por tools/finops_tenants.py.
   Painel de operação (/operacao):
   - Visão geral: último resultado de cada coisa (testes, FinOps, Logic Apps, Azure, chamados, serviços)
   - Executar: botões que rodam as tarefas (as mesmas de tools/rodar.py) com o log ao vivo
@@ -181,15 +182,19 @@ def avaliacao_atual():
     return None
 
 
-def painel_finops():
-    """Tudo o que o painel FinOps mostra, calculado em código e separado por ambiente (tenant)."""
+def painel_finops(ambiente=None):
+    """Tudo o que o painel FinOps mostra, calculado em código e separado por ambiente (tenant).
+    Com 'ambiente', devolve só aquele tenant (a página de um ambiente nunca recebe dados dos outros)."""
     import finops_tenants as ft
     dados = ft.carregar()
     corte = dados["corte"]
     dias = [corte - timedelta(days=29 - i) for i in range(30)]
     fim_mes = (corte.replace(day=1) + timedelta(days=32)).replace(day=1) - timedelta(days=1)
     ambientes = []
+    lista = [{"id": ft.ambiente(t), "nome": ft.NOME_AMBIENTE.get(ft.ambiente(t), t["nome"])} for t in dados["tenants"]]
     for t in dados["tenants"]:
+        if ambiente and ft.ambiente(t) != ambiente:
+            continue
         a = ft.analisar(dados, t)
         serie = [round(sum(s.get(d, 0.0) for (tid, _), s in dados["custos"].items() if tid == t["id"]), 2) for d in dias]
         ambientes.append({
@@ -197,12 +202,22 @@ def painel_finops():
             "orcamento": a["orcamento_mensal"], "previsao": a["previsao_mes"], "custo30": a["custo_ultimos_30_dias"],
             "custo_mes": a["custo_mes_ate_corte"], "realizada": a["economia_realizada_mensal"], "serie": serie,
             "recursos": a["custo_por_recurso"], "app": a["showback_app"], "cc": a["showback_centro_custo"],
-            "aumento": a["aumentos"][0] if a["aumentos"] else None,
+            "aumento": a["aumentos"][0] if a["aumentos"] else None, "tenant_id": t["id"],
+            "assinaturas": sorted((t.get("assinaturas") or {}).values()), "tags_pct": a["cobertura_tags_pct"], "sem_tags": a["sem_tags"],
+            "realizadas": [{"recurso": r["recurso"], "acao": r["acao"], "implementada_em": r["implementada_em"],
+                            "economia": r["economia_mensal"], "comprovada": r["comprovada"]} for r in a["realizadas"]],
+            "relatorio": f"relatorios/executivo/{ft.slug(t)}.md" if (ROOT / f"relatorios/executivo/{ft.slug(t)}.md").exists() else None,
             "acoes": [{"recurso": o["recurso"], "tipo": ft.NOME_OPORTUNIDADE[o["tipo"]], "valor": o["economia_mensal"],
                        "evidencia": o["evidencia"], "acao": o["acao"], "dono": o["dono"]} for o in a["oportunidades"]]})
     return {"corte": str(corte), "dias": [str(d) for d in dias], "dias_no_mes": fim_mes.day,
-            "demonstracao": "PILOTO_TENANTS_DIR" not in os.environ, "ambientes": ambientes,
+            "demonstracao": "PILOTO_TENANTS_DIR" not in os.environ, "ambientes": ambientes, "lista_ambientes": lista,
+            "ambiente": ambiente,
             "avaliacao": _seguro(avaliacao_atual)}
+
+
+def ambientes_validos():
+    import finops_tenants as ft
+    return {ft.ambiente(t) for t in json.loads((ft.PASTA / "tenants.json").read_text(encoding="utf-8"))}
 
 
 def chamados():
@@ -381,7 +396,14 @@ class Hub(BaseHTTPRequestHandler):
         if u.path == "/operacao":
             return self._envia(200, _pagina("hub_pagina.html", "<h1>hub_pagina.html não encontrado</h1>"), "text/html; charset=utf-8")
         if u.path == "/api/finops":
-            return self._envia(200, json.dumps(painel_finops(), ensure_ascii=False, default=str), "application/json; charset=utf-8")
+            amb = (q.get("ambiente") or [None])[0]
+            if amb and amb not in ambientes_validos():
+                return self._envia(404, json.dumps({"erro": "ambiente não encontrado"}), "application/json")
+            return self._envia(200, json.dumps(painel_finops(amb), ensure_ascii=False, default=str), "application/json; charset=utf-8")
+        if u.path.startswith("/ambiente/"):
+            if u.path.split("/")[2] not in ambientes_validos():
+                return self._envia(404, "Ambiente não encontrado.", "text/plain; charset=utf-8")
+            return self._envia(200, _pagina("hub_painel.html", "<h1>hub_painel.html não encontrado</h1>"), "text/html; charset=utf-8")
         if u.path == "/api/estado":
             return self._envia(200, json.dumps(estado(), ensure_ascii=False, default=str), "application/json; charset=utf-8")
         if u.path.startswith("/api/log/"):
