@@ -51,6 +51,8 @@ def main():
         "finops-pico-vm": ("parcial", ["vm-producao-02"]),
         "finops-armadilha": ("errou", ["312,40"]),
         "docs-quando-roda": ("sem resposta", []),
+        "clientes-isolamento": ("parcial", ["vazou 'pip-legado-01'", "vazou 'snap-vm-pdv-2025-12'"]),
+        "clientes-armadilha": ("errou", ["vm-core-acme", "12.430,00"]),
     }
     for cid, (situacao, inventos) in esperado.items():
         r = avaliar.corrigir(casos[cid], ruins[cid], universo)

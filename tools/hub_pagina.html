@@ -220,7 +220,7 @@ const quando = iso => { if(!iso) return '–'; const d = new Date(iso); if (isNa
   return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); };
 const dur = s => s == null ? '–' : (s < 60 ? `${Number(s).toFixed(1)} s` : `${Math.floor(s/60)} min ${Math.round(s%60)} s`);
 function pill(status){
-  const m = {'ok':['ok','OK'],'falhou':['falhou','Falhou'],'em andamento':['andamento','Rodando'],'sem resposta':['aviso','Sem resposta'],'pulada':['neutro','Pulada'],'recusado':['aviso','Recusado'],
+  const m = {'ok':['ok','OK'],'falhou':['falhou','Falhou'],'em andamento':['andamento','Rodando'],'sem resposta':['aviso','Sem resposta'],'pulada':['neutro','Pulada'],'atencao':['aviso','Atenção'],'recusado':['aviso','Recusado'],
              'Succeeded':['ok','Sucesso'],'Failed':['falhou','Falhou'],'Aberto':['aviso','Aberto'],'Resolvido':['ok','Resolvido'],
              'Alta':['falhou','Alta'],'Média':['aviso','Média'],'Baixa':['neutro','Baixa']}[status] || ['neutro', status||'–'];
   return `<span class="pill ${m[0]}">${m[0]==='andamento'?'<span class="gira" aria-hidden="true"></span>':''}${esc(m[1])}</span>`;
@@ -271,6 +271,12 @@ function renderVisao(){
     cartao('FinOps (dados fictícios)', E.finops.total != null ? brl(E.finops.total) : '–', `${(E.finops.anomalias||[]).length} anomalias · relatório ${rel ? esc(rel.resumo) : 'não gerado'}`, 'resultados', rel && rel.status),
     cartao('Documentação das Logic Apps', `${(E.logicapps||[]).length} fluxos`, `${reais} real(is) · ${achados} achados · ${d ? esc(d.resumo) : 'não gerada'}`, 'resultados', d && d.status),
     cartao('Chamados dos alertas', `${abertos} aberto(s)`, `${resolvidos} resolvido(s) · receptor ${E.servicos.receptor?'no ar':'fora do ar'}${r?` · teste: ${esc(r.resumo)}`:''}`, 'chamados', abertos ? 'Aberto' : (E.chamados.length ? 'Resolvido' : null)),
+    (() => { const T = (E.tenants || {}).lista || []; if (!T.length) return '';
+      const est = T.filter(t => t.estoura_orcamento), pot = T.reduce((x, t) => x + t.economia_potencial_mensal, 0),
+            real = T.reduce((x, t) => x + t.economia_realizada_mensal, 0);
+      return cartao('Clientes (tenants)', `${T.length} clientes`,
+        `economia possível ${brl(pot)}/mês · realizada ${brl(real)}/mês` + (est.length ? ` · estoura o orçamento: ${est.map(t => esc(t.nome)).join(', ')}` : ''),
+        'documentos', est.length ? 'atencao' : 'ok'); })(),
     (() => { const a = E.agendador || {}; const st = a.atrasado ? 'falhou' : a.ultimo_resultado || null;
       return cartao('Sincronização agendada', a.a_cada_h ? `a cada ${a.a_cada_h} h` : 'não agendada',
         a.ultima_rodada ? `última ${quando(a.ultima_rodada)} (${esc(a.ultimo_resultado||'-')})${a.atrasado?' · ATRASADA':a.proxima_estimada?` · próxima ~${quando(a.proxima_estimada)}`:''}`

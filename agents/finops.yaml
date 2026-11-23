@@ -26,7 +26,7 @@ agents:
     description: Orquestrador FinOps que coordena a análise de custos Azure
     welcome_message: |
       Olá! Sou o orquestrador FinOps (dados SINTÉTICOS de demonstração).
-      Peça, por exemplo: "Analise os custos e gere o relatório".
+      Peça, por exemplo: "Analise os custos e gere o relatório" ou "Qual cliente vai estourar o orçamento?".
     instruction: |
       Você coordena uma pequena equipe de análise de custos Azure. Responda sempre em português do Brasil.
       Os dados são sintéticos (demonstração); nunca invente números.
@@ -39,7 +39,11 @@ agents:
          Lembre que o relatório pode ser conferido com: python tests/validar_relatorio.py
 
       Para perguntas simples sobre um recurso específico, delegue só ao "analista_custos".
-    sub_agents: [analista_custos, relator]
+
+      Perguntas sobre CLIENTES ou TENANTS (Contoso, Fabrikam, Northwind ou "qual cliente..."): orçamento,
+      previsão do mês, economia possível, economia já realizada, quem gasta, relatório executivo de um cliente.
+      Delegue ao agente "analista_clientes" e repasse a resposta dele. Nunca misture dados de clientes diferentes.
+    sub_agents: [analista_custos, relator, analista_clientes]
     add_date: true
     # Hook "stop": roda sempre que o orquestrador termina de responder.
     # Garante, por código, que o relatório é gerado, salvo e validado,
@@ -106,6 +110,60 @@ agents:
                   - appi-automacao
                   - stgbackupantigo
             required: [nome]
+
+  analista_clientes:
+    model: local
+    description: Analista FinOps por tenant (cliente) - orçamento, economia potencial e realizada, sempre separado por cliente
+    instruction: |
+      Você é o analista FinOps dos clientes (cada cliente é um tenant do Azure). Responda em português do Brasil.
+      Use SOMENTE as ferramentas; nunca estime, some ou invente valores. Copie os números exatamente como vieram.
+
+      - Visão geral ou "qual cliente...": chame "clientes_resumo".
+      - Um cliente específico (orçamento, previsão, o que subiu, quem gasta): chame "cliente_detalhe" com o nome do cliente.
+      - "Quanto dá para economizar" ou "o que dá para cortar": chame "economia_cliente" e liste cada recurso com o valor,
+        a evidência e a ação.
+      - "Relatório executivo": chame "relatorio_executivo_cliente" e diga onde o arquivo foi salvo.
+      Regras de isolamento: fale só do cliente perguntado. Nunca cite recurso, nome ou valor de outro cliente na resposta
+      sobre um cliente. Se a ferramenta disser "TENANT NÃO ENCONTRADO", diga que esse cliente não existe nos dados e
+      liste os clientes disponíveis. Se não houver oportunidade, diga que nenhuma foi encontrada.
+    toolsets:
+      - type: script
+        shell:
+          clientes_resumo:
+            cmd: python tools/finops_tenants.py tenants
+            env:
+              PYTHONIOENCODING: utf-8
+            description: Um cliente (tenant) por linha - custo de 30 dias, previsão do mês, orçamento, economia potencial e realizada.
+          cliente_detalhe:
+            cmd: python tools/finops_tenants.py tenant   # o nome chega pela variável de ambiente 'tenant'
+            env:
+              PYTHONIOENCODING: utf-8
+            description: Detalhe de um cliente - previsão × orçamento, o que mais subiu, custo por centro de custo e oportunidades.
+            args:
+              tenant:
+                type: string
+                description: "Nome do cliente, como aparece em clientes_resumo (ex.: Fabrikam Saúde)"
+            required: [tenant]
+          economia_cliente:
+            cmd: python tools/finops_tenants.py economia   # o nome chega pela variável de ambiente 'tenant'
+            env:
+              PYTHONIOENCODING: utf-8
+            description: Oportunidades de economia de um cliente, com valor por mês, evidência, ação e dono.
+            args:
+              tenant:
+                type: string
+                description: Nome do cliente, como aparece em clientes_resumo
+            required: [tenant]
+          relatorio_executivo_cliente:
+            cmd: python tools/finops_tenants.py executivo   # o nome chega pela variável de ambiente 'tenant'
+            env:
+              PYTHONIOENCODING: utf-8
+            description: Gera o relatório executivo de 1 página do cliente em relatorios/executivo/.
+            args:
+              tenant:
+                type: string
+                description: Nome do cliente, como aparece em clientes_resumo
+            required: [tenant]
 
   relator:
     model: local

@@ -1,0 +1,127 @@
+{
+ "corte": "2026-11-20",
+ "regras": {
+  "custo_mes_recurso": "soma dos últimos 30 dias até o corte",
+  "disco_orfao": "disco com diskState Unattached: economia = 100% do custo do mês",
+  "ip_orfao": "IP público sem ipConfiguration: economia = 100% do custo do mês",
+  "snapshot_antigo": "snapshot com mais de 90 dias: economia = 100% do custo do mês",
+  "vm_superdimensionada": "VM com CPU P95 (14 dias) abaixo de 20%: economia = 50% do custo do mês (um tamanho abaixo)",
+  "previsao_mes": "custo do mês até o corte + média dos últimos 7 dias × dias restantes",
+  "economia_realizada": "ação implementada e custo zerado depois dela: média diária dos 30 dias antes × 30"
+ },
+ "tenants": {
+  "11111111-1111-1111-1111-111111111111": {
+   "nome": "Contoso Varejo",
+   "custo_ultimos_30_dias": 8726.44,
+   "custo_mes_ate_corte": 5828.16,
+   "previsao_mes": 8725.94,
+   "orcamento_mensal": 9500.0,
+   "estoura_orcamento": false,
+   "cobertura_tags_pct": 99.7,
+   "oportunidades": [
+    {
+     "recurso": "vm-relatorios-02",
+     "tipo": "vm_superdimensionada",
+     "economia_mensal": 1142.17
+    },
+    {
+     "recurso": "disk-backup-01",
+     "tipo": "disco_orfao",
+     "economia_mensal": 148.25
+    },
+    {
+     "recurso": "snap-vm-pdv-2025-12",
+     "tipo": "snapshot_antigo",
+     "economia_mensal": 77.68
+    },
+    {
+     "recurso": "pip-legado-01",
+     "tipo": "ip_orfao",
+     "economia_mensal": 28.73
+    }
+   ],
+   "economia_potencial_mensal": 1396.83,
+   "nao_sao_oportunidades": [
+    "vm-dev-teste",
+    "vm-pdv-api-01"
+   ],
+   "economia_realizada_mensal": 0.0,
+   "causa_aumento": [],
+   "recursos": [
+    "aks-loja",
+    "disk-backup-01",
+    "pip-legado-01",
+    "snap-vm-pdv-2025-12",
+    "sqldb-vendas",
+    "stgcontosodados",
+    "vm-dev-teste",
+    "vm-pdv-api-01",
+    "vm-relatorios-02"
+   ]
+  },
+  "22222222-2222-2222-2222-222222222222": {
+   "nome": "Fabrikam Saúde",
+   "custo_ultimos_30_dias": 5530.57,
+   "custo_mes_ate_corte": 4158.51,
+   "previsao_mes": 6402.02,
+   "orcamento_mensal": 6000.0,
+   "estoura_orcamento": true,
+   "cobertura_tags_pct": 95.1,
+   "oportunidades": [],
+   "economia_potencial_mensal": 0,
+   "nao_sao_oportunidades": [
+    "disk-backup-01",
+    "snap-prontuario-2026-10",
+    "vm-prontuario-01"
+   ],
+   "economia_realizada_mensal": 0.0,
+   "causa_aumento": [
+    {
+     "recurso": "sqldb-prontuario",
+     "desde": "2026-11-05"
+    }
+   ],
+   "recursos": [
+    "appi-fabrikam",
+    "disk-backup-01",
+    "snap-prontuario-2026-10",
+    "sqldb-prontuario",
+    "stgfabrikamimagens",
+    "vm-prontuario-01"
+   ]
+  },
+  "33333333-3333-3333-3333-333333333333": {
+   "nome": "Northwind Logística",
+   "custo_ultimos_30_dias": 2309.62,
+   "custo_mes_ate_corte": 1535.16,
+   "previsao_mes": 2294.07,
+   "orcamento_mensal": 3200.0,
+   "estoura_orcamento": false,
+   "cobertura_tags_pct": 92.2,
+   "oportunidades": [
+    {
+     "recurso": "vm-rotas-01",
+     "tipo": "vm_superdimensionada",
+     "economia_mensal": 451.42
+    },
+    {
+     "recurso": "pip-sem-uso-03",
+     "tipo": "ip_orfao",
+     "economia_mensal": 28.54
+    }
+   ],
+   "economia_potencial_mensal": 479.96,
+   "nao_sao_oportunidades": [],
+   "economia_realizada_mensal": 185.01,
+   "causa_aumento": [],
+   "recursos": [
+    "disk-antigo-02",
+    "func-rastreio",
+    "pip-sem-uso-03",
+    "sqldb-entregas",
+    "stgnorthwindlogs",
+    "vm-rotas-01"
+   ]
+  }
+ }
+}

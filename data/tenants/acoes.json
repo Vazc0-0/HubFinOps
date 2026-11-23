@@ -1,0 +1,11 @@
+[
+ {
+  "id": "E-001",
+  "tenant": "33333333-3333-3333-3333-333333333333",
+  "recurso": "disk-antigo-02",
+  "acao": "Excluir disco gerenciado sem VM (Unattached)",
+  "aprovada_em": "2026-10-08",
+  "implementada_em": "2026-10-10",
+  "responsavel": "operacoes"
+ }
+]

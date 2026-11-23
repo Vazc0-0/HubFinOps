@@ -156,6 +156,15 @@ def agendador():
     return {**e, "atrasado": atrasado}
 
 
+def tenants():
+    import finops_tenants as ft
+    analises = ft.analisar_todos(ft.carregar())
+    return {"corte": analises[0]["corte"] if analises else None,
+            "lista": [{k: a[k] for k in ("nome", "custo_ultimos_30_dias", "previsao_mes", "orcamento_mensal", "pct_orcamento",
+                                         "estoura_orcamento", "economia_potencial_mensal", "economia_realizada_mensal",
+                                         "cobertura_tags_pct")} for a in analises]}
+
+
 def chamados():
     pasta = ROOT / "chamados"
     out = []
@@ -171,6 +180,7 @@ def documentos():
               "Relatórios FinOps": sorted(ROOT.glob("relatorios/relatorio-finops*.md")),
               "Documentação das Logic Apps": sorted(ROOT.glob("docs/logicapps/*.md")),
               "Comparações de versões": sorted(ROOT.glob("docs/comparacoes/*.md")),
+              "Relatórios executivos por cliente": sorted(ROOT.glob("relatorios/executivo/*.md")),
               "Guias": [p for p in (ROOT / "README.md", ROOT / "azure" / "LEIA-ME.md", ROOT / "logicapps" / "reais" / "LEIA-ME.md")
                         if p.exists()]}
     return {g: [{"nome": p.name, "caminho": p.relative_to(ROOT).as_posix(),
@@ -196,7 +206,7 @@ def estado():
             "tarefas": tarefas, "historico": hist, "em_andamento": [h for h in hist if h.get("status") == "em andamento"],
             "finops": _seguro(finops), "logicapps": _seguro(logicapps, []), "azure": _seguro(azure),
             "ranking_logicapps": _seguro(ranking_logicapps, {"itens": []}), "chamados": _seguro(chamados, []),
-            "documentos": _seguro(documentos, {}), "agendador": _seguro(agendador, {}),
+            "documentos": _seguro(documentos, {}), "agendador": _seguro(agendador, {}), "tenants": _seguro(tenants, {}),
             "grafana": {"url": GRAFANA_NAVEGADOR, "paineis": [
                 {"uid": "piloto-operacao", "titulo": "Logic App real e operação do piloto"},
                 {"uid": "finops-custos-demo", "titulo": "FinOps: custos Azure (dados sintéticos)"}]}}
