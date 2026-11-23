@@ -74,6 +74,9 @@ services:
 
   hub:
     image: piloto-python:local   # mesma imagem do receptor (docker/Dockerfile)
+    build:                       # sem isto o compose tenta baixar piloto-python:local do Docker Hub
+      context: .
+      dockerfile: docker/Dockerfile
     working_dir: /app
     command: ["python", "tools/hub.py", "--sem-abrir"]
     depends_on:
