@@ -53,6 +53,14 @@ def chama(url, corpo=None, auth=True, cabecalhos=None, metodo=None):
         return json.loads(r.read().decode("utf-8") or "null")
 
 
+def get_status(url, cabecalhos=None):
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, headers=cabecalhos or {}), timeout=15) as r:
+            return r.status
+    except urllib.error.HTTPError as e:
+        return e.code
+
+
 def status_de(url, corpo=None, cabecalhos=None):
     try:
         chama(url, corpo, auth=False, cabecalhos=cabecalhos, metodo="POST")
@@ -204,6 +212,9 @@ def main():
         confere(status_de(f"{HUB}/api/executar/grafana") == 403, "hub recusa execução sem o cabeçalho da página (403)")
         confere(status_de(f"{HUB}/api/executar/grafana", cabecalhos={"X-Piloto-Hub": "1", "Host": "exemplo.com"}) == 403,
                 "hub recusa execução com Host de fora (403)")
+        for proibido in ("config/azure.json", ".env", ".git/config"):
+            confere(get_status(f"{HUB}/ver?arquivo={proibido}") == 404, f"hub não mostra {proibido}")
+        confere(get_status(f"{HUB}/api/estado", {"Host": "exemplo.com"}) == 403, "hub recusa leitura com Host de fora (DNS rebinding)")
         inicio = time.time()
         confere(status_de(f"{HUB}/api/executar/grafana", cabecalhos={"X-Piloto-Hub": "1"}) == 200, "hub aceita execução da página")
 

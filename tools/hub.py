@@ -289,9 +289,15 @@ def markdown(texto):
     return "\n".join(out)
 
 
+PROIBIDOS = ("config", ".git", ".github")  # config/azure.json tem o ID da assinatura; nada disso aparece no hub
+
+
 def arquivo_seguro(rel):
     p = (ROOT / rel).resolve()
     if ROOT.resolve() not in p.parents or p.suffix.lower() not in EXTENSOES or not p.is_file():
+        return None
+    partes = p.relative_to(ROOT.resolve()).parts
+    if partes[0] in PROIBIDOS or any(x.startswith(".") for x in partes):
         return None
     return p
 
@@ -310,7 +316,14 @@ class Hub(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b)
 
+    def _host_local(self):
+        """Só responde a endereços locais: um site de fora que aponte o próprio nome para 127.0.0.1
+        (DNS rebinding) não consegue ler o hub."""
+        return (self.headers.get("Host") or "").rsplit(":", 1)[0].lower() in HOSTS_LOCAIS
+
     def do_GET(self):
+        if not self._host_local():
+            return self._envia(403, "Hub só atende endereços locais (localhost).", "text/plain; charset=utf-8")
         u = urllib.parse.urlparse(self.path)
         q = urllib.parse.parse_qs(u.query)
         if u.path == "/":
@@ -338,8 +351,7 @@ class Hub(BaseHTTPRequestHandler):
     def _pedido_local(self):
         """Só a própria página pode executar: Host local (contra DNS rebinding) e cabeçalho próprio.
         Um site qualquer não consegue mandar esse cabeçalho sem a permissão de CORS, que o hub nunca dá."""
-        host = (self.headers.get("Host") or "").rsplit(":", 1)[0].lower()
-        return host in HOSTS_LOCAIS and self.headers.get("X-Piloto-Hub") == "1"
+        return self._host_local() and self.headers.get("X-Piloto-Hub") == "1"
 
     def do_POST(self):
         u = urllib.parse.urlparse(self.path)

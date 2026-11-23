@@ -519,7 +519,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT max(sincronizado_em) AS \"Última\" FROM azure_sincronizacoes"
+          "rawSql": "SELECT EXTRACT(EPOCH FROM max(sincronizado_em)) * 1000 AS \"Última\" FROM azure_sincronizacoes"
         }
       ],
       "fieldConfig": {
