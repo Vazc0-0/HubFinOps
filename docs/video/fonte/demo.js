@@ -18,7 +18,10 @@ const ease = (t) => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   let cur = { x: 960, y: 600 }, legenda = '', ripple = 0, total = 0;
 
   async function overlay() {
+    // durante a troca de página o documento ainda não existe: espera carregar
+    await p.waitForLoadState('domcontentloaded').catch(() => {});
     await p.evaluate(([x, y, leg, rip]) => {
+      if (!document.documentElement || !document.body) return;
       let c = document.getElementById('demo-cursor');
       if (!c) {
         const st = document.createElement('style');
