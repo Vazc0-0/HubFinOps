@@ -274,8 +274,11 @@ function renderVisao(){
     (() => { const T = (E.tenants || {}).lista || []; if (!T.length) return '';
       const est = T.filter(t => t.estoura_orcamento), pot = T.reduce((x, t) => x + t.economia_potencial_mensal, 0),
             real = T.reduce((x, t) => x + t.economia_realizada_mensal, 0);
-      return cartao('Clientes (tenants)', `${T.length} clientes`,
-        `economia possível ${brl(pot)}/mês · realizada ${brl(real)}/mês` + (est.length ? ` · estoura o orçamento: ${est.map(t => esc(t.nome)).join(', ')}` : ''),
+      const np = E.tenants.nao_produtivo_pct;
+      return cartao('Ambientes (tenants)', `${T.length} ambientes`,
+        `economia possível ${brl(pot)}/mês · realizada ${brl(real)}/mês`
+        + (np != null ? ` · fora de produção = ${String(np).replace('.', ',')}% de produção` : '')
+        + (est.length ? ` · estoura o orçamento: ${est.map(t => esc(t.nome)).join(', ')}` : ''),
         'documentos', est.length ? 'atencao' : 'ok'); })(),
     (() => { const a = E.agendador || {}; const st = a.atrasado ? 'falhou' : a.ultimo_resultado || null;
       return cartao('Sincronização agendada', a.a_cada_h ? `a cada ${a.a_cada_h} h` : 'não agendada',

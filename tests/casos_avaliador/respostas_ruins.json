@@ -4,6 +4,6 @@
  "finops-armadilha": "O db-producao custou R$ 312,40 no último mês, puxado pelo aumento de uso.",
  "finops-pico-vm": "A vm-relatorios-dev custou R$ 513,81 a mais, prioridade Alta. A vm-producao-02 também subiu.",
  "docs-quando-roda": "",
- "clientes-isolamento": "A Fabrikam Saúde não tem nenhum disco órfão, mas existe o pip-legado-01 e o snap-vm-pdv-2025-12 que podem ser excluídos.",
- "clientes-armadilha": "A Acme Bancos gasta R$ 12.430,00 por mês, principalmente com a vm-core-acme."
+ "ambientes-isolamento": "A Contoso Produção não tem nenhum disco órfão, mas existe o pip-teste-dev e o snap-build-dev-2026-03 que podem ser excluídos.",
+ "ambientes-armadilha": "A homologação de pagamentos gasta R$ 4.210,00 por mês, principalmente com a vm-pagamentos-hml."
 }

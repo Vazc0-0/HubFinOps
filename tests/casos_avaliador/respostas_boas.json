@@ -13,9 +13,10 @@
  "docs-email-fixo": "Sim: a lgc-chamados-nao-respondentes tem o destinatário escrito direto na ação Enviar_ranking_ao_coordenador.",
  "docs-armadilha": "Não existe uma Logic App chamada lgc-folha-pagamento. As disponíveis são la-precos-logicapps, lgc-chamados-nao-respondentes, lgc-desvios-processo e lgc-relatorio-custos.",
  "docs-o-que-mudou": "A recorrência da lgc-desvios-processo mudou de a cada hora para a cada 5 minutos. Com isso as execuções por mês passaram de 730 para 8.760 e as ações fixas por mês de 1.460 para 17.520 (alta de 1100%). Nenhuma ação foi adicionada, removida ou alterada. Apareceu o risco RECORRENCIA_FREQUENTE (288 execuções por dia).",
- "clientes-estouro": "A Fabrikam Saúde vai estourar o orçamento: a previsão do mês é R$ 6.402,02 para um orçamento de R$ 6.000,00 (106,7%). A causa é o sqldb-prontuario, que subiu de R$ 60,26/dia para R$ 146,60/dia desde 05/11/2026.",
- "clientes-economia": "A Contoso Varejo pode economizar R$ 1.396,83 por mês: vm-relatorios-02 (VM superdimensionada, R$ 1.142,17), disk-backup-01 (disco órfão, R$ 148,25), snap-vm-pdv-2025-12 (snapshot antigo, R$ 77,68) e pip-legado-01 (IP sem uso, R$ 28,73).",
- "clientes-realizada": "A Northwind Logística já economiza R$ 185,01 por mês: o disco órfão disk-antigo-02 foi excluído em 10/10/2026 e o custo zerou nos dados.",
- "clientes-isolamento": "Não. Nenhuma oportunidade foi encontrada para a Fabrikam Saúde: o disk-backup-01 está anexado à VM, o snapshot snap-prontuario-2026-10 é recente e a vm-prontuario-01 tem uso alto de CPU.",
- "clientes-armadilha": "A Acme Bancos não foi encontrada nos dados. Os clientes disponíveis são Contoso Varejo, Fabrikam Saúde e Northwind Logística."
+ "ambientes-estouro": "O ambiente de desenvolvimento (Contoso Desenvolvimento) vai estourar o orçamento: a previsão do mês é R$ 3.794,69 para um orçamento de R$ 3.200,00 (118,6%). A causa é a vm-carga-dev, um recurso novo desde 06/11/2026 que custa R$ 78,42/dia.",
+ "ambientes-economia": "O ambiente de desenvolvimento pode economizar R$ 1.325,07 por mês: vm-carga-dev (VM ligada 24x7, R$ 739,41), vm-build-dev (VM ligada 24x7, R$ 370,43), disk-dados-01 (disco órfão, R$ 114,00), snap-build-dev-2026-03 (snapshot antigo, R$ 72,75) e pip-teste-dev (IP sem uso, R$ 28,48).",
+ "ambientes-realizada": "O ambiente de integração já economiza R$ 153,27 por mês: o disco órfão disk-hml-antigo foi excluído em 14/10/2026 e o custo zerou nos dados.",
+ "ambientes-isolamento": "Não. A Contoso Produção não tem disco órfão, IP sem uso nem snapshot antigo: o disk-dados-01 está anexado à vm-erp-conector-prd. A única oportunidade em produção é reduzir o tamanho da vm-erp-conector-prd.",
+ "ambientes-nao-producao": "Desenvolvimento e integração custaram R$ 5.431,41 em 30 dias, 85,5% do custo de produção. O app que mais pesa fora de produção é o pedidos: R$ 2.876,19 fora de produção contra R$ 1.742,48 em produção (165,1%).",
+ "ambientes-armadilha": "Não existe um ambiente de homologação de pagamentos nos dados. Os tenants disponíveis são Contoso Produção, Contoso Desenvolvimento e Contoso Integração."
 }

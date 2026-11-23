@@ -26,7 +26,7 @@ agents:
     description: Orquestrador FinOps que coordena a análise de custos Azure
     welcome_message: |
       Olá! Sou o orquestrador FinOps (dados SINTÉTICOS de demonstração).
-      Peça, por exemplo: "Analise os custos e gere o relatório" ou "Qual cliente vai estourar o orçamento?".
+      Peça, por exemplo: "Analise os custos e gere o relatório" ou "Qual ambiente vai estourar o orçamento?".
     instruction: |
       Você coordena uma pequena equipe de análise de custos Azure. Responda sempre em português do Brasil.
       Os dados são sintéticos (demonstração); nunca invente números.
@@ -40,10 +40,11 @@ agents:
 
       Para perguntas simples sobre um recurso específico, delegue só ao "analista_custos".
 
-      Perguntas sobre CLIENTES ou TENANTS (Contoso, Fabrikam, Northwind ou "qual cliente..."): orçamento,
-      previsão do mês, economia possível, economia já realizada, quem gasta, relatório executivo de um cliente.
-      Delegue ao agente "analista_clientes" e repasse a resposta dele. Nunca misture dados de clientes diferentes.
-    sub_agents: [analista_custos, relator, analista_clientes]
+      Perguntas sobre AMBIENTES ou TENANTS (produção, desenvolvimento, integração/homologação, "qual ambiente..."):
+      orçamento, previsão do mês, economia possível, economia já realizada, quem gasta, quanto custa o que não é
+      produção, relatório executivo de um ambiente. Delegue ao agente "analista_ambientes" e repasse a resposta dele.
+      Nunca misture dados de ambientes diferentes.
+    sub_agents: [analista_custos, relator, analista_ambientes]
     add_date: true
     # Hook "stop": roda sempre que o orquestrador termina de responder.
     # Garante, por código, que o relatório é gerado, salvo e validado,
@@ -74,6 +75,8 @@ agents:
          O CUSTO EXTRA e a PRIORIDADE de cada anomalia vêm prontos em "detectar_anomalias": copie exatamente,
          nunca recalcule, e nunca use o total geral como custo de um recurso só.
       Devolva tudo em texto organizado por anomalia.
+      Se perguntarem de um recurso que NÃO está na lista de "detalhar_recurso", diga que ele não existe nos dados e
+      liste os recursos disponíveis. Nunca responda com os números de outro recurso no lugar.
     toolsets:
       - type: script
         shell:
@@ -111,58 +114,65 @@ agents:
                   - stgbackupantigo
             required: [nome]
 
-  analista_clientes:
+  analista_ambientes:
     model: local
-    description: Analista FinOps por tenant (cliente) - orçamento, economia potencial e realizada, sempre separado por cliente
+    description: Analista FinOps por ambiente (um tenant por ambiente) - orçamento, economia potencial e realizada, custo fora de produção
     instruction: |
-      Você é o analista FinOps dos clientes (cada cliente é um tenant do Azure). Responda em português do Brasil.
+      Você é o analista FinOps dos ambientes da empresa. Cada ambiente é um tenant do Azure: Contoso Produção,
+      Contoso Desenvolvimento e Contoso Integração (homologação). Responda em português do Brasil.
       Use SOMENTE as ferramentas; nunca estime, some ou invente valores. Copie os números exatamente como vieram.
 
-      - Visão geral ou "qual cliente...": chame "clientes_resumo".
-      - Um cliente específico (orçamento, previsão, o que subiu, quem gasta): chame "cliente_detalhe" com o nome do cliente.
-      - "Quanto dá para economizar" ou "o que dá para cortar": chame "economia_cliente" e liste cada recurso com o valor,
-        a evidência e a ação.
-      - "Relatório executivo": chame "relatorio_executivo_cliente" e diga onde o arquivo foi salvo.
-      Regras de isolamento: fale só do cliente perguntado. Nunca cite recurso, nome ou valor de outro cliente na resposta
-      sobre um cliente. Se a ferramenta disser "TENANT NÃO ENCONTRADO", diga que esse cliente não existe nos dados e
-      liste os clientes disponíveis. Se não houver oportunidade, diga que nenhuma foi encontrada.
+      - Visão geral, "qual ambiente..." ou quanto custa o que não é produção (por app): chame "ambientes_resumo".
+        Quando um ambiente vai estourar o orçamento, a linha "Causa do estouro" explica o porquê: copie o recurso e a data.
+      - Um ambiente específico (orçamento, previsão, o que subiu, quem gasta): chame "ambiente_detalhe" com o ambiente.
+      - "Quanto dá para economizar" ou "o que dá para cortar": chame "economia_ambiente" e liste cada recurso com o
+        valor, a evidência e a ação.
+      - "Quanto já economizou" (economia REALIZADA): chame "ambiente_detalhe" e copie a linha "Economia realizada" e as
+        ações embaixo dela. Economia realizada (já medida) é diferente de economia potencial (o que ainda dá para cortar):
+        nunca use uma no lugar da outra.
+      - "Relatório executivo": chame "relatorio_executivo_ambiente" e diga onde o arquivo foi salvo. Não cite arquivo
+        nenhum se não tiver chamado essa ferramenta.
+      Regras de isolamento: fale só do ambiente perguntado. Nunca cite recurso, nome ou valor de outro ambiente na
+      resposta sobre um ambiente (o mesmo nome de recurso pode existir em dois ambientes com situações diferentes).
+      Se a ferramenta disser "TENANT NÃO ENCONTRADO", diga que esse ambiente não existe nos dados e liste os
+      disponíveis. Se não houver oportunidade, diga que nenhuma foi encontrada.
     toolsets:
       - type: script
         shell:
-          clientes_resumo:
+          ambientes_resumo:
             cmd: python tools/finops_tenants.py tenants
             env:
               PYTHONIOENCODING: utf-8
-            description: Um cliente (tenant) por linha - custo de 30 dias, previsão do mês, orçamento, economia potencial e realizada.
-          cliente_detalhe:
-            cmd: python tools/finops_tenants.py tenant   # o nome chega pela variável de ambiente 'tenant'
+            description: Um ambiente (tenant) por linha - custo de 30 dias, previsão, orçamento, economia potencial e realizada - e o custo fora de produção por app.
+          ambiente_detalhe:
+            cmd: python tools/finops_tenants.py tenant   # o ambiente chega pela variável de ambiente 'tenant'
             env:
               PYTHONIOENCODING: utf-8
-            description: Detalhe de um cliente - previsão × orçamento, o que mais subiu, custo por centro de custo e oportunidades.
+            description: Detalhe de um ambiente - previsão × orçamento, o que mais subiu (ou recurso novo), custo por centro de custo e oportunidades.
             args:
               tenant:
                 type: string
-                description: "Nome do cliente, como aparece em clientes_resumo (ex.: Fabrikam Saúde)"
+                description: "Ambiente ou nome do tenant (ex.: producao, desenvolvimento, integracao, dev, hml ou Contoso Desenvolvimento)"
             required: [tenant]
-          economia_cliente:
-            cmd: python tools/finops_tenants.py economia   # o nome chega pela variável de ambiente 'tenant'
+          economia_ambiente:
+            cmd: python tools/finops_tenants.py economia   # o ambiente chega pela variável de ambiente 'tenant'
             env:
               PYTHONIOENCODING: utf-8
-            description: Oportunidades de economia de um cliente, com valor por mês, evidência, ação e dono.
+            description: Oportunidades de economia de um ambiente, com valor por mês, evidência, ação e dono.
             args:
               tenant:
                 type: string
-                description: Nome do cliente, como aparece em clientes_resumo
+                description: "Ambiente ou nome do tenant (ex.: desenvolvimento)"
             required: [tenant]
-          relatorio_executivo_cliente:
-            cmd: python tools/finops_tenants.py executivo   # o nome chega pela variável de ambiente 'tenant'
+          relatorio_executivo_ambiente:
+            cmd: python tools/finops_tenants.py executivo   # o ambiente chega pela variável de ambiente 'tenant'
             env:
               PYTHONIOENCODING: utf-8
-            description: Gera o relatório executivo de 1 página do cliente em relatorios/executivo/.
+            description: Gera o relatório executivo de 1 página do ambiente em relatorios/executivo/.
             args:
               tenant:
                 type: string
-                description: Nome do cliente, como aparece em clientes_resumo
+                description: "Ambiente ou nome do tenant (ex.: integracao)"
             required: [tenant]
 
   relator:
@@ -176,7 +186,8 @@ agents:
       2. Responda com:
          - o caminho do arquivo;
          - o resultado da validação, exatamente como veio ("RELATÓRIO CONFIÁVEL" ou "REPROVADO");
-         - 3 linhas de resumo copiando números da saída da ferramenta.
+         - as 3 linhas da seção "## Resumo" da saída da ferramenta, copiadas exatamente.
+           O custo extra total é o valor da linha "Foram encontradas ... que somam": nunca some você mesmo.
       Nunca diga que salvou ou validou algo sem ter chamado a ferramenta. Nunca invente números.
     toolsets:
       - type: script

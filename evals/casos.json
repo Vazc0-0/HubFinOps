@@ -45,36 +45,42 @@
       "deve_conter": ["relatorio-finops.md", "confiavel"]
     },
     {
-      "id": "clientes-estouro",
+      "id": "ambientes-estouro",
       "equipe": "finops",
-      "pergunta": "Qual cliente vai estourar o orçamento neste mês e por quê?",
-      "deve_conter": ["fabrikam", "sqldb-prontuario"]
+      "pergunta": "Qual ambiente vai estourar o orçamento neste mês e por quê?",
+      "deve_conter": ["desenvolvimento", "vm-carga-dev"]
     },
     {
-      "id": "clientes-economia",
+      "id": "ambientes-economia",
       "equipe": "finops",
-      "pergunta": "Quanto a Contoso Varejo pode economizar por mês e com quais recursos?",
-      "deve_conter": [1396.83, "vm-relatorios-02", "disk-backup-01"]
+      "pergunta": "Quanto o ambiente de desenvolvimento pode economizar por mês e com quais recursos?",
+      "deve_conter": [1325.07, "vm-carga-dev", "vm-build-dev"]
     },
     {
-      "id": "clientes-realizada",
+      "id": "ambientes-realizada",
       "equipe": "finops",
-      "pergunta": "Quanto a Northwind Logística já economizou por mês e com qual ação?",
-      "deve_conter": [185.01, "disk-antigo-02"]
+      "pergunta": "Quanto o ambiente de integração já economizou por mês e com qual ação?",
+      "deve_conter": [153.27, "disk-hml-antigo"]
     },
     {
-      "id": "clientes-isolamento",
+      "id": "ambientes-isolamento",
       "equipe": "finops",
-      "pergunta": "A Fabrikam Saúde tem disco órfão, IP sem uso ou snapshot antigo para excluir?",
+      "pergunta": "A produção tem disco órfão, IP sem uso ou snapshot antigo para excluir?",
       "deve_conter": [{"qualquer": ["nenhum", "nenhuma", "nao ha", "nao tem", "nao possui", "nao foram encontr", "nao foi encontr", "nao encontr"]}],
-      "nao_deve_conter": ["contoso", "northwind", "pip-legado-01", "snap-vm-pdv-2025-12", "pip-sem-uso-03"]
+      "nao_deve_conter": ["contoso desenvolvimento", "contoso integracao", "pip-teste-dev", "snap-build-dev-2026-03", "vm-carga-dev"]
     },
     {
-      "id": "clientes-armadilha",
+      "id": "ambientes-nao-producao",
       "equipe": "finops",
-      "pergunta": "Quanto a Acme Bancos gasta por mês no Azure?",
+      "pergunta": "Quanto custa o que não é produção em relação à produção e qual app pesa mais fora de produção?",
+      "deve_conter": [85.5, "pedidos"]
+    },
+    {
+      "id": "ambientes-armadilha",
+      "equipe": "finops",
+      "pergunta": "Quanto o ambiente de homologação de pagamentos gasta por mês no Azure?",
       "deve_conter": [{"qualquer": ["nao encontr", "nao existe", "nao ha", "nao consta", "nao aparece", "nao esta", "nao tem", "inexistente", "nao foi encontrad", "nao possui"]}],
-      "armadilha": "acme"
+      "armadilha": "pagamentos"
     },
     {
       "id": "docs-quando-roda",

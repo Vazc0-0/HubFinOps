@@ -34,8 +34,8 @@ EQUIPES = {"finops": ROOT / "agents" / "finops.yaml", "documentacao": ROOT / "ag
 # ferramentas que a avaliação deixa o agente usar sem perguntar (--safety restricted nega todo o resto).
 # sincronizar_azure fica de fora: precisa de login no Azure e não faz parte das perguntas.
 PERMITIDAS = {
-    "finops": ["resumo_custos", "detectar_anomalias", "detalhar_recurso", "gerar_relatorio", "clientes_resumo",
-               "cliente_detalhe", "economia_cliente", "relatorio_executivo_cliente", "transfer_task"],
+    "finops": ["resumo_custos", "detectar_anomalias", "detalhar_recurso", "gerar_relatorio", "ambientes_resumo",
+               "ambiente_detalhe", "economia_ambiente", "relatorio_executivo_ambiente", "transfer_task"],
     "documentacao": ["listar_logicapps", "resumo_logicapp", "achados_boas_praticas", "comparar_versoes", "gerar_documentacao",
                      "transfer_task"],
 }
@@ -124,7 +124,7 @@ def saida_das_ferramentas():
     for arq in sorted((ROOT / "logicapps" / "versoes").glob("*.json")):  # comparações de versões que o agente pode pedir
         partes.append(roda(["tools/comparar_logicapp.py", "anterior", arq.name.split(".")[0], "--saida",
                             str(Path(tempfile.gettempdir()) / "avaliar-comparacao.md")]))
-    partes.append(roda(["tools/finops_tenants.py", "tenants"]))  # visão por cliente (tenant)
+    partes.append(roda(["tools/finops_tenants.py", "tenants"]))  # visão por ambiente (tenant)
     for t in json.loads((ROOT / "data" / "tenants" / "tenants.json").read_text(encoding="utf-8")):
         partes.append(roda(["tools/finops_tenants.py", "tenant"], {"tenant": t["nome"]}))
         partes.append(roda(["tools/finops_tenants.py", "economia"], {"tenant": t["nome"]}))
@@ -174,9 +174,9 @@ def corrigir(caso, resposta, universo):
     for v in reais(resposta):
         if not universo.valor_conhecido(v):
             inventados.append(f"valor R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-    for proibido in caso.get("nao_deve_conter", []):  # isolamento: dado de outro cliente na resposta
+    for proibido in caso.get("nao_deve_conter", []):  # isolamento: dado de outro tenant na resposta
         if sem_acento(proibido) in norm:
-            inventados.append(f"vazou '{proibido}' (de outro cliente)")
+            inventados.append(f"vazou '{proibido}' (de outro tenant)")
     if not resposta.strip():
         situacao = "sem resposta"
     elif pontos == 1 and not inventados:

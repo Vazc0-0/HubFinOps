@@ -159,8 +159,10 @@ def agendador():
 def tenants():
     import finops_tenants as ft
     analises = ft.analisar_todos(ft.carregar())
+    empresa = ft.analisar_empresa(analises) if analises else {}
     return {"corte": analises[0]["corte"] if analises else None,
-            "lista": [{k: a[k] for k in ("nome", "custo_ultimos_30_dias", "previsao_mes", "orcamento_mensal", "pct_orcamento",
+            "nao_produtivo_pct": empresa.get("custo_nao_produtivo_pct"), "apps_nao_prod_alto": empresa.get("apps_nao_prod_alto", []),
+            "lista": [{k: a[k] for k in ("nome", "ambiente", "custo_ultimos_30_dias", "previsao_mes", "orcamento_mensal", "pct_orcamento",
                                          "estoura_orcamento", "economia_potencial_mensal", "economia_realizada_mensal",
                                          "cobertura_tags_pct")} for a in analises]}
 
@@ -180,7 +182,7 @@ def documentos():
               "Relatórios FinOps": sorted(ROOT.glob("relatorios/relatorio-finops*.md")),
               "Documentação das Logic Apps": sorted(ROOT.glob("docs/logicapps/*.md")),
               "Comparações de versões": sorted(ROOT.glob("docs/comparacoes/*.md")),
-              "Relatórios executivos por cliente": sorted(ROOT.glob("relatorios/executivo/*.md")),
+              "Relatórios executivos por ambiente": sorted(ROOT.glob("relatorios/executivo/*.md")),
               "Guias": [p for p in (ROOT / "README.md", ROOT / "azure" / "LEIA-ME.md", ROOT / "logicapps" / "reais" / "LEIA-ME.md")
                         if p.exists()]}
     return {g: [{"nome": p.name, "caminho": p.relative_to(ROOT).as_posix(),

@@ -6,122 +6,160 @@
   "ip_orfao": "IP público sem ipConfiguration: economia = 100% do custo do mês",
   "snapshot_antigo": "snapshot com mais de 90 dias: economia = 100% do custo do mês",
   "vm_superdimensionada": "VM com CPU P95 (14 dias) abaixo de 20%: economia = 50% do custo do mês (um tamanho abaixo)",
+  "vm_ligada_24x7": "fora de produção, VM que custa no fim de semana >= 90% do dia útil (últimos 28 dias): economia = custo do mês × (1 − 60/168), ligando só em horário comercial; tem prioridade sobre a regra de CPU",
+  "custo_nao_produtivo_pct": "custo de desenvolvimento + integração ÷ custo de produção (30 dias)",
+  "app_nao_prod_alto": "app (tag app) que custa fora de produção 50% ou mais do que em produção",
   "previsao_mes": "custo do mês até o corte + média dos últimos 7 dias × dias restantes",
   "economia_realizada": "ação implementada e custo zerado depois dela: média diária dos 30 dias antes × 30"
  },
  "tenants": {
   "11111111-1111-1111-1111-111111111111": {
-   "nome": "Contoso Varejo",
-   "custo_ultimos_30_dias": 8726.44,
-   "custo_mes_ate_corte": 5828.16,
-   "previsao_mes": 8725.94,
-   "orcamento_mensal": 9500.0,
+   "nome": "Contoso Produção",
+   "ambiente": "producao",
+   "custo_ultimos_30_dias": 6349.05,
+   "custo_mes_ate_corte": 4213.19,
+   "previsao_mes": 6329.97,
+   "orcamento_mensal": 9000.0,
    "estoura_orcamento": false,
-   "cobertura_tags_pct": 99.7,
+   "cobertura_tags_pct": 96.5,
    "oportunidades": [
     {
-     "recurso": "vm-relatorios-02",
+     "recurso": "vm-erp-conector-prd",
      "tipo": "vm_superdimensionada",
-     "economia_mensal": 1142.17
-    },
-    {
-     "recurso": "disk-backup-01",
-     "tipo": "disco_orfao",
-     "economia_mensal": 148.25
-    },
-    {
-     "recurso": "snap-vm-pdv-2025-12",
-     "tipo": "snapshot_antigo",
-     "economia_mensal": 77.68
-    },
-    {
-     "recurso": "pip-legado-01",
-     "tipo": "ip_orfao",
-     "economia_mensal": 28.73
+     "economia_mensal": 615.46
     }
    ],
-   "economia_potencial_mensal": 1396.83,
+   "economia_potencial_mensal": 615.46,
    "nao_sao_oportunidades": [
-    "vm-dev-teste",
-    "vm-pdv-api-01"
+    "disk-dados-01"
    ],
    "economia_realizada_mensal": 0.0,
    "causa_aumento": [],
    "recursos": [
-    "aks-loja",
-    "disk-backup-01",
-    "pip-legado-01",
-    "snap-vm-pdv-2025-12",
-    "sqldb-vendas",
-    "stgcontosodados",
-    "vm-dev-teste",
-    "vm-pdv-api-01",
-    "vm-relatorios-02"
+    "apim-integracao-prd",
+    "appi-integracao-prd",
+    "disk-dados-01",
+    "func-pedidos-prd",
+    "lgc-pedidos-prd",
+    "sqldb-pedidos-prd",
+    "stgintegracaoprd",
+    "vm-erp-conector-prd"
    ]
   },
   "22222222-2222-2222-2222-222222222222": {
-   "nome": "Fabrikam Saúde",
-   "custo_ultimos_30_dias": 5530.57,
-   "custo_mes_ate_corte": 4158.51,
-   "previsao_mes": 6402.02,
-   "orcamento_mensal": 6000.0,
+   "nome": "Contoso Desenvolvimento",
+   "ambiente": "desenvolvimento",
+   "custo_ultimos_30_dias": 3013.5,
+   "custo_mes_ate_corte": 2393.34,
+   "previsao_mes": 3794.69,
+   "orcamento_mensal": 3200.0,
    "estoura_orcamento": true,
-   "cobertura_tags_pct": 95.1,
-   "oportunidades": [],
-   "economia_potencial_mensal": 0,
+   "cobertura_tags_pct": 99.1,
+   "oportunidades": [
+    {
+     "recurso": "vm-carga-dev",
+     "tipo": "vm_ligada_24x7",
+     "economia_mensal": 739.41
+    },
+    {
+     "recurso": "vm-build-dev",
+     "tipo": "vm_ligada_24x7",
+     "economia_mensal": 370.43
+    },
+    {
+     "recurso": "disk-dados-01",
+     "tipo": "disco_orfao",
+     "economia_mensal": 114.0
+    },
+    {
+     "recurso": "snap-build-dev-2026-03",
+     "tipo": "snapshot_antigo",
+     "economia_mensal": 72.75
+    },
+    {
+     "recurso": "pip-teste-dev",
+     "tipo": "ip_orfao",
+     "economia_mensal": 28.48
+    }
+   ],
+   "economia_potencial_mensal": 1325.07,
    "nao_sao_oportunidades": [
-    "disk-backup-01",
-    "snap-prontuario-2026-10",
-    "vm-prontuario-01"
+    "vm-teste-dev"
    ],
    "economia_realizada_mensal": 0.0,
    "causa_aumento": [
     {
-     "recurso": "sqldb-prontuario",
-     "desde": "2026-11-05"
+     "recurso": "vm-carga-dev",
+     "desde": "2026-11-06",
+     "recurso_novo": true
     }
    ],
    "recursos": [
-    "appi-fabrikam",
-    "disk-backup-01",
-    "snap-prontuario-2026-10",
-    "sqldb-prontuario",
-    "stgfabrikamimagens",
-    "vm-prontuario-01"
+    "disk-dados-01",
+    "lgc-pedidos-dev",
+    "pip-teste-dev",
+    "snap-build-dev-2026-03",
+    "sqldb-pedidos-dev",
+    "vm-build-dev",
+    "vm-carga-dev",
+    "vm-teste-dev"
    ]
   },
   "33333333-3333-3333-3333-333333333333": {
-   "nome": "Northwind Logística",
-   "custo_ultimos_30_dias": 2309.62,
-   "custo_mes_ate_corte": 1535.16,
-   "previsao_mes": 2294.07,
-   "orcamento_mensal": 3200.0,
+   "nome": "Contoso Integração",
+   "ambiente": "integracao",
+   "custo_ultimos_30_dias": 2417.91,
+   "custo_mes_ate_corte": 1606.63,
+   "previsao_mes": 2416.38,
+   "orcamento_mensal": 3600.0,
    "estoura_orcamento": false,
-   "cobertura_tags_pct": 92.2,
+   "cobertura_tags_pct": 95.7,
    "oportunidades": [
     {
-     "recurso": "vm-rotas-01",
-     "tipo": "vm_superdimensionada",
-     "economia_mensal": 451.42
-    },
-    {
-     "recurso": "pip-sem-uso-03",
-     "tipo": "ip_orfao",
-     "economia_mensal": 28.54
+     "recurso": "vm-hml-01",
+     "tipo": "vm_ligada_24x7",
+     "economia_mensal": 370.79
     }
    ],
-   "economia_potencial_mensal": 479.96,
+   "economia_potencial_mensal": 370.79,
    "nao_sao_oportunidades": [],
-   "economia_realizada_mensal": 185.01,
+   "economia_realizada_mensal": 153.27,
    "causa_aumento": [],
    "recursos": [
-    "disk-antigo-02",
-    "func-rastreio",
-    "pip-sem-uso-03",
-    "sqldb-entregas",
-    "stgnorthwindlogs",
-    "vm-rotas-01"
+    "apim-integracao-hml",
+    "disk-hml-antigo",
+    "sqldb-pedidos-hml",
+    "stghml",
+    "vm-hml-01"
    ]
   }
+ },
+ "empresa": {
+  "custo_por_ambiente": {
+   "producao": 6349.05,
+   "desenvolvimento": 3013.5,
+   "integracao": 2417.91
+  },
+  "custo_nao_produtivo_pct": 85.5,
+  "apps": {
+   "integracao-erp": {
+    "producao": 4381.22,
+    "nao_producao": 1773.12,
+    "pct": 40.5
+   },
+   "pedidos": {
+    "producao": 1742.48,
+    "nao_producao": 2876.19,
+    "pct": 165.1
+   },
+   "pipeline": {
+    "producao": 0.0,
+    "nao_producao": 648.98,
+    "pct": null
+   }
+  },
+  "apps_nao_prod_alto": [
+   "pedidos"
+  ]
  }
 }

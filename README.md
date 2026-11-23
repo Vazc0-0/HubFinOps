@@ -29,7 +29,7 @@ e medido por uma avaliação com gabarito.**
 |---|---|
 | **13 / 13** | perguntas certas do agente com o modelo local qwen3, **sem nenhum número ou recurso inventado** (inclusive nas armadilhas) |
 | **451.914** | verificações do leitor de Logic Apps, todas certas, com gabarito escrito à mão, exemplos oficiais e 2.000 fluxos aleatórios |
-| **R$ 1.876,79/mês** | de economia achada em 3 clientes fictícios (cada valor com evidência e conferido com gabarito), mais **R$ 185,01/mês já realizados e medidos** nos dados |
+| **R$ 2.311,32/mês** | de economia achada nos 3 ambientes fictícios (produção, desenvolvimento e integração), cada valor com evidência e conferido com gabarito, mais **R$ 153,27/mês já realizados e medidos** nos dados |
 | **15 × 15** | ações cobradas por execução: previstas só lendo o JSON × medidas pelo Azure Monitor na Logic App real |
 | **4** | verificações a cada `push` no GitHub, inclusive o ambiente Docker inteiro de ponta a ponta |
 | **1 comando** | para subir Postgres, Grafana, receptor de alertas e hub: `docker compose up -d --build` |
@@ -38,8 +38,8 @@ e medido por uma avaliação com gabarito.**
 
 | Parte | O que faz |
 |---|---|
-| **Equipe FinOps** | Orquestrador → analista de custos → relator → analista de clientes. Lê custos no formato **FOCUS 1.0** (o mesmo da exportação do Azure Cost Management), acha anomalias e escreve um relatório. |
-| **FinOps por cliente (multi-tenant)** | Um tenant do Azure por cliente, **sempre isolados**: previsão do mês × orçamento (e o que causou o estouro), quem gasta por centro de custo, quanto dá para economizar (com evidência), quanto já foi economizado (medido) e um relatório executivo de 1 página por cliente. |
+| **Equipe FinOps** | Orquestrador → analista de custos → relator → analista de ambientes. Lê custos no formato **FOCUS 1.0** (o mesmo da exportação do Azure Cost Management), acha anomalias e escreve um relatório. |
+| **FinOps por ambiente (multi-tenant)** | Uma empresa com um tenant do Azure por ambiente (produção, desenvolvimento, integração), **sempre isolados**: previsão do mês × orçamento (e o que causou o estouro), quem gasta, quanto dá para economizar (com evidência), quanto já foi economizado (medido), **quanto custa o que não é produção** e um relatório executivo de 1 página por ambiente. |
 | **Equipe de documentação** | Lê a definição JSON de Logic Apps (*Workflow Definition Language*) e gera documentação com passo a passo, diagrama Mermaid, custo estimado, achados de boas práticas e o que mudou entre versões. |
 | **Leitor exato de Logic Apps** | Parser determinístico (sem IA): ordem real de execução pelo `runAfter`, ramos, loops, retentativas, agenda e ações cobradas por execução. |
 | **Avaliação dos agentes** | Perguntas com resposta conhecida feitas aos agentes; um corretor em código mede acerto e **invenção** e compara modelos. |
@@ -138,7 +138,7 @@ que usa o Docker) aparecem como **Só no PC**, com o comando para rodar no termi
 | Receptor de alertas | **36 / 36** verificações com alertas reais do Grafana, incluindo a assinatura (sem assinatura, segredo errado, alterado ou velho → recusado) |
 | Agendador e histórico | **24 / 24** verificações: comando do Agendador de Tarefas, rodada que para no primeiro erro, carga que acumula no Postgres |
 | Comparação de versões | **24 / 24** verificações com mudanças de gabarito e versões do Azure lidas de um servidor falso |
-| FinOps por cliente | **33 / 33** verificações: cada número de 3 clientes igual ao gabarito, nenhum dado de um cliente no relatório de outro e mudanças nos dados mudando o resultado do jeito certo |
+| FinOps por ambiente | **99 / 99** verificações: cada número dos 3 ambientes igual ao gabarito, nenhum dado de um ambiente no relatório de outro e mudanças nos dados mudando o resultado do jeito certo |
 | Ambiente de ponta a ponta | Alerta real e assinado do Grafana vira chamado; alerta falso é recusado; tarefa roda pelo hub; sincronização atrasada abre chamado |
 | Sabotagem | Cada bateria foi estragada de propósito de vários jeitos e reprovou em todos |
 
@@ -180,11 +180,11 @@ Os testes conferem o **código**. A avaliação confere o **agente** (modelo + i
 
 A 1ª rodada do qwen3 ficou gravada como 12 / 13: a resposta sobre riscos estava certa, mas o corretor ainda não aceitava
 `SEM_TRATAMENTO_DE_ERRO` com sublinhado. Corrigida com `--corrigir`, dá 13 / 13, e a resposta virou caso de teste.
-Depois entraram a 14ª pergunta ("o que mudou na lgc-desvios-processo?", o qwen3 acertou) e 5 perguntas sobre os
-clientes (orçamento, economia, economia realizada, isolamento e um cliente que não existe).
+Depois entraram a 14ª pergunta ("o que mudou na lgc-desvios-processo?", o qwen3 acertou) e 6 perguntas sobre os
+ambientes (orçamento, economia, economia realizada, isolamento, custo fora de produção e um ambiente que não existe).
 
 ```bash
-python evals/avaliar.py                          # 19 perguntas com o modelo dos YAMLs (ai/qwen3)
+python evals/avaliar.py                          # 20 perguntas com o modelo dos YAMLs (ai/qwen3)
 python evals/avaliar.py --modelo dmr/ai/gemma3   # outro modelo local, mesmas perguntas
 python evals/avaliar.py --so finops              # só uma equipe · --caso <id> para uma pergunta
 python evals/avaliar.py --repetir 3              # cada pergunta 3 vezes (o modelo varia de uma vez para outra)
@@ -196,36 +196,48 @@ equipe; a sincronização com o Azure fica de fora. Antes da primeira pergunta o
 não contar no tempo. Cada rodada grava as respostas completas em `evals/resultados/`, e
 [`evals/resultados/RESUMO.md`](evals/resultados/RESUMO.md) junta todas numa tabela.
 
-## FinOps por cliente (multi-tenant)
+## FinOps por ambiente (multi-tenant)
 
-Feito para quem cuida do Azure de **várias empresas ou várias áreas**, cada uma num tenant. Os dados de exemplo têm 3
-clientes fictícios (Contoso Varejo, Fabrikam Saúde e Northwind Logística), cada um com o seu gabarito.
+Feito para uma área que separa os ambientes em **tenants diferentes** do Azure, como uma área de Automação e Integração com
+produção, desenvolvimento e integração (homologação). Os dados de exemplo são de uma empresa fictícia com 3 tenants
+(Contoso Produção, Contoso Desenvolvimento e Contoso Integração), com os mesmos apps (`pedidos`, `integracao-erp`) nos três.
 
 ```bash
-python tools/finops_tenants.py tenants            # um cliente por linha: custo, previsão × orçamento, economia
-python tools/finops_tenants.py tenant fabrikam    # detalhe: o que fez o custo subir, quem gasta, oportunidades
-python tools/finops_tenants.py economia contoso   # o que cortar, com a evidência, a ação e o dono
-python tools/finops_tenants.py executivo          # relatório executivo de 1 página por cliente + consolidado
+python tools/finops_tenants.py tenants            # um ambiente por linha + quanto custa o que não é produção, por app
+python tools/finops_tenants.py tenant dev         # detalhe: o que fez o custo subir, quem gasta, oportunidades
+python tools/finops_tenants.py economia hml       # o que cortar, com a evidência, a ação e o dono
+python tools/finops_tenants.py executivo          # relatório executivo de 1 página por ambiente + consolidado
 ```
 
-| Pergunta do cliente | Como a resposta é calculada |
+O ambiente pode ser chamado pelo nome do tenant, pelo ambiente (`producao`, `desenvolvimento`, `integracao`), por apelido
+(`prod`, `dev`, `hml`) ou pelo ID. "contoso" sozinho é ambíguo e não escolhe nenhum.
+
+| Pergunta | Como a resposta é calculada |
 |---|---|
-| Vou estourar o orçamento? Por quê? | Custo do mês até hoje + média dos últimos 7 dias × dias restantes, comparado com o orçamento; e o recurso cujo custo diário mais subiu, com a data |
-| Quanto dá para economizar? | Inventário no formato do **Azure Resource Graph** (disco *Unattached*, IP sem associação, snapshot com mais de 90 dias) e CPU P95 de 14 dias do **Azure Monitor** (abaixo de 20%: um tamanho abaixo) |
+| Algum ambiente vai estourar o orçamento? Por quê? | Custo do mês até hoje + média dos últimos 7 dias × dias restantes, comparado com o orçamento; e a causa: o recurso cujo custo diário mais subiu ou um **recurso novo** que não existia no mês anterior |
+| Quanto dá para economizar? | Inventário no formato do **Azure Resource Graph** (disco *Unattached*, IP sem associação, snapshot com mais de 90 dias), CPU P95 de 14 dias do **Azure Monitor** (abaixo de 20%: um tamanho abaixo) e, **só fora de produção**, VM ligada 24x7: custo no fim de semana ≥ 90% do dia útil → ligar só 12 h nos dias úteis (60 das 168 horas da semana) |
+| Quanto custa o que não é produção? | Desenvolvimento + integração ÷ produção, e por app (tag `app`): o app que custa fora de produção 50% ou mais do que em produção é marcado |
 | Quanto já economizamos? | Para cada ação implementada, custo diário **medido** antes e depois: economia comprovada, não estimada |
 | Quem gasta? | *Showback* pelas tags `centro_custo` e `app`, e a cobertura de tags (% do custo com dono) |
 
-Resultado com os dados de exemplo: a **Fabrikam** vai fechar novembro 6,7% acima do orçamento porque o `sqldb-prontuario`
-passou de R$ 60 para R$ 147 por dia em 05/11. A **Contoso** pode economizar R$ 1.396,83/mês, a maior parte numa VM com CPU de
-9%. A **Northwind** já economiza R$ 185,01/mês com um disco órfão excluído.
+Resultado com os dados de exemplo: **desenvolvimento** vai fechar novembro 18,6% acima do orçamento por causa da
+`vm-carga-dev`, uma VM D16 criada em 06/11 para teste de carga e esquecida ligada. Desenvolvimento pode economizar
+R$ 1.325,07/mês, a maior parte desligando VMs à noite e no fim de semana. A `vm-teste-dev`, que já tem auto-shutdown, **não**
+aparece como desperdício, e a VM de produção ligada 24x7 também não. O que não é produção custa 85,5% de produção, e o app
+`pedidos` custa fora de produção 165% do que custa em produção (o banco de dev é quase do tamanho do de produção).
+Integração já economiza R$ 153,27/mês com um disco órfão excluído.
 
-**Isolamento:** toda conta filtra pelo tenant, e o teste confere que o relatório de um cliente não cita recurso, nome ou ID de
-outro. Os dados têm uma armadilha: um disco com o mesmo nome em dois clientes, órfão num e em uso no outro. A equipe FinOps
-ganhou o agente `analista_clientes`, e a avaliação ganhou 5 perguntas, inclusive de isolamento e de cliente que não existe.
+**Isolamento:** toda conta filtra pelo tenant, e o teste confere que o relatório de um ambiente não cita recurso, nome ou ID
+de outro. Os dados têm uma armadilha: o disco `disk-dados-01` existe em produção (anexado) e em desenvolvimento (órfão). A
+equipe FinOps ganhou o agente `analista_ambientes`, e a avaliação ganhou 6 perguntas, inclusive de isolamento e de um
+ambiente que não existe.
 
-**Com dados reais**, cada tenant entra pela exportação FOCUS do Cost Management, como fazem os FinOps hubs da Microsoft,
-com a coluna do tenant de origem. O inventário vem do Azure Resource Graph. Com Azure Lighthouse, um tenant consegue ler o
-inventário dos outros com papéis delegados.
+**Com dados reais:** o custo de cada tenant entra pela exportação FOCUS do Cost Management, como fazem os FinOps hubs da
+Microsoft, com a coluna do tenant de origem. O inventário vem do Azure Resource Graph, e com Azure Lighthouse em cenário
+empresarial um tenant (o de produção ou um de gestão) lê os outros com papéis delegados. Vale saber: a Microsoft recomenda
+**um tenant só sempre que possível** e separar os ambientes por assinatura e grupo de gerenciamento; vários tenants fazem
+sentido quando há exigência de isolamento. A ferramenta serve para os dois casos, porque a separação é pela coluna do tenant
+na exportação e dá para trocar por assinatura.
 
 ## Ambiente local e segurança
 
@@ -290,12 +302,12 @@ tools/         ferramentas em Python: leitor, documentação, comparação, Azur
 docker/        imagem do hub e do receptor (Python + cliente do Postgres)
 evals/         avaliação dos agentes: perguntas com gabarito, corretor e resultados por modelo
 tests/         validadores e baterias de teste, com casos e gabaritos (testar_ambiente.py: Docker de ponta a ponta)
-data/          gerador de custos no formato FOCUS + gabarito das anomalias; data/tenants/: 3 clientes fictícios com gabarito
+data/          gerador de custos no formato FOCUS + gabarito das anomalias; data/tenants/: 3 ambientes fictícios (um tenant cada) com gabarito
 logicapps/     Logic Apps de exemplo (fictícias), a Logic App real de teste e versões anteriores para comparar
 azure/         definição e modelo ARM da Logic App de teste + passo a passo
 grafana/       provisionamento: datasource, painéis e alertas
 docs/          documentação gerada das Logic Apps, comparações de versões, guia completo e imagens deste README
-relatorios/    relatórios gerados (inclui as tentativas que falharam e os executivos por cliente)
+relatorios/    relatórios gerados (inclui as tentativas que falharam e os executivos por ambiente)
 .github/       testes automáticos (CI) e Dependabot
 ```
 
@@ -303,25 +315,25 @@ Guia detalhado de cada parte (todos os comandos, arquivos e o gabarito das anoma
 
 ## Limites conhecidos
 
-- A avaliação tem 19 perguntas e uma rodada por modelo: mostra a tendência, não é uma medida estatística (`--repetir` mostra a variação).
+- A avaliação tem 20 perguntas e uma rodada por modelo: mostra a tendência, não é uma medida estatística (`--repetir` mostra a variação).
 - O modelo local é pequeno: por isso a redação dos números fica em código. Com um modelo maior, dá para devolver a redação ao agente mantendo os validadores e a avaliação.
 - O que um trecho de JavaScript (ação *Execute JavaScript Code*) lê de outras ações não é analisado; a documentação avisa quando isso acontece.
 - Os chamados são arquivos locais (simulação do Jira).
-- O FinOps por cliente ainda roda só com dados fictícios; a economia de *rightsizing* é uma estimativa (50% com um tamanho abaixo), não o preço exato do novo tamanho.
+- O FinOps por ambiente ainda roda só com dados fictícios; as economias de *rightsizing* (50% com um tamanho abaixo) e de desligar fora do horário (60 das 168 horas) são estimativas: a VM desligada deixa de pagar computação, mas o disco continua cobrando.
 
 ## Próximos passos
 
 - [ ] Chamados num Jira de verdade (API oficial do Jira Cloud)
 - [ ] Custo real em vez dos dados fictícios: exportação FOCUS agendada de cada tenant ou acesso de leitura ao Cost Management
 - [ ] Inventário real pelo Azure Resource Graph em cada tenant (com Azure Lighthouse para ler vários de um lugar só)
-- [ ] Painel do Grafana por cliente e alerta de orçamento (previsão acima de 100%)
+- [ ] Painel do Grafana por ambiente e alerta de orçamento (previsão acima de 100%)
 - [ ] Modelo maior (ex.: Azure OpenAI) avaliado com as mesmas perguntas: só troca se não piorar acertos nem invenções
 
 ## Fontes oficiais
 
 - **Docker:** [Docker Agent](https://docs.docker.com/ai/docker-agent/) · [Docker Model Runner (provider dmr)](https://docs.docker.com/ai/docker-agent/providers/dmr/) · [Ferramenta script](https://docs.docker.com/ai/docker-agent/tools/script/) · [Modelos locais e chamada de ferramentas](https://www.docker.com/blog/local-llm-tool-calling-a-practical-evaluation/)
 - **Logic Apps:** [Workflow Definition Language](https://learn.microsoft.com/azure/logic-apps/workflow-definition-language-schema) · [Gatilhos e ações](https://learn.microsoft.com/azure/logic-apps/logic-apps-workflow-actions-triggers) · [Tratamento de erros](https://learn.microsoft.com/azure/logic-apps/error-exception-handling) · [Cobrança](https://learn.microsoft.com/azure/logic-apps/logic-apps-pricing) · [Métricas](https://learn.microsoft.com/azure/logic-apps/monitor-logic-apps-reference#metrics) · [Versões (REST)](https://learn.microsoft.com/rest/api/logic/workflow-versions/list)
-- **FinOps:** [FinOps Framework](https://www.finops.org/framework/) · [FOCUS](https://focus.finops.org/) · [FinOps hubs (vários tenants)](https://learn.microsoft.com/cloud-computing/finops/toolkit/hubs/finops-hubs-overview) · [Exportações do Cost Management](https://learn.microsoft.com/azure/cost-management-billing/costs/tutorial-improved-exports) · [Azure Lighthouse](https://learn.microsoft.com/azure/lighthouse/concepts/cross-tenant-management-experience) · [Coletar e revisar dados de custo (Well-Architected)](https://learn.microsoft.com/azure/well-architected/cost-optimization/collect-review-cost-data)
+- **FinOps:** [FinOps Framework](https://www.finops.org/framework/) · [FOCUS](https://focus.finops.org/) · [FinOps hubs (vários tenants)](https://learn.microsoft.com/cloud-computing/finops/toolkit/hubs/finops-hubs-overview) · [Exportações do Cost Management](https://learn.microsoft.com/azure/cost-management-billing/costs/tutorial-improved-exports) · [Azure Lighthouse](https://learn.microsoft.com/azure/lighthouse/concepts/cross-tenant-management-experience) · [Lighthouse em empresas com vários tenants](https://learn.microsoft.com/azure/lighthouse/concepts/enterprise) · [Vários tenants Microsoft Entra (CAF)](https://learn.microsoft.com/azure/cloud-adoption-framework/ready/landing-zone/design-area/multi-tenant/scenarios) · [Auto-shutdown de VM](https://learn.microsoft.com/azure/virtual-machines/auto-shutdown-vm) · [Start/Stop VMs v2](https://learn.microsoft.com/azure/azure-functions/start-stop-v2/overview) · [Coletar e revisar dados de custo (Well-Architected)](https://learn.microsoft.com/azure/well-architected/cost-optimization/collect-review-cost-data)
 - **Azure e Windows:** [Esquema FOCUS do Azure](https://learn.microsoft.com/azure/cost-management-billing/dataset-schema/cost-usage-details-focus) · [Agendador de Tarefas (schtasks create)](https://learn.microsoft.com/windows-server/administration/windows-commands/schtasks-create)
 - **Grafana:** [Alertas por arquivo](https://grafana.com/docs/grafana/latest/alerting/set-up/provision-alerting-resources/file-provisioning/) · [Webhook e assinatura HMAC](https://grafana.com/docs/grafana/latest/alerting/configure-notifications/manage-contact-points/integrations/webhook-notifier/) · [Datasource PostgreSQL](https://grafana.com/docs/grafana/latest/datasources/postgres/configure/)
 

@@ -1,7 +1,8 @@
-"""Gera dados SINTÉTICOS de 3 tenants (clientes fictícios) para a visão FinOps multi-tenant.
+"""Gera dados SINTÉTICOS de uma empresa com 3 tenants, um por ambiente (produção, desenvolvimento e integração),
+para a visão FinOps multi-tenant. É o caso de uma área de Automação e Integração que separa os ambientes em tenants.
 
 Saídas nesta pasta (tudo fictício, com nomes de exemplo da própria Microsoft):
-  tenants.json        os tenants: id, nome, assinaturas e orçamento mensal
+  tenants.json        os tenants: id, nome, ambiente, assinaturas e orçamento mensal
   focus_tenants.csv   custo diário no formato FOCUS (mesmas colunas de data/focus_costs.csv) + x_TenantId/x_TenantNome
   inventario.json     estado dos recursos como o Azure Resource Graph devolve (disco Attached/Unattached, IP sem
                       ipConfiguration, data do snapshot, tamanho da VM) + CPU P95 de 14 dias (Azure Monitor)
@@ -33,17 +34,18 @@ SNAPSHOT_VELHO_DIAS = 90
 CPU_P95_LIMITE = 20.0
 FATOR_RIGHTSIZING = 0.5
 DIAS_TENDENCIA = 7
+JANELA_24X7 = 28            # dias usados para ver se a VM fica ligada no fim de semana
+RAZAO_24X7 = 0.9            # custo no fim de semana >= 90% do dia útil: VM ligada 24x7
+HORAS_UTEIS_SEMANA = 60     # ligada 12 h por dia útil (7h às 19h), desligada à noite e no fim de semana
+LIMITE_APP_NAO_PROD = 50.0  # app que custa em dev/integração 50% ou mais do que custa em produção
 
 TENANTS = [
-    {"id": "11111111-1111-1111-1111-111111111111", "nome": "Contoso Varejo", "slug": "contoso",
-     "orcamento_mensal": 9500.0,
-     "assinaturas": {"prod": "sub-contoso-prod", "dev": "sub-contoso-dev"}},
-    {"id": "22222222-2222-2222-2222-222222222222", "nome": "Fabrikam Saúde", "slug": "fabrikam",
-     "orcamento_mensal": 6000.0,
-     "assinaturas": {"prod": "sub-fabrikam-prod"}},
-    {"id": "33333333-3333-3333-3333-333333333333", "nome": "Northwind Logística", "slug": "northwind",
-     "orcamento_mensal": 3200.0,
-     "assinaturas": {"prod": "sub-northwind-prod"}},
+    {"id": "11111111-1111-1111-1111-111111111111", "nome": "Contoso Produção", "slug": "producao", "ambiente": "producao", "apelidos": ["prod", "prd"],
+     "orcamento_mensal": 9000.0, "assinaturas": {"prod": "sub-integracao-prd"}},
+    {"id": "22222222-2222-2222-2222-222222222222", "nome": "Contoso Desenvolvimento", "slug": "desenvolvimento",
+     "ambiente": "desenvolvimento", "apelidos": ["dev"], "orcamento_mensal": 3200.0, "assinaturas": {"dev": "sub-integracao-dev"}},
+    {"id": "33333333-3333-3333-3333-333333333333", "nome": "Contoso Integração", "slug": "integracao", "ambiente": "integracao", "apelidos": ["hml", "homologacao", "int"],
+     "orcamento_mensal": 3600.0, "assinaturas": {"hml": "sub-integracao-hml"}},
 ]
 
 VM, DISCO, IP, SNAP = ("microsoft.compute/virtualmachines", "microsoft.compute/disks", "microsoft.network/publicipaddresses",
@@ -57,6 +59,8 @@ SERVICOS = {
     "microsoft.storage/storageaccounts": ("Storage", "Storage", "Storage", "GB/Month"),
     "microsoft.containerservice/managedclusters": ("Azure Kubernetes Service", "Compute", "Virtual Machines", "Hours"),
     "microsoft.web/sites": ("Functions", "Compute", "Functions", "Executions"),
+    "microsoft.logic/workflows": ("Logic Apps", "Integration", "Logic Apps", "Actions"),
+    "microsoft.apimanagement/service": ("API Management", "Integration", "API Management", "Units"),
     "microsoft.insights/components": ("Azure Monitor", "Management and Governance", "Log Analytics", "GB"),
 }
 
@@ -72,38 +76,43 @@ def T(owner=None, cc=None, app=None, env="prod"):
     return t
 
 
+LA, FUNC, SQL, APIM, STG, APPI = ("microsoft.logic/workflows", "microsoft.web/sites", "microsoft.sql/servers/databases",
+                                  "microsoft.apimanagement/service", "microsoft.storage/storageaccounts",
+                                  "microsoft.insights/components")
+
 # tenant, assinatura, nome, rg, tipo, custo diário, tags, inventário, plano especial
+# plano especial: "ate" (excluído depois do dia), "degrau" (muda de valor numa data), "inicio" (criado na data),
+#                 "auto_shutdown" (liga só 12 h nos dias úteis: custo pela metade e zero no fim de semana)
 RECURSOS = [
-    # ---------------- Contoso Varejo
-    ("contoso", "prod", "vm-pdv-api-01", "rg-pdv", VM, 38.4, T("loja", "CC-100", "pdv"), {"vmSize": "Standard_D8s_v5", "cpu_p95": 62.0}, None),
-    ("contoso", "prod", "vm-relatorios-02", "rg-bi", VM, 76.8, T("bi", "CC-200", "relatorios"), {"vmSize": "Standard_D16s_v5", "cpu_p95": 9.0}, None),
-    ("contoso", "prod", "sqldb-vendas", "rg-pdv", "microsoft.sql/servers/databases", 54.0, T("loja", "CC-100", "pdv"), {}, None),
-    ("contoso", "prod", "aks-loja", "rg-loja-online", "microsoft.containerservice/managedclusters", 95.0, T("ecommerce", "CC-300", "loja-online"), {}, None),
-    ("contoso", "prod", "stgcontosodados", "rg-bi", "microsoft.storage/storageaccounts", 12.5, T("bi", "CC-200", "relatorios"), {}, None),
-    ("contoso", "prod", "disk-backup-01", "rg-pdv", DISCO, 4.9, T("loja", "CC-100", "pdv"), {"diskState": "Unattached", "managedBy": None, "desde": "2026-09-03"}, None),
-    ("contoso", "prod", "pip-legado-01", "rg-legado", IP, 0.95, {}, {"ipConfiguration": None}, None),
-    ("contoso", "prod", "snap-vm-pdv-2025-12", "rg-pdv", SNAP, 2.6, T("loja", "CC-100", "pdv"), {"timeCreated": "2025-12-10T03:00:00Z"}, None),
-    ("contoso", "dev", "vm-dev-teste", "rg-dev", VM, 6.1, T("loja", "CC-100", "pdv", env="dev"), {"vmSize": "Standard_B4ms", "cpu_p95": 35.0}, None),
-    # ---------------- Fabrikam Saúde (SQL escalado em 05/11 → estoura o orçamento de novembro)
-    ("fabrikam", "prod", "vm-prontuario-01", "rg-prontuario", VM, 44.0, T("clinico", "CC-10", "prontuario"), {"vmSize": "Standard_D8s_v5", "cpu_p95": 71.0}, None),
-    ("fabrikam", "prod", "sqldb-prontuario", "rg-prontuario", "microsoft.sql/servers/databases", 60.0, T("clinico", "CC-10", "prontuario"), {}, {"degrau": ("2026-11-05", 150.0)}),
-    ("fabrikam", "prod", "disk-backup-01", "rg-prontuario", DISCO, 4.9, T("clinico", "CC-10", "prontuario"),
-     {"diskState": "Attached", "managedBy": "vm-prontuario-01"}, None),
-    ("fabrikam", "prod", "stgfabrikamimagens", "rg-imagens", "microsoft.storage/storageaccounts", 18.0, T("imagens", "CC-20", "pacs"), {}, None),
-    ("fabrikam", "prod", "appi-fabrikam", "rg-monitoramento", "microsoft.insights/components", 9.0, T("ti"), {}, None),
-    ("fabrikam", "prod", "snap-prontuario-2026-10", "rg-prontuario", SNAP, 1.8, T("clinico", "CC-10", "prontuario"), {"timeCreated": "2026-10-20T03:00:00Z"}, None),
-    # ---------------- Northwind Logística (disco órfão excluído em 10/10 → economia realizada)
-    ("northwind", "prod", "vm-rotas-01", "rg-rotas", VM, 30.0, T("operacoes", "CC-7", "rotas"), {"vmSize": "Standard_D8s_v5", "cpu_p95": 15.0}, None),
-    ("northwind", "prod", "func-rastreio", "rg-rotas", "microsoft.web/sites", 7.5, T("operacoes", "CC-7", "rastreio"), {}, None),
-    ("northwind", "prod", "sqldb-entregas", "rg-rotas", "microsoft.sql/servers/databases", 33.0, T("operacoes", "CC-7", "rotas"), {}, None),
-    ("northwind", "prod", "disk-antigo-02", "rg-rotas", DISCO, 6.2, T("operacoes", "CC-7", "rotas"), {"excluido": "2026-10-10"}, {"ate": "2026-10-09"}),
-    ("northwind", "prod", "pip-sem-uso-03", "rg-rotas", IP, 0.95, T("operacoes", "CC-7", "rotas"), {"ipConfiguration": None}, None),
-    ("northwind", "prod", "stgnorthwindlogs", "rg-logs", "microsoft.storage/storageaccounts", 6.0, {}, {}, None),
+    # ---------------- Produção
+    ("producao", "prod", "lgc-pedidos-prd", "rg-pedidos-prd", LA, 6.5, T("integracao", "CC-410", "pedidos"), {}, None),
+    ("producao", "prod", "func-pedidos-prd", "rg-pedidos-prd", FUNC, 4.2, T("integracao", "CC-410", "pedidos"), {}, None),
+    ("producao", "prod", "sqldb-pedidos-prd", "rg-pedidos-prd", SQL, 48.0, T("integracao", "CC-410", "pedidos"), {}, None),
+    ("producao", "prod", "apim-integracao-prd", "rg-apim-prd", APIM, 92.0, T("integracao", "CC-420", "integracao-erp"), {}, None),
+    ("producao", "prod", "vm-erp-conector-prd", "rg-erp-prd", VM, 41.0, T("integracao", "CC-420", "integracao-erp"), {"vmSize": "Standard_D8s_v5", "cpu_p95": 11.0}, None),
+    ("producao", "prod", "disk-dados-01", "rg-erp-prd", DISCO, 3.8, T("integracao", "CC-420", "integracao-erp"), {"diskState": "Attached", "managedBy": "vm-erp-conector-prd"}, None),
+    ("producao", "prod", "stgintegracaoprd", "rg-erp-prd", STG, 9.0, T("integracao", "CC-420", "integracao-erp"), {}, None),
+    ("producao", "prod", "appi-integracao-prd", "rg-monitoramento-prd", APPI, 7.5, T("integracao"), {}, None),
+    # ---------------- Desenvolvimento (VM de carga criada em 06/11 e esquecida ligada → estoura o orçamento)
+    ("desenvolvimento", "dev", "lgc-pedidos-dev", "rg-pedidos-dev", LA, 1.1, T("integracao", "CC-410", "pedidos", "dev"), {}, None),
+    ("desenvolvimento", "dev", "sqldb-pedidos-dev", "rg-pedidos-dev", SQL, 31.0, T("integracao", "CC-410", "pedidos", "dev"), {}, None),
+    ("desenvolvimento", "dev", "vm-build-dev", "rg-pipeline-dev", VM, 19.2, T("integracao", "CC-430", "pipeline", "dev"), {"vmSize": "Standard_D4s_v5", "cpu_p95": 30.0}, None),
+    ("desenvolvimento", "dev", "vm-teste-dev", "rg-pedidos-dev", VM, 9.6, T("integracao", "CC-410", "pedidos", "dev"), {"vmSize": "Standard_B4ms", "cpu_p95": 45.0}, {"auto_shutdown": True}),
+    ("desenvolvimento", "dev", "vm-carga-dev", "rg-pedidos-dev", VM, 76.8, T("integracao", "CC-410", "pedidos", "dev"), {"vmSize": "Standard_D16s_v5", "cpu_p95": 8.0}, {"inicio": "2026-11-06"}),
+    ("desenvolvimento", "dev", "snap-build-dev-2026-03", "rg-pipeline-dev", SNAP, 2.4, T("integracao", "CC-430", "pipeline", "dev"), {"timeCreated": "2026-03-15T03:00:00Z"}, None),
+    ("desenvolvimento", "dev", "pip-teste-dev", "rg-pedidos-dev", IP, 0.95, {}, {"ipConfiguration": None}, None),
+    ("desenvolvimento", "dev", "disk-dados-01", "rg-pedidos-dev", DISCO, 3.8, T("integracao", "CC-410", "pedidos", "dev"), {"diskState": "Unattached", "managedBy": None}, None),
+    # ---------------- Integração (disco órfão excluído em 14/10 → economia realizada)
+    ("integracao", "hml", "apim-integracao-hml", "rg-apim-hml", APIM, 40.0, T("integracao", "CC-420", "integracao-erp", "hml"), {}, None),
+    ("integracao", "hml", "vm-hml-01", "rg-erp-hml", VM, 19.2, T("integracao", "CC-420", "integracao-erp", "hml"), {"vmSize": "Standard_D4s_v5", "cpu_p95": 22.0}, None),
+    ("integracao", "hml", "sqldb-pedidos-hml", "rg-pedidos-hml", SQL, 18.0, T("integracao", "CC-410", "pedidos", "hml"), {}, None),
+    ("integracao", "hml", "disk-hml-antigo", "rg-erp-hml", DISCO, 5.1, T("integracao", "CC-420", "integracao-erp", "hml"), {"excluido": "2026-10-14"}, {"ate": "2026-10-13"}),
+    ("integracao", "hml", "stghml", "rg-erp-hml", STG, 3.5, {}, {}, None),
 ]
 
-ACOES = [{"id": "E-001", "tenant": "33333333-3333-3333-3333-333333333333", "recurso": "disk-antigo-02",
-          "acao": "Excluir disco gerenciado sem VM (Unattached)", "aprovada_em": "2026-10-08", "implementada_em": "2026-10-10",
-          "responsavel": "operacoes"}]
+ACOES = [{"id": "E-001", "tenant": "33333333-3333-3333-3333-333333333333", "recurso": "disk-hml-antigo",
+          "acao": "Excluir disco gerenciado sem VM (Unattached)", "aprovada_em": "2026-10-10", "implementada_em": "2026-10-14",
+          "responsavel": "integracao"}]
 
 
 def dias():
@@ -114,11 +123,17 @@ def dias():
 
 
 def custo_do_dia(plano, base, d, rng):
-    especial = plano[8]
-    if especial and "ate" in especial and d > date.fromisoformat(especial["ate"]):
+    especial = plano[8] or {}
+    if "ate" in especial and d > date.fromisoformat(especial["ate"]):
         return None  # recurso excluído: não gera mais custo
+    if "inicio" in especial and d < date.fromisoformat(especial["inicio"]):
+        return None  # recurso ainda não existia
     valor = base
-    if especial and "degrau" in especial and d >= date.fromisoformat(especial["degrau"][0]):
+    if especial.get("auto_shutdown"):
+        if d.weekday() >= 5:
+            return None  # desligada no fim de semana: sem linha de custo de computação
+        valor = base * 12 / 24
+    if "degrau" in especial and d >= date.fromisoformat(especial["degrau"][0]):
         valor = especial["degrau"][1]
     return round(valor * rng.uniform(0.94, 1.06), 4)
 
@@ -195,6 +210,11 @@ def main():
         "snapshot_antigo": f"snapshot com mais de {SNAPSHOT_VELHO_DIAS} dias: economia = 100% do custo do mês",
         "vm_superdimensionada": f"VM com CPU P95 (14 dias) abaixo de {CPU_P95_LIMITE:.0f}%: economia = "
                                 f"{FATOR_RIGHTSIZING:.0%} do custo do mês (um tamanho abaixo)",
+        "vm_ligada_24x7": f"fora de produção, VM que custa no fim de semana >= {RAZAO_24X7:.0%} do dia útil "
+                          f"(últimos {JANELA_24X7} dias): economia = custo do mês × (1 − {HORAS_UTEIS_SEMANA}/168), "
+                          "ligando só em horário comercial; tem prioridade sobre a regra de CPU",
+        "custo_nao_produtivo_pct": "custo de desenvolvimento + integração ÷ custo de produção (30 dias)",
+        "app_nao_prod_alto": f"app (tag app) que custa fora de produção {LIMITE_APP_NAO_PROD:.0f}% ou mais do que em produção",
         "previsao_mes": f"custo do mês até o corte + média dos últimos {DIAS_TENDENCIA} dias × dias restantes",
         "economia_realizada": "ação implementada e custo zerado depois dela: média diária dos 30 dias antes × 30"},
         "tenants": {}}
@@ -214,6 +234,8 @@ def main():
                 regra, fator = "ip_orfao", 1.0
             elif tipo == SNAP and (CORTE - date.fromisoformat(props["timeCreated"][:10])).days > SNAPSHOT_VELHO_DIAS:
                 regra, fator = "snapshot_antigo", 1.0
+            elif tipo == VM and t["ambiente"] != "producao" and not (p[8] or {}).get("auto_shutdown"):
+                regra, fator = "vm_ligada_24x7", 1 - HORAS_UTEIS_SEMANA / 168
             elif tipo == VM and props["cpu_p95"] < CPU_P95_LIMITE:
                 regra, fator = "vm_superdimensionada", FATOR_RIGHTSIZING
             if regra:
@@ -237,17 +259,43 @@ def main():
             s = serie[(slug, a["recurso"])]
             realizada += sum(s.get(d, 0.0) for d in antes) / 30 * DIAS_MES
         gabarito["tenants"][t["id"]] = {
-            "nome": t["nome"], "custo_ultimos_30_dias": round(total30, 2), "custo_mes_ate_corte": round(ate_hoje, 2),
+            "nome": t["nome"], "ambiente": t["ambiente"], "custo_ultimos_30_dias": round(total30, 2), "custo_mes_ate_corte": round(ate_hoje, 2),
             "previsao_mes": round(previsao, 2), "orcamento_mensal": t["orcamento_mensal"],
             "estoura_orcamento": previsao > t["orcamento_mensal"],
             "cobertura_tags_pct": round(100 * com_tags / total30, 1),
             "oportunidades": sorted(ops, key=lambda o: -o["economia_mensal"]),
             "economia_potencial_mensal": round(sum(o["economia_mensal"] for o in ops), 2),
             "nao_sao_oportunidades": sorted(nao), "economia_realizada_mensal": round(realizada, 2),
-            "causa_aumento": [{"recurso": p[2], "desde": p[8]["degrau"][0]} for p in recursos if p[8] and "degrau" in p[8]],
+            "causa_aumento": [{"recurso": p[2], "desde": (p[8].get("degrau") or [p[8].get("inicio")])[0],
+                               "recurso_novo": "inicio" in p[8]}
+                              for p in recursos if p[8] and ("degrau" in p[8] or "inicio" in p[8])],
             "recursos": sorted(p[2] for p in recursos)}
+    # consolidado da empresa: quanto custa o que não é produção e, por app, quanto dev/integração custam perto de produção
+    por_amb = {}
+    apps = {}
+    for t in TENANTS:
+        for p in RECURSOS:
+            if p[0] != t["slug"]:
+                continue
+            c = custo30(t["slug"], p[2])
+            por_amb[t["ambiente"]] = por_amb.get(t["ambiente"], 0.0) + c
+            app = p[6].get("app")
+            if app:
+                lado = "producao" if t["ambiente"] == "producao" else "nao_producao"
+                apps.setdefault(app, {"producao": 0.0, "nao_producao": 0.0})[lado] += c
+    prod = por_amb.get("producao", 0.0)
+    gabarito["empresa"] = {
+        "custo_por_ambiente": {k: round(v, 2) for k, v in por_amb.items()},
+        "custo_nao_produtivo_pct": round(100 * (sum(por_amb.values()) - prod) / prod, 1),
+        "apps": {a: {"producao": round(v["producao"], 2), "nao_producao": round(v["nao_producao"], 2),
+                     "pct": round(100 * v["nao_producao"] / v["producao"], 1) if v["producao"] else None}
+                 for a, v in sorted(apps.items())},
+        "apps_nao_prod_alto": sorted(a for a, v in apps.items()
+                                     if v["producao"] and 100 * v["nao_producao"] / v["producao"] >= LIMITE_APP_NAO_PROD)}
     (PASTA / "gabarito.json").write_text(json.dumps(gabarito, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     print(f"{len(linhas)} linhas de custo, {len(inventario)} recursos no inventário, {len(TENANTS)} tenants")
+    print(f"  não produtivo ÷ produção: {gabarito['empresa']['custo_nao_produtivo_pct']}% · apps altos fora de produção: "
+          f"{gabarito['empresa']['apps_nao_prod_alto']}")
     for g in gabarito["tenants"].values():
         print(f"  {g['nome']}: 30 dias R$ {g['custo_ultimos_30_dias']:.2f} · previsão R$ {g['previsao_mes']:.2f} / "
               f"orçamento R$ {g['orcamento_mensal']:.2f} · economia potencial R$ {g['economia_potencial_mensal']:.2f}/mês · "

@@ -155,9 +155,9 @@ Docker do PC). Fora do Docker, `python tools/hub.py` continua funcionando como a
 | `tools/carregar_grafana.py` | Carrega no Postgres: execuções e métricas do Azure, preços, previsto × medido, histórico, chamados |
 | `grafana/dashboards/piloto-operacao.json` | Painel "Logic App real e operação do piloto" (gerado por `grafana/build_dashboard_operacao.py`) |
 | `grafana/provisioning/alerting/piloto-alertas.yaml` | 4 alertas: recurso sem dono, Logic App com falha (últimas 24 h), custo medido ≠ previsto, sincronização agendada atrasada |
-| `tools/finops_tenants.py` | FinOps por cliente (tenant), sempre isolado: previsão × orçamento e causa do estouro, showback, oportunidades de economia com evidência, economia realizada medida e relatório executivo (`relatorios/executivo/`) |
-| `data/tenants/` | 3 clientes fictícios: custo FOCUS com `x_TenantId`, inventário no formato do Resource Graph, orçamentos, ações implementadas e o gabarito (`gerar_tenants.py`) |
-| `tests/testar_finops_tenants.py` | Confere tudo com o gabarito, o isolamento entre clientes e mudanças nos dados |
+| `tools/finops_tenants.py` | FinOps por ambiente (um tenant por ambiente: produção, desenvolvimento, integração), sempre isolado: previsão × orçamento e causa do estouro (inclusive recurso novo), VM de não produção ligada 24x7, custo fora de produção por app, showback, oportunidades de economia com evidência, economia realizada medida e relatório executivo (`relatorios/executivo/`) |
+| `data/tenants/` | 3 ambientes fictícios (um tenant cada): custo FOCUS com `x_TenantId`, inventário no formato do Resource Graph, orçamentos, ações implementadas e o gabarito (`gerar_tenants.py`) |
+| `tests/testar_finops_tenants.py` | Confere tudo com o gabarito, o isolamento entre ambientes e mudanças nos dados |
 | `tools/comparar_logicapp.py` | Compara duas versões de uma Logic App (exemplo, Azure ou arquivos): gatilho, ações, custo previsto, riscos e pontos de atenção → `docs/comparacoes/` |
 | `tests/testar_comparacao.py` | Testa a comparação com mudanças de gabarito e as versões do Azure com servidor falso |
 | `logicapps/versoes/` | Versões anteriores (fictícias) usadas no exemplo da comparação |

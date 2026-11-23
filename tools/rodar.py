@@ -40,15 +40,15 @@ TAREFAS = {
     "comparacao_teste": ("Teste da comparação de versões", [PY, "tests/testar_comparacao.py"],
                          "Aplica mudanças conhecidas (gatilho, ação nova/removida/alterada, retentativa, conector, "
                          "tratamento de erro, segredo) e confere que a comparação aponta exatamente cada uma.", "Testes"),
-    "finops_tenants_teste": ("Teste do FinOps por cliente", [PY, "tests/testar_finops_tenants.py"],
-                             "Confere com o gabarito de 3 clientes fictícios: custo, previsão × orçamento, cada oportunidade "
-                             "de economia, economia realizada e o ISOLAMENTO entre clientes.", "Testes"),
+    "finops_tenants_teste": ("Teste do FinOps por ambiente", [PY, "tests/testar_finops_tenants.py"],
+                             "Confere com o gabarito dos 3 ambientes fictícios (produção, desenvolvimento, integração): custo, "
+                             "previsão × orçamento, oportunidades, economia realizada, custo fora de produção e o ISOLAMENTO.", "Testes"),
     "relatorio_finops": ("Relatório FinOps", [PY, "tools/gerar_relatorio.py"],
                          "Gera relatorios/relatorio-finops.md em código e valida contra os dados.", "Gerar"),
     "docs_logicapps": ("Documentação das Logic Apps", [PY, "tools/doc_logicapp.py", "gerar"],
                        "Gera docs/logicapps/*.md (passo a passo, diagrama, custo) e valida.", "Gerar"),
-    "executivo_clientes": ("Relatórios executivos por cliente", [PY, "tools/finops_tenants.py", "executivo"],
-                           "Um relatório de 1 página por cliente (tenant) + o consolidado: previsão × orçamento, economia "
+    "executivo_ambientes": ("Relatórios executivos por ambiente", [PY, "tools/finops_tenants.py", "executivo"],
+                           "Um relatório de 1 página por ambiente (tenant) + o consolidado: previsão × orçamento, economia "
                            "possível e realizada, quem gasta. Gera relatorios/executivo/.", "Gerar"),
     "comparar_versoes": ("Comparar versões (exemplo)", [PY, "tools/comparar_logicapp.py", "exemplo"],
                          "Versão anterior × atual da lgc-desvios-processo: o que mudou no fluxo, no custo previsto e nos "
@@ -85,7 +85,7 @@ def falta(tarefa):
 
 # o que roda sem Docker, sem Azure e sem modelo: é o que o GitHub Actions roda a cada push
 SEQUENCIA_CI = ["testes", "gabarito_finops", "chamados_teste", "avaliador_teste", "agendador_teste", "comparacao_teste",
-               "finops_tenants_teste", "relatorio_finops", "docs_logicapps", "comparar_versoes", "executivo_clientes"]
+               "finops_tenants_teste", "relatorio_finops", "docs_logicapps", "comparar_versoes", "executivo_ambientes"]
 SEQUENCIA_TUDO = SEQUENCIA_CI + ["azure", "grafana"]
 SEQUENCIAS = {"tudo": SEQUENCIA_TUDO, "ci": SEQUENCIA_CI}
 
