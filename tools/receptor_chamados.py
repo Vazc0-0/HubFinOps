@@ -157,9 +157,32 @@ def diag_custo_divergente(alvo, alerta):
     return "Média", linhas, passos
 
 
+def diag_sincronizacao_atrasada(alvo, alerta):
+    import agendador as ag
+    e = ag.ler_estado()
+    rodadas = [h for h in historico.ler() if h.get("origem") == "agendador" and h.get("status") != "em andamento"]
+    linhas = [f"A sincronização agendada da Logic App `{alvo}` não acontece há mais de 2 intervalos "
+              f"(agendada a cada {e.get('a_cada_h', '?')} h).",
+              f"Última rodada do agendador: {(e.get('ultima_rodada') or 'nunca')[:16].replace('T', ' ')} "
+              f"→ **{e.get('ultimo_resultado', 'sem registro')}**."]
+    for p in e.get("passos", []):
+        if not p["ok"]:
+            linhas.append(f"Passo que falhou: `{p['tarefa']}` → {p['resumo']}")
+    falhas = [h for h in rodadas if h.get("status") == "falhou"][:3]
+    for h in falhas:
+        linhas.append(f"Falha registrada em {h.get('inicio', '')[:16].replace('T', ' ')}: {h.get('tarefa')} → {h.get('resumo')}")
+    passos = ["Ver se o PC ficou ligado e com você logado (a tarefa do Windows só roda com o usuário logado).",
+              "Conferir o login da Azure CLI: `az account show` (se expirou, `az login`).",
+              "Conferir se o docker compose está no ar (a carga no Grafana precisa do Postgres).",
+              "Ver a tarefa e a última rodada: `python tools/agendador.py --status` (log em relatorios/agendador.log).",
+              "Rodar na mão para voltar ao normal: `python tools/agendador.py --uma-vez`."]
+    return "Média", linhas, passos
+
+
 REGRAS = {"recurso_sem_dono": ("Recurso sem dono gerando custo", diag_recurso_sem_dono),
           "logicapp_falha": ("Logic App com execução que falhou", diag_logicapp_falha),
-          "custo_divergente": ("Custo medido diferente do previsto", diag_custo_divergente)}
+          "custo_divergente": ("Custo medido diferente do previsto", diag_custo_divergente),
+          "sincronizacao_atrasada": ("Sincronização agendada com o Azure atrasada", diag_sincronizacao_atrasada)}
 
 
 # ----------------------------------------------------------------- chamados
@@ -237,7 +260,7 @@ def processar(payload):
             prioridade, linhas, passos = diag(alvo, al)
             c = {"id": _novo_id(), "criado_em": historico.agora(), "status": "Aberto",
                  "titulo": f"{titulo_base}: {alvo}", "prioridade": prioridade, "regra": regra, "alvo": alvo,
-                 "componente": "FinOps" if regra == "recurso_sem_dono" else "Logic Apps",
+                 "componente": {"recurso_sem_dono": "FinOps", "sincronizacao_atrasada": "Integração com o Azure"}.get(regra, "Logic Apps"),
                  "origem": f"Alerta do Grafana: {lab.get('alertname', '?')}",
                  "descricao": ann.get("description") or ann.get("summary") or titulo_base,
                  "valores": al.get("values") or {}, "fingerprint": chave,

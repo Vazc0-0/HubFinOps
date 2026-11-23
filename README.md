@@ -27,7 +27,7 @@
 | **Equipe de documentação** | Lê a definição JSON de Logic Apps (*Workflow Definition Language*) e gera documentação com passo a passo, diagrama Mermaid, custo estimado e achados de boas práticas. |
 | **Leitor exato de Logic Apps** | Parser determinístico (sem IA): ordem real de execução pelo `runAfter`, ramos, loops, retentativas, agenda e ações cobradas por execução. |
 | **Logic App real no Azure** | Uma Logic App de teste na minha conta de estudante, ligada ao projeto **só para leitura**. O custo previsto pelo leitor é conferido com o medido pelo Azure Monitor. |
-| **Grafana** | Painéis de custo e de operação, e 3 alertas que viram **chamados com diagnóstico** (simulando um Jira). |
+| **Grafana** | Painéis de custo e de operação, e 4 alertas que viram **chamados com diagnóstico** (simulando um Jira). |
 | **Hub** | Página local que junta tudo: executar tarefas com log ao vivo, histórico, resultados, chamados, Grafana e documentos. |
 
 ## Por que assim: código calcula, IA explica
@@ -194,6 +194,25 @@ O que a Logic App de teste faz: consulta 1 vez por dia a API pública de preços
 4.000 execuções grátis por mês. O acesso é só leitura, via Azure CLI (`az login`). A configuração com o ID da assinatura fica em
 `config/azure.json`, que está fora do Git.
 
+### Sincronização agendada
+
+```bash
+python tools/agendador.py --uma-vez                 # sincroniza com o Azure e carrega no Grafana agora
+python tools/agendador.py --instalar --a-cada 6     # cria uma tarefa no Agendador de Tarefas do Windows (a cada 6 h)
+python tools/agendador.py --status                  # a tarefa do Windows e a última rodada
+python tools/agendador.py --remover                 # apaga a tarefa
+```
+
+- Roda no PC (precisa do `az login` e do `docker compose` no ar). A tarefa do Windows usa o `schtasks` com `/it`:
+  roda só com você logado, com as suas permissões, sem guardar senha.
+- Cada rodada é `azure` → `grafana`. Se o Azure falhar, não carrega dado velho no Grafana.
+- **Histórico no Postgres:** a API do Azure devolve só as últimas execuções. Agora o Postgres guarda todas as que já
+  viu (`ON CONFLICT`, nada é apagado) e cada sincronização vira uma linha em `azure_sincronizacoes`. O painel de operação
+  ganhou execuções por dia e custo/mês ao longo do tempo.
+- **Alerta "sincronização atrasada":** se passarem mais de 2 intervalos sem sincronizar (PC desligado, `az login`
+  expirado, Docker parado), o Grafana abre um chamado com o passo que falhou e o que conferir.
+- O alerta de falha da Logic App passou a olhar só as últimas 24 h, para uma falha antiga não alertar para sempre.
+
 ### Testar o alerta de falha
 
 ```bash
@@ -232,7 +251,7 @@ Guia detalhado de cada parte (todos os comandos, arquivos e o gabarito das anoma
 - [Docker Agent](https://docs.docker.com/ai/docker-agent/) · [Docker Model Runner (provider dmr)](https://docs.docker.com/ai/docker-agent/providers/dmr/) · [Ferramenta script](https://docs.docker.com/ai/docker-agent/tools/script/)
 - [Workflow Definition Language](https://learn.microsoft.com/azure/logic-apps/workflow-definition-language-schema) · [Gatilhos e ações](https://learn.microsoft.com/azure/logic-apps/logic-apps-workflow-actions-triggers) · [Tratamento de erros](https://learn.microsoft.com/azure/logic-apps/error-exception-handling)
 - [Cobrança das Logic Apps](https://learn.microsoft.com/azure/logic-apps/logic-apps-pricing) · [Métricas das Logic Apps](https://learn.microsoft.com/azure/logic-apps/monitor-logic-apps-reference#metrics) · [Esquema FOCUS do Azure](https://learn.microsoft.com/azure/cost-management-billing/dataset-schema/cost-usage-details-focus)
-- [Assinatura HMAC do webhook do Grafana](https://grafana.com/docs/grafana/latest/alerting/configure-notifications/manage-contact-points/integrations/webhook-notifier/) · [Alertas do Grafana por arquivo](https://grafana.com/docs/grafana/latest/alerting/set-up/provision-alerting-resources/file-provisioning/) · [Webhook do Grafana](https://grafana.com/docs/grafana/latest/alerting/configure-notifications/manage-contact-points/integrations/webhook-notifier/) · [Datasource PostgreSQL](https://grafana.com/docs/grafana/v12.4/datasources/postgres/configure/)
+- [Agendador de Tarefas do Windows (schtasks create)](https://learn.microsoft.com/windows-server/administration/windows-commands/schtasks-create) · [Assinatura HMAC do webhook do Grafana](https://grafana.com/docs/grafana/latest/alerting/configure-notifications/manage-contact-points/integrations/webhook-notifier/) · [Alertas do Grafana por arquivo](https://grafana.com/docs/grafana/latest/alerting/set-up/provision-alerting-resources/file-provisioning/) · [Webhook do Grafana](https://grafana.com/docs/grafana/latest/alerting/configure-notifications/manage-contact-points/integrations/webhook-notifier/) · [Datasource PostgreSQL](https://grafana.com/docs/grafana/v12.4/datasources/postgres/configure/)
 
 ## Licença
 

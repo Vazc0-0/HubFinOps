@@ -30,4 +30,4 @@ ignore = [
 "data/generate_costs.py" = ["E501"]  # tabela de recursos fictícios, uma linha por recurso
 
 [tool.ruff.lint.isort]
-known-first-party = ["cost_query", "doc_logicapp", "logicapp_parser", "historico", "rodar", "receptor_chamados", "carregar_grafana"]
+known-first-party = ["agendador", "preparar_ambiente", "cost_query", "doc_logicapp", "logicapp_parser", "historico", "rodar", "receptor_chamados", "carregar_grafana"]

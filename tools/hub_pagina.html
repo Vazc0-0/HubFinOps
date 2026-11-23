@@ -271,6 +271,10 @@ function renderVisao(){
     cartao('FinOps (dados fictícios)', E.finops.total != null ? brl(E.finops.total) : '–', `${(E.finops.anomalias||[]).length} anomalias · relatório ${rel ? esc(rel.resumo) : 'não gerado'}`, 'resultados', rel && rel.status),
     cartao('Documentação das Logic Apps', `${(E.logicapps||[]).length} fluxos`, `${reais} real(is) · ${achados} achados · ${d ? esc(d.resumo) : 'não gerada'}`, 'resultados', d && d.status),
     cartao('Chamados dos alertas', `${abertos} aberto(s)`, `${resolvidos} resolvido(s) · receptor ${E.servicos.receptor?'no ar':'fora do ar'}${r?` · teste: ${esc(r.resumo)}`:''}`, 'chamados', abertos ? 'Aberto' : (E.chamados.length ? 'Resolvido' : null)),
+    (() => { const a = E.agendador || {}; const st = a.atrasado ? 'falhou' : a.ultimo_resultado || null;
+      return cartao('Sincronização agendada', a.a_cada_h ? `a cada ${a.a_cada_h} h` : 'não agendada',
+        a.ultima_rodada ? `última ${quando(a.ultima_rodada)} (${esc(a.ultimo_resultado||'-')})${a.atrasado?' · ATRASADA':a.proxima_estimada?` · próxima ~${quando(a.proxima_estimada)}`:''}`
+                        : 'No terminal do PC: <code>python tools/agendador.py --instalar --a-cada 6</code>', 'historico', st); })(),
     cartao('Gabarito FinOps', g ? esc(g.resumo) : 'sem execução', g ? `4 anomalias plantadas · ${quando(g.fim||g.inicio)}` : 'Rode “Gabarito FinOps”.', 'metodos', g && g.status),
   ].join('');
   document.querySelectorAll('.cartao.clicavel').forEach(c => { c.onclick = () => location.hash = c.dataset.alvo;

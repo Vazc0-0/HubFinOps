@@ -34,6 +34,9 @@ TAREFAS = {
     "avaliador_teste": ("Teste do corretor da avaliação", [PY, "tests/testar_avaliador.py"],
                         "Confere o corretor das respostas dos agentes com respostas boas e ruins conhecidas "
                         "(inclusive valores e recursos inventados).", "Testes"),
+    "agendador_teste": ("Teste do agendador", [PY, "tests/testar_agendador.py"],
+                        "Confere o comando do Agendador de Tarefas, a rodada (para no primeiro erro) e que a carga no "
+                        "Postgres guarda o histórico das execuções e sincronizações.", "Testes"),
     "relatorio_finops": ("Relatório FinOps", [PY, "tools/gerar_relatorio.py"],
                          "Gera relatorios/relatorio-finops.md em código e valida contra os dados.", "Gerar"),
     "docs_logicapps": ("Documentação das Logic Apps", [PY, "tools/doc_logicapp.py", "gerar"],
@@ -41,6 +44,9 @@ TAREFAS = {
     "azure": ("Sincronizar com o Azure", [PY, "tools/azure_logicapp.py", "sincronizar"],
               "Só leitura: definição, execuções, métricas de cobrança e preços da Logic App real. "
               "Precisa de az login.", "Azure"),
+    "agendador": ("Sincronização agendada (uma rodada)", [PY, "tools/agendador.py", "--uma-vez"],
+                  "Sincroniza com o Azure e carrega no Grafana, como o agendador faz a cada N horas. Para agendar: "
+                  "python tools/agendador.py --instalar --a-cada 6 (Agendador de Tarefas do Windows).", "Azure"),
     "grafana": ("Carregar dados no Grafana", [PY, "tools/carregar_grafana.py"],
                 "Leva execuções do Azure, preços, histórico e chamados para o Postgres do Grafana "
                 "(precisa do docker compose rodando).", "Grafana"),
@@ -49,7 +55,8 @@ TAREFAS = {
                         "Precisa do Docker Desktop e do modelo local; demora alguns minutos.", "IA"),
 }
 # tarefas que dependem de um programa da máquina (no hub em Docker eles não existem: rode no terminal do PC)
-REQUER = {"azure": ("az", "a Azure CLI (az login)"), "avaliar_agentes": ("docker", "o Docker Desktop com o modelo local")}
+REQUER = {"azure": ("az", "a Azure CLI (az login)"), "agendador": ("az", "a Azure CLI (az login)"),
+          "avaliar_agentes": ("docker", "o Docker Desktop com o modelo local")}
 
 
 def falta(tarefa):
@@ -64,7 +71,8 @@ def falta(tarefa):
 
 
 # o que roda sem Docker, sem Azure e sem modelo: é o que o GitHub Actions roda a cada push
-SEQUENCIA_CI = ["testes", "gabarito_finops", "chamados_teste", "avaliador_teste", "relatorio_finops", "docs_logicapps"]
+SEQUENCIA_CI = ["testes", "gabarito_finops", "chamados_teste", "avaliador_teste", "agendador_teste", "relatorio_finops",
+               "docs_logicapps"]
 SEQUENCIA_TUDO = SEQUENCIA_CI + ["azure", "grafana"]
 SEQUENCIAS = {"tudo": SEQUENCIA_TUDO, "ci": SEQUENCIA_CI}
 

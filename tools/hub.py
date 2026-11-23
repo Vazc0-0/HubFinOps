@@ -146,6 +146,16 @@ def azure():
             "configurado": (ROOT / "config" / "azure.json").exists()}
 
 
+def agendador():
+    arq = ROOT / "relatorios" / "agendador.json"
+    e = json.loads(arq.read_text(encoding="utf-8")) if arq.exists() else {}
+    atrasado = None
+    if e.get("a_cada_h") and e.get("ultima_rodada"):
+        horas = (time.time() - datetime.fromisoformat(e["ultima_rodada"]).timestamp()) / 3600
+        atrasado = horas > 2 * float(e["a_cada_h"])
+    return {**e, "atrasado": atrasado}
+
+
 def chamados():
     pasta = ROOT / "chamados"
     out = []
@@ -185,7 +195,7 @@ def estado():
             "tarefas": tarefas, "historico": hist, "em_andamento": [h for h in hist if h.get("status") == "em andamento"],
             "finops": _seguro(finops), "logicapps": _seguro(logicapps, []), "azure": _seguro(azure),
             "ranking_logicapps": _seguro(ranking_logicapps, {"itens": []}), "chamados": _seguro(chamados, []),
-            "documentos": _seguro(documentos, {}),
+            "documentos": _seguro(documentos, {}), "agendador": _seguro(agendador, {}),
             "grafana": {"url": GRAFANA_NAVEGADOR, "paineis": [
                 {"uid": "piloto-operacao", "titulo": "Logic App real e operação do piloto"},
                 {"uid": "finops-custos-demo", "titulo": "FinOps: custos Azure (dados sintéticos)"}]}}

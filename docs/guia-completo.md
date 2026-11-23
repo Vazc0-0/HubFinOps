@@ -127,6 +127,7 @@ rodou no Azure bate com a leitura do JSON. Passo a passo em `azure/LEIA-ME.md`.
 
 ```bash
 python tools/azure_logicapp.py sincronizar   # termina com "AZURE E LEITURA BATEM" e "Por execução: medido 15 × previsto 15 → BATE"
+python tools/agendador.py --instalar --a-cada 6   # opcional: sincroniza sozinho a cada 6 h (Agendador de Tarefas do Windows)
 ```
 
 ## Hub (tudo numa página)
@@ -153,7 +154,9 @@ Docker do PC). Fora do Docker, `python tools/hub.py` continua funcionando como a
 | `tools/historico.py` | Histórico único em `relatorios/historico.jsonl` (logs em `relatorios/execucoes/`) |
 | `tools/carregar_grafana.py` | Carrega no Postgres: execuções e métricas do Azure, preços, previsto × medido, histórico, chamados |
 | `grafana/dashboards/piloto-operacao.json` | Painel "Logic App real e operação do piloto" (gerado por `grafana/build_dashboard_operacao.py`) |
-| `grafana/provisioning/alerting/piloto-alertas.yaml` | 3 alertas: recurso sem dono, Logic App com falha, custo medido ≠ previsto |
+| `grafana/provisioning/alerting/piloto-alertas.yaml` | 4 alertas: recurso sem dono, Logic App com falha (últimas 24 h), custo medido ≠ previsto, sincronização agendada atrasada |
+| `tools/agendador.py` | Sincronização agendada (Agendador de Tarefas do Windows): Azure → Grafana a cada N horas; `--instalar`, `--status`, `--remover` |
+| `tests/testar_agendador.py` | Testa o comando do `schtasks`, a rodada e o histórico no Postgres |
 | `tools/receptor_chamados.py` | Recebe os alertas do Grafana (webhook **assinado com HMAC-SHA256**) e abre chamados com diagnóstico em `chamados/` |
 | `tests/testar_chamados.py` | Testa o receptor com alertas reais do Grafana (`tests/casos_chamados/`) e a assinatura (sem, errada, alterada, velha) |
 

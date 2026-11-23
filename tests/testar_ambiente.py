@@ -8,7 +8,9 @@ Confere, pela API do Grafana e do receptor, que:
   4. um alerta de verdade dispara no Grafana, vai ASSINADO (HMAC) e o receptor abre o chamado certo;
      alerta sem assinatura é recusado;
   5. o hub (container) responde, só aceita execução vinda da própria página e roda uma tarefa de verdade
-     (carregar os dados no Postgres pelo psql do container).
+     (carregar os dados no Postgres pelo psql do container);
+  6. o Postgres guarda o histórico das sincronizações (duas cargas seguidas somam, não substituem) e o alerta
+     "sincronização atrasada" abre chamado quando passam mais de 2 intervalos do agendador sem sincronizar.
 
 Uso:  python tests/testar_ambiente.py            (espera até 4 min pelo alerta)
 Termina com "RESULTADO: AMBIENTE OK" ou "RESULTADO: AMBIENTE COM PROBLEMAS".
@@ -16,11 +18,13 @@ Termina com "RESULTADO: AMBIENTE OK" ou "RESULTADO: AMBIENTE COM PROBLEMAS".
 import base64
 import json
 import os
+import subprocess
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -78,6 +82,59 @@ def consulta_sql(sql):
     r = chama(f"{GRAFANA}/api/ds/query", corpo)
     frame = r["results"]["A"]["frames"][0]
     return frame["data"]["values"][0][0]
+
+
+LA_TESTE = "teste-historico"
+
+
+def carga(pasta_azure, estado):
+    env = {**os.environ, "PILOTO_AZURE_DIR": str(pasta_azure), "PILOTO_AGENDADOR_ESTADO": str(estado),
+           "PYTHONIOENCODING": "utf-8"}
+    r = subprocess.run([sys.executable, str(ROOT / "tools" / "carregar_grafana.py")], cwd=ROOT, env=env,
+                       capture_output=True, text=True, encoding="utf-8", errors="replace")
+    return r.returncode == 0, (r.stdout + r.stderr).strip().splitlines()[-1:]
+
+
+def historico_sincronizacoes():
+    """Duas sincronizações falsas (Logic App 'teste-historico', agendador a cada 1 h, última há 4 h)."""
+    sys.path.insert(0, str(ROOT / "tools"))
+    import carregar_grafana as cg
+    tmp = Path(tempfile.mkdtemp(prefix="sinc-"))
+    estado = tmp / "agendador.json"
+    estado.write_text(json.dumps({"a_cada_h": 1}), encoding="utf-8")
+    agora = datetime.now(timezone.utc)
+    try:
+        for i, (execucao, horas_atras) in enumerate((("teste-run-1", 5), ("teste-run-2", 4)), 1):
+            momento = (agora - timedelta(hours=horas_atras)).isoformat(timespec="seconds")
+            (tmp / f"{LA_TESTE}-execucoes.json").write_text(json.dumps([
+                {"execucao": execucao, "status": "Succeeded", "inicio": momento, "fim": momento, "acoes": {"A": "Succeeded"}}]),
+                encoding="utf-8")
+            (tmp / f"{LA_TESTE}-metricas.json").write_text(json.dumps({"ate": momento, "totais": {}, "bruto": {"value": []}}),
+                                                           encoding="utf-8")
+            ok, saida = carga(tmp, estado)
+            confere(ok, f"carga {i} da sincronização falsa: {saida}")
+        n_exec = consulta_sql(f"SELECT count(*) FROM azure_execucoes WHERE logic_app = '{LA_TESTE}'")
+        n_sinc = consulta_sql(f"SELECT count(*) FROM azure_sincronizacoes WHERE logic_app = '{LA_TESTE}'")
+        confere(n_exec == 2, f"execuções acumuladas: 2 cargas com 1 execução cada → {n_exec} no Postgres")
+        confere(n_sinc == 2, f"sincronizações registradas: {n_sinc} (esperado 2)")
+
+        def chamado_atrasada():
+            for p in sorted(CHAMADOS.glob("CH-*.json")):
+                c = json.loads(p.read_text(encoding="utf-8"))
+                if c.get("regra") == "sincronizacao_atrasada" and c.get("alvo") == LA_TESTE:
+                    return c
+            return None
+        c = espera("o alerta 'sincronização atrasada' (4 h sem sincronizar, agendado a cada 1 h)", chamado_atrasada,
+                   ESPERA_ALERTA_S, 10)
+        if confere(bool(c), "chamado aberto pelo alerta de sincronização atrasada"):
+            confere(c["componente"] == "Integração com o Azure" and c["prioridade"] == "Média",
+                    f"componente {c['componente']}, prioridade {c['prioridade']}")
+    finally:  # tira os dados de teste e recarrega os dados reais
+        r = subprocess.run(cg.psql_cmd() + ["-q", "-c", f"DELETE FROM azure_execucoes WHERE logic_app = '{LA_TESTE}'; "
+                                            f"DELETE FROM azure_sincronizacoes WHERE logic_app = '{LA_TESTE}';"],
+                           cwd=ROOT, capture_output=True)
+        confere(r.returncode == 0, "limpeza dos dados de teste no Postgres")
+        subprocess.run([sys.executable, str(ROOT / "tools" / "carregar_grafana.py")], cwd=ROOT, capture_output=True)
 
 
 def main():
@@ -161,6 +218,9 @@ def main():
             return None
         h = espera("a tarefa rodar no hub", carga_concluida, 90)
         confere(bool(h) and h["status"] == "ok", f"tarefa rodou pelo hub com psql do container: {(h or {}).get('resumo')}")
+
+    print("6. Histórico das sincronizações e alerta de sincronização atrasada")
+    historico_sincronizacoes()
 
     print()
     if falhas:

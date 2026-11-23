@@ -76,7 +76,8 @@ groups:
               format: table
               rawQuery: true
               editorMode: code
-              rawSql: "SELECT logic_app, (count(*) FILTER (WHERE status = 'Failed'))::float AS falhas FROM azure_execucoes GROUP BY logic_app"
+              # só as últimas 24 h: o Postgres agora guarda todas as execuções, e uma falha antiga não deve alertar para sempre
+              rawSql: "SELECT logic_app, (count(*) FILTER (WHERE status = 'Failed' AND inicio > now() - interval '24 hours'))::float AS falhas FROM azure_execucoes GROUP BY logic_app"
           - refId: B
             datasourceUid: __expr__
             model:
@@ -92,7 +93,7 @@ groups:
         labels: {regra: logicapp_falha, severidade: alta}
         annotations:
           summary: "Execução com falha na Logic App"
-          description: "A Logic App {{ $labels.logic_app }} tem {{ printf \"%.0f\" $values.A.Value }} execução(ões) com falha na última sincronização."
+          description: "A Logic App {{ $labels.logic_app }} tem {{ printf \"%.0f\" $values.A.Value }} execução(ões) com falha nas últimas 24 h."
 
       - uid: piloto-custo-divergente
         title: Custo medido diferente do previsto
@@ -123,3 +124,34 @@ groups:
         annotations:
           summary: "Ações cobradas por execução diferentes da previsão"
           description: "Na Logic App {{ $labels.logic_app }} o Azure mediu {{ printf \"%.1f\" $values.A.Value }} ação(ões) por execução a mais ou a menos do que o leitor previu."
+
+      - uid: piloto-sincronizacao-atrasada
+        title: Sincronizacao agendada atrasada
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: focus-pg
+            model:
+              refId: A
+              format: table
+              rawQuery: true
+              editorMode: code
+              # quantos intervalos do agendador se passaram desde a última sincronização (só quando há agendamento)
+              rawSql: "SELECT logic_app, (EXTRACT(EPOCH FROM now() - max(sincronizado_em)) / 3600 / max(a_cada_h))::float AS intervalos_sem_sincronizar FROM azure_sincronizacoes WHERE a_cada_h > 0 GROUP BY logic_app"
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              datasource: {type: __expr__, uid: __expr__}
+              conditions:
+                - evaluator: {type: gt, params: [2]}
+        noDataState: OK
+        execErrState: OK
+        for: 0s
+        labels: {regra: sincronizacao_atrasada, severidade: media}
+        annotations:
+          summary: "A sincronização agendada com o Azure parou"
+          description: "A Logic App {{ $labels.logic_app }} está há {{ printf \"%.1f\" $values.A.Value }} intervalos do agendador sem sincronizar."

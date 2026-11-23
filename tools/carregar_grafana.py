@@ -8,7 +8,10 @@ Fontes (arquivos que os outros scripts já geram):
   relatorios/historico.jsonl                   -> tabela historico
   chamados/*.json                              -> tabela chamados
 
-Cada carga apaga e recria o conteúdo dessas tabelas (pode rodar quantas vezes quiser).
+Histórico: execuções e métricas do Azure são ACUMULADAS (a API só devolve as últimas execuções; o Postgres
+guarda todas as que já viu) e cada sincronização vira uma linha em azure_sincronizacoes, com o intervalo do
+agendador (tools/agendador.py), o que dá tendência no Grafana e o alerta de sincronização atrasada.
+As demais tabelas são recriadas a cada carga (as fontes já são completas). Pode rodar quantas vezes quiser.
 Usa o psql de dentro do container (docker compose exec), então não precisa instalar nada no Windows.
 
 Uso:
@@ -30,7 +33,7 @@ import historico  # noqa: E402
 import logicapp_parser as lp  # noqa: E402
 
 ROOT = historico.ROOT
-AZ = ROOT / "relatorios" / "azure"
+AZ = Path(os.environ.get("PILOTO_AZURE_DIR", ROOT / "relatorios" / "azure"))  # outra pasta: usado nos testes
 CHAMADOS = ROOT / "chamados"
 
 DDL = """
@@ -44,6 +47,9 @@ CREATE TABLE IF NOT EXISTS azure_precos (medidor text, a_partir_de numeric, prec
 CREATE TABLE IF NOT EXISTS azure_previsto (logic_app text PRIMARY KEY, previsto_por_execucao numeric,
   fixas int, por_item int, itens_no_loop int, medido_acoes numeric, medido_disparos numeric,
   medido_por_execucao numeric, execucoes_mes numeric, custo_mes_brl numeric);
+CREATE TABLE IF NOT EXISTS azure_sincronizacoes (logic_app text, sincronizado_em timestamptz, execucoes_vistas int,
+  falhas_vistas int, previsto_por_execucao numeric, medido_por_execucao numeric, custo_mes_brl numeric,
+  a_cada_h numeric, PRIMARY KEY (logic_app, sincronizado_em));
 CREATE TABLE IF NOT EXISTS historico (id text PRIMARY KEY, tarefa text, origem text, status text,
   inicio timestamptz, fim timestamptz, duracao_s numeric, resumo text);
 CREATE TABLE IF NOT EXISTS chamados (id text PRIMARY KEY, criado_em timestamptz, titulo text, prioridade text,
@@ -61,12 +67,26 @@ def q(v):
     return "'" + str(v).replace("'", "''") + "'"
 
 
-def insert(tabela, linhas):
+def insert(tabela, linhas, conflito=None, atualizar=False):
+    """INSERT simples; com conflito=(colunas da chave), atualiza (atualizar=True) ou ignora a linha que já existe."""
     if not linhas:
         return ""
     cols = list(linhas[0])
     vals = ",\n".join("(" + ", ".join(q(l[c]) for c in cols) + ")" for l in linhas)
-    return f"INSERT INTO {tabela} ({', '.join(cols)}) VALUES\n{vals};\n"
+    fim = ""
+    if conflito:
+        resto = [c for c in cols if c not in conflito]
+        fim = (f" ON CONFLICT ({', '.join(conflito)}) DO UPDATE SET " + ", ".join(f"{c} = EXCLUDED.{c}" for c in resto)
+               if atualizar and resto else f" ON CONFLICT ({', '.join(conflito)}) DO NOTHING")
+    return f"INSERT INTO {tabela} ({', '.join(cols)}) VALUES\n{vals}{fim};\n"
+
+
+def intervalo_agendador():
+    try:
+        arq = Path(os.environ.get("PILOTO_AGENDADOR_ESTADO", ROOT / "relatorios" / "agendador.json"))
+        return json.loads(arq.read_text(encoding="utf-8")).get("a_cada_h")
+    except (OSError, ValueError):
+        return None
 
 
 SIMULACAO = AZ / "simulacao_falha.json"
@@ -104,7 +124,9 @@ def previsto_x_medido(la, dados=None):
 
 
 def montar_sql(simular_falha=False, limpar_simulacao=False):
-    sql = [DDL, "BEGIN;", "TRUNCATE azure_execucoes, azure_metricas, azure_precos, azure_previsto, historico, chamados;"]
+    # execuções e métricas não são apagadas: o Postgres guarda tudo o que já foi sincronizado (só sai o simulado)
+    sql = [DDL, "BEGIN;", "TRUNCATE azure_precos, azure_previsto, historico, chamados;",
+           "DELETE FROM azure_execucoes WHERE simulada;"]
     resumo = {}
 
     execs = []
@@ -138,10 +160,11 @@ def montar_sql(simular_falha=False, limpar_simulacao=False):
                       "acoes_puladas": sum(1 for x in st if x == "Skipped"),
                       "acoes_com_falha": ", ".join(n for n, x in e["acoes"].items() if x == "Failed"),
                       "simulada": True})
-    sql.append(insert("azure_execucoes", execs))
-    resumo["execuções do Azure"] = len(execs)
+    sql.append(insert("azure_execucoes", execs, conflito=["execucao"], atualizar=True))
+    resumo["execuções do Azure (nesta carga)"] = len(execs)
 
-    mets, previstos = [], []
+    mets, previstos, sincs = [], [], []
+    a_cada = intervalo_agendador()
     for arq in sorted(AZ.glob("*-metricas.json")):
         la = arq.name[:-len("-metricas.json")]
         dados = json.loads(arq.read_text(encoding="utf-8"))
@@ -153,8 +176,17 @@ def montar_sql(simular_falha=False, limpar_simulacao=False):
         p = previsto_x_medido(la, dados)
         if p:
             previstos.append(p)
-    sql.append(insert("azure_metricas", mets))
+        if dados.get("ate"):  # uma linha por sincronização (o horário em que as métricas foram lidas)
+            vistas = [e for e in execs if e["logic_app"] == la and not e["simulada"]]
+            sincs.append({"logic_app": la, "sincronizado_em": dados["ate"], "execucoes_vistas": len(vistas),
+                          "falhas_vistas": sum(1 for e in vistas if e["status"] == "Failed"),
+                          "previsto_por_execucao": p and p["previsto_por_execucao"],
+                          "medido_por_execucao": p and p["medido_por_execucao"], "custo_mes_brl": p and p["custo_mes_brl"],
+                          "a_cada_h": a_cada})
+    sql.append(insert("azure_metricas", mets, conflito=["logic_app", "metrica", "momento"], atualizar=True))
     sql.append(insert("azure_previsto", previstos))
+    sql.append(insert("azure_sincronizacoes", sincs, conflito=["logic_app", "sincronizado_em"]))
+    resumo["sincronizações registradas (nesta carga)"] = len(sincs)
     resumo["pontos de métrica"] = len(mets)
 
     precos = json.loads((AZ / "precos_logicapps.json").read_text(encoding="utf-8")) \
@@ -180,7 +212,7 @@ def montar_sql(simular_falha=False, limpar_simulacao=False):
     sql.append(insert("chamados", ch))
     resumo["chamados"] = len(ch)
 
-    sql += ["GRANT SELECT ON azure_execucoes, azure_metricas, azure_precos, azure_previsto, historico, chamados "
+    sql += ["GRANT SELECT ON azure_execucoes, azure_metricas, azure_precos, azure_previsto, azure_sincronizacoes, historico, chamados "
             "TO grafana_reader;", "COMMIT;"]
     return "\n".join(s for s in sql if s), resumo
 

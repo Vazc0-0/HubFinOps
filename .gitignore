@@ -11,3 +11,5 @@ relatorios/azure/
 chamados/
 relatorios/historico.jsonl
 relatorios/execucoes/
+relatorios/agendador.json
+relatorios/agendador.log

@@ -484,7 +484,7 @@
     {
       "id": 11,
       "type": "row",
-      "title": "Operação do piloto",
+      "title": "Histórico das sincronizações (agendador: python tools/agendador.py)",
       "collapsed": false,
       "gridPos": {
         "x": 0,
@@ -496,6 +496,311 @@
     },
     {
       "id": 12,
+      "title": "Última sincronização",
+      "type": "stat",
+      "description": "Cada rodada do agendador (ou sincronização manual) vira uma linha em azure_sincronizacoes.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 21,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT max(sincronizado_em) AS \"Última\" FROM azure_sincronizacoes"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dateTimeFromNow",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 13,
+      "title": "Sincronizações registradas",
+      "type": "stat",
+      "description": "",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 21,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*) AS \"Sincronizações\" FROM azure_sincronizacoes"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 14,
+      "title": "Execuções guardadas no Postgres",
+      "type": "stat",
+      "description": "A API do Azure devolve só as últimas execuções; o Postgres guarda todas as que já foram sincronizadas.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 21,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*) AS \"Execuções\" FROM azure_execucoes WHERE NOT simulada"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 15,
+      "title": "Agendado a cada",
+      "type": "stat",
+      "description": "Vazio quando a sincronização foi manual. O alerta 'sincronização atrasada' dispara quando passam mais de 2 intervalos sem sincronizar.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 21,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT a_cada_h AS \"Horas\" FROM azure_sincronizacoes ORDER BY sincronizado_em DESC LIMIT 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "h",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 16,
+      "title": "Execuções por dia (histórico acumulado)",
+      "type": "barchart",
+      "description": "",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 25,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT to_char(date_trunc('day', inicio), 'DD/MM') AS \"Dia\", count(*) FILTER (WHERE status = 'Succeeded') AS \"Sucesso\", count(*) FILTER (WHERE status = 'Failed') AS \"Falhou\" FROM azure_execucoes WHERE NOT simulada GROUP BY date_trunc('day', inicio) ORDER BY date_trunc('day', inicio)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Sucesso"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Falhou"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "xField": "Dia",
+        "stacking": "normal",
+        "legend": {
+          "showLegend": true,
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 17,
+      "title": "Custo estimado por mês a cada sincronização",
+      "type": "timeseries",
+      "description": "Mostra se o custo previsto da Logic App muda com o tempo (ex.: mais itens no loop).",
+      "datasource": {
+        "type": "postgres",
+        "uid": "focus-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 25,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "focus-pg"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT sincronizado_em AS time, custo_mes_brl AS \"Custo/mês (R$)\" FROM azure_sincronizacoes WHERE $__timeFilter(sincronizado_em) ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyBRL",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 18,
+      "type": "row",
+      "title": "Operação do piloto",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 19,
       "title": "Execuções registradas",
       "type": "stat",
       "description": "",
@@ -505,7 +810,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 21,
+        "y": 33,
         "w": 4,
         "h": 4
       },
@@ -540,7 +845,7 @@
       }
     },
     {
-      "id": 13,
+      "id": 20,
       "title": "Execuções com falha",
       "type": "stat",
       "description": "",
@@ -550,7 +855,7 @@
       },
       "gridPos": {
         "x": 4,
-        "y": 21,
+        "y": 33,
         "w": 4,
         "h": 4
       },
@@ -601,7 +906,7 @@
       }
     },
     {
-      "id": 14,
+      "id": 21,
       "title": "Chamados abertos",
       "type": "stat",
       "description": "",
@@ -611,7 +916,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 21,
+        "y": 33,
         "w": 4,
         "h": 4
       },
@@ -662,7 +967,7 @@
       }
     },
     {
-      "id": 15,
+      "id": 22,
       "title": "Chamados resolvidos",
       "type": "stat",
       "description": "",
@@ -672,7 +977,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 21,
+        "y": 33,
         "w": 4,
         "h": 4
       },
@@ -707,7 +1012,7 @@
       }
     },
     {
-      "id": 16,
+      "id": 23,
       "title": "Execuções por tarefa",
       "type": "barchart",
       "description": "",
@@ -717,7 +1022,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 21,
+        "y": 33,
         "w": 8,
         "h": 8
       },
@@ -779,7 +1084,7 @@
       }
     },
     {
-      "id": 17,
+      "id": 24,
       "title": "Chamados abertos pelos alertas",
       "type": "table",
       "description": "",
@@ -789,7 +1094,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 25,
+        "y": 37,
         "w": 16,
         "h": 6
       },
@@ -866,7 +1171,7 @@
       "options": {}
     },
     {
-      "id": 18,
+      "id": 25,
       "title": "Histórico de execuções (o mesmo do hub)",
       "type": "table",
       "description": "",
@@ -876,7 +1181,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 31,
+        "y": 43,
         "w": 24,
         "h": 10
       },
