@@ -6,7 +6,7 @@
 # Recarregar os dados de custo após gerar um CSV novo:  docker compose down -v && docker compose up -d
 services:
   postgres:
-    image: postgres:17
+    image: postgres:19
     environment:
       POSTGRES_DB: finops
       POSTGRES_USER: finops_admin
