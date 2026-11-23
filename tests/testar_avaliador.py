@@ -63,6 +63,13 @@ def main():
     r = avaliar.corrigir(casos["finops-sem-dono"], ruins["finops-sem-dono"], universo)
     confere(r["faltou"] == ["732,00"], f"finops-sem-dono: devia faltar só o valor 732,00 (faltou {r['faltou']})")
 
+    print("4. Respostas reais do modelo que estão certas (o corretor já errou nelas uma vez)")
+    reais = json.loads((ROOT / "tests/casos_avaliador/respostas_reais_corretas.json").read_text(encoding="utf-8"))
+    for cid, resp in reais.items():
+        r = avaliar.corrigir(casos[cid], resp, universo)
+        confere(r["situacao"] == "acertou" and not r["inventou"],
+                f"{cid} (qwen3, 23/11): {r['situacao']}, faltou {r['faltou']}, inventou {r['inventou']}")
+
     print()
     if falhas:
         print(f"{len(falhas)} falha(s).")

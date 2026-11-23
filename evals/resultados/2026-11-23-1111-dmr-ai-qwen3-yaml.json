@@ -1,0 +1,172 @@
+{
+  "quando": "2026-11-23T11:11:17",
+  "modelo": "dmr/ai/qwen3 (YAML)",
+  "resumo": {
+    "perguntas": 13,
+    "acertos": 12,
+    "pontos_pct": 97.4,
+    "com_invencao": 0,
+    "invencao_pct": 0.0,
+    "tempo_medio_s": 39.3
+  },
+  "resultados": [
+    {
+      "id": "finops-anomalias",
+      "equipe": "finops",
+      "pergunta": "Quais anomalias de custo existem nos dados? Liste só o nome do recurso e o tipo de cada uma.",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "resposta": "Aqui estão as anomalias de custo listadas com o nome do recurso e o tipo de cada uma:\n\n1. **lgc-desvios-processo** – mudanca_de_patamar  \n2. **func-rma-integracao** – pico  \n3. **vm-relatorios-dev** – pico  \n4. **stgbackupantigo** – recurso_orfao  \n\nO relatório completo pode ser conferido em `relatorios/relatorio_finops_2026-11-23.pdf`.",
+      "tempo_s": 59.8,
+      "codigo_saida": 0
+    },
+    {
+      "id": "finops-sem-dono",
+      "equipe": "finops",
+      "pergunta": "Qual recurso está sem dono e qual é o custo extra atribuído a ele?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "resposta": "O recurso sem dono é o `stgbackupantigo`, e o custo extra atribuído a ele foi de R$ 732,00. O relatório foi salvo em `relatorios/analise_custos_2026-11-23.pdf`. Você pode conferir o relatório com o comando `python tests/validar_relatorio.py`.",
+      "tempo_s": 63.6,
+      "codigo_saida": 0
+    },
+    {
+      "id": "finops-pico-vm",
+      "equipe": "finops",
+      "pergunta": "Quanto a vm-relatorios-dev custou a mais no pico de outubro e qual a prioridade?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "resposta": "Com base na análise do custo adicional da **vm-relatorios-dev** no pico de outubro:\n\n- O custo adicional foi de **R$ 513,81**.\n- A prioridade associada é **Alta**, devido à elevada quantidade de recursos consumidos e ao impacto financeiro.\n\nO relatório com detalhes completos foi salvo em `/relatorios/analise_vm-relatorios-dev_outubro_2026.pdf`. Você pode validá-lo com o comando `python tests/validar_relatorio.py`.",
+      "tempo_s": 27.5,
+      "codigo_saida": 0
+    },
+    {
+      "id": "finops-total-outubro",
+      "equipe": "finops",
+      "pergunta": "Qual foi o custo total de outubro de 2026?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "resposta": "O custo total de outubro de 2026 foi de **R$ 4.762,83**.\n\nO relatório completo foi salvo em `/home/relator/relatorio_financeiro_2026-10.xlsx`. Você pode conferir o relatório com o comando: `python tests/validar_relatorio.py`.",
+      "tempo_s": 40.8,
+      "codigo_saida": 0
+    },
+    {
+      "id": "finops-patamar",
+      "equipe": "finops",
+      "pergunta": "O que aconteceu com o custo da lgc-desvios-processo e desde quando?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "resposta": "O recurso **lgc-desvios-processo** teve um custo médio diário de R$ 7,46 no período de 30 dias. Houve uma anomalia de **mudança de patamar**, onde o custo diário subiu de R$ 4,02 para R$ 8,97 em 2026-09-15 e não voltou ao valor anterior, resultando em um custo extra de R$ 200,36. \n\nO relatório completo foi salvo em `relatorios/relatorio_financeiro_lgc-desvios-processo.pdf`. Você pode conferir o relatório com o comando: `python tests/validar_relatorio.py`.",
+      "tempo_s": 44.9,
+      "codigo_saida": 0
+    },
+    {
+      "id": "finops-armadilha",
+      "equipe": "finops",
+      "pergunta": "Quanto custou o recurso db-producao no último mês?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "resposta": "O recurso `db-producao` não foi encontrado nos dados fornecidos, portanto, não foi possível determinar seu custo no último mês. As anomalias listadas acima podem estar relacionadas a outros recursos, mas não ao `db-producao`.\n\nO relatório completo com todas as análises e sugestões está salvo em `relatorios/analise_custos_2026-11-23.pdf`. Você pode conferir o relatório com o comando: `python tests/validar_relatorio.py`.",
+      "tempo_s": 66.6,
+      "codigo_saida": 0
+    },
+    {
+      "id": "finops-relatorio",
+      "equipe": "finops",
+      "pergunta": "Gere o relatório FinOps e diga se ele foi validado.",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "resposta": "O relatório FinOps foi gerado e validado com sucesso. Ele está salvo em `relatorios/relatorio-finops.md`. O relatório foi validado como `RELATÓRIO CONFIÁVEL`.\n\nResumo do relatório:\n1. Custo por mês: R$ 3.378,24 (agosto), R$ 3.525,60 (setembro), R$ 4.762,83 (outubro).\n2. Foram encontradas 4 anomalias, que somam R$ 1.615,92 de custo extra.\n3. Anomalias de prioridade alta: `stgbackupantigo` (R$ 732,00) e `vm-relatorios-dev` (R$ 513,81).\n\nVocê pode conferir o relatório com o comando: `python tests/validar_relatorio.py`.",
+      "tempo_s": 20.7,
+      "codigo_saida": 0
+    },
+    {
+      "id": "docs-quando-roda",
+      "equipe": "documentacao",
+      "pergunta": "Quando roda a lgc-relatorio-custos?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "resposta": "A Logic App **lgc-relatorio-custos** é executada diariamente às 07:00 no fuso horário **E. South America Standard Time**. Ela obtém relatórios de custos via HTTP, analisa os dados e envia um alerta por e-mail ao gestor se o custo de ontem ultrapassar o limite definido. Caso contrário, registra que o custo está dentro do limite.\n\nA documentação completa está em `docs/logicapps/lgc-relatorio-custos.md` e pode ser validada com o comando `python tests/validar_docs.py`.",
+      "tempo_s": 21.5,
+      "codigo_saida": 0
+    },
+    {
+      "id": "docs-riscos",
+      "equipe": "documentacao",
+      "pergunta": "Quais riscos de boas práticas tem a lgc-relatorio-custos?",
+      "situacao": "parcial",
+      "pontos": 0.667,
+      "faltou": [
+        "tratamento de erro ou trata erro ou trata erros ou tratamento de erros"
+      ],
+      "inventou": [],
+      "resposta": "A Logic App **lgc-relatorio-custos** apresenta os seguintes riscos de boas práticas:\n\n1. **[Alta] SEGREDO_NA_URL (Segurança)**: A chave/segredo está exposto na URL de uma chamada HTTP (parâmetro de chave na URI). Recomendação: Armazenar a chave no Azure Key Vault ou usar identidade gerenciada; nunca no JSON do fluxo.\n\n2. **[Média] SEM_RETENTATIVA (Confiabilidade)**: A política de retentativa está desligada (retryPolicy 'none'), o que pode causar falhas passageiras (408/429/5xx) a derrubar a execução. Recomendação: Remover o 'none' para voltar à política padrão (até 4 retentativas) ou definir uma política explícita.\n\n3. **[Média] SEM_TRATAMENTO_DE_ERRO (Confiabilidade)**: Nenhuma ação roda após falha (runAfter Failed/TimedOut), o que faz com que erros passem em silêncio. Recomendação: Agrupar as ações num Escopo e adicionar uma ação de aviso com 'executar após' = Falhou/Tempo esgotado.\n\nA documentação completa da lgc-relatorio-custos está em `docs/logicapps/lgc-relatorio-custos.md` e pode ser validada com: `python tests/validar_docs.py`.",
+      "tempo_s": 41.5,
+      "codigo_saida": 0
+    },
+    {
+      "id": "docs-cinco-minutos",
+      "equipe": "documentacao",
+      "pergunta": "Qual Logic App roda a cada 5 minutos?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "resposta": "A Logic App **lgc-desvios-processo** está configurada para executar a cada 5 minutos. Ela usa o conector SharePoint para obter desvios de processos e envia e-mails para analistas com uma tabela HTML contendo os desvios. \n\n### Riscos de Boas Práticas\n- **Média:** A recorrência é frequente (288 execuções por dia), o que pode gerar custos elevados.\n- **Média:** Não há tratamento de erro no fluxo inteiro. Erros podem passar em silêncio, prejudicando a confiabilidade.\n\nA documentação completa está em `docs/logicapps/lgc-desvios-processo.md` e pode ser conferida com o comando: `python tests/validar_docs.py`. Se desejar, posso revisar outros pontos de segurança ou custo.",
+      "tempo_s": 25.3,
+      "codigo_saida": 0
+    },
+    {
+      "id": "docs-conectores",
+      "equipe": "documentacao",
+      "pergunta": "Quais conectores a lgc-chamados-nao-respondentes usa?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "resposta": "A Logic App **lgc-chamados-nao-respondentes** utiliza os seguintes conectores:\n\n1. **Excel Online (Business)**: Para ler a planilha de chamados e obter os dados da tabela 'Tabela1'.\n2. **Office 365 Outlook**: Para enviar e-mails ao coordenador com o ranking dos chamados não respondidos e ao suporte em caso de falha na automação.\n\nA documentação completa está em `docs/logicapps/` e pode ser validada com `python tests/validar_docs.py`.",
+      "tempo_s": 15.2,
+      "codigo_saida": 0
+    },
+    {
+      "id": "docs-email-fixo",
+      "equipe": "documentacao",
+      "pergunta": "Alguma Logic App tem e-mail de destinatário escrito direto no fluxo? Qual?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "resposta": "As seguintes Logic Apps possuem e-mail de destinatário escrito diretamente no fluxo:\n\n1. **lgc-chamados-nao-respondentes**:\n   - **Descrição**: A Logic App é acionada a cada mês, às 09:00, e busca por chamados não respondidos em uma planilha do Excel. Ela filtra os chamados não respondidos e envia um e-mail com os top 5 para o coordenador.\n   - **Risco**: `DESTINATARIO_FIXO` em Enviar_ranking_ao_coordenador: Endereço de e-mail escrito direto na ação.\n\n2. **lgc-relatorio-custos**:\n   - **Descrição**: A Logic App é acionada diariamente às 07:00 e verifica se o custo do dia anterior ultrapassou um limite definido. Se ultrapassar, envia um alerta para o gestor por e-mail.\n   - **Riscos**:\n     - `SEGREDO_NA_URL` em Chamar_function_de_custos: Chave/segredo exposto na URL de uma chamada HTTP.\n     - `SEM_RETENTATIVA` em Chamar_function_de_custos: Política de retentativa desligada.\n     - `SEM_TRATAMENTO_DE_ERRO` no fluxo inteiro: Nenhuma ação roda após falha.\n\nA documentação completa está em `docs/logicapps/` e pode ser conferida com o comando: `python tests/validar_docs.py`.",
+      "tempo_s": 68.2,
+      "codigo_saida": 0
+    },
+    {
+      "id": "docs-armadilha",
+      "equipe": "documentacao",
+      "pergunta": "O que a Logic App lgc-folha-pagamento faz?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "resposta": "A Logic App **lgc-folha-pagamento** não está disponível nas listas. Por favor, confirme o nome correto da Logic App que deseja documentar. Se for uma das listadas, diga o nome exato dela.",
+      "tempo_s": 14.7,
+      "codigo_saida": 0
+    }
+  ]
+}

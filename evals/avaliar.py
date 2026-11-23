@@ -50,7 +50,8 @@ RE_NUMERO = re.compile(r"(?<![\w])-?\d[\d.,]*")
 # ------------------------------------------------------------------ normalização
 def sem_acento(t):
     t = unicodedata.normalize("NFKD", t)
-    return "".join(c for c in t if not unicodedata.combining(c)).lower()
+    t = "".join(c for c in t if not unicodedata.combining(c)).lower()
+    return re.sub(r"\s+", " ", t.replace("_", " "))  # SEM_TRATAMENTO_DE_ERRO conta como "tratamento de erro"
 
 
 def para_numero(txt):
@@ -191,12 +192,40 @@ def perguntar(cfg, pergunta, modelo, limite_s):
         cmd += ["--model", modelo]
     cmd += [str(cfg), pergunta]
     t0 = time.time()
+    p = subprocess.Popen(cmd, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="replace",
+                         env={**os.environ, "PYTHONIOENCODING": "utf-8", "TELEMETRY_ENABLED": "false"},
+                         start_new_session=os.name != "nt")
     try:
-        r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=limite_s,
-                           env={**os.environ, "PYTHONIOENCODING": "utf-8", "TELEMETRY_ENABLED": "false"})
-        return r.stdout.strip(), r.stderr.strip(), r.returncode, time.time() - t0
+        out, err = p.communicate(timeout=limite_s)
+        return out.strip(), err.strip(), p.returncode, time.time() - t0
     except subprocess.TimeoutExpired:
+        mata_arvore(p)
         return "", f"passou de {limite_s} s", -1, time.time() - t0
+
+
+def mata_arvore(p):
+    """No tempo limite, encerra o docker E os processos filhos dele (o plugin docker-agent).
+    Só matar o 'docker' deixa o filho segurando a saída e o Python fica esperando para sempre (acontece no Windows)."""
+    if os.name == "nt":
+        subprocess.run(["taskkill", "/T", "/F", "/PID", str(p.pid)], capture_output=True)
+    else:
+        import signal
+        try:
+            os.killpg(p.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+    try:
+        p.communicate(timeout=10)
+    except subprocess.TimeoutExpired:
+        pass
+
+
+def baixa_modelo(modelo):
+    """Baixa o modelo antes de começar (docker model pull), com o progresso na tela.
+    Assim o download não conta no tempo de nenhuma resposta. Se já estiver baixado, é rápido."""
+    print(f"Conferindo o modelo {modelo} (docker model pull; na primeira vez baixa alguns GB)...", flush=True)
+    r = subprocess.run(["docker", "model", "pull", modelo])
+    return r.returncode == 0
 
 
 def confere_docker_agent():
@@ -286,6 +315,8 @@ def main(argv=None):
 
     if a.corrigir:
         dados = json.loads(Path(a.corrigir).read_text(encoding="utf-8"))
+        if isinstance(dados, dict) and "resultados" in dados:  # um arquivo de evals/resultados: corrige de novo
+            dados = dados["resultados"]
         respostas = dados if isinstance(dados, dict) else {d["id"]: d["resposta"] for d in dados}
         for c in casos:
             if c["id"] in respostas:
@@ -301,6 +332,10 @@ def main(argv=None):
     if problema:
         print(f"RESULTADO: ERRO — {problema}")
         return 1
+    dmr_modelo = a.modelo[len("dmr/"):] if a.modelo and a.modelo.startswith("dmr/") else (None if a.modelo else "ai/qwen3")
+    if dmr_modelo and not baixa_modelo(dmr_modelo):
+        print(f"RESULTADO: ERRO — não consegui baixar {dmr_modelo} (o Docker Model Runner está ativado?)")
+        return 1
     modelo = a.modelo or "padrão do YAML (dmr/ai/qwen3)"
     print(f"Avaliando {len(casos)} pergunta(s) × {a.repetir} com {modelo}. Cada resposta pode levar alguns minutos no modelo local.\n")
     with tempfile.TemporaryDirectory() as tmp:
@@ -315,7 +350,7 @@ def main(argv=None):
             resultados.append(r)
             extra = f"  inventou: {', '.join(r['inventou'])}" if r["inventou"] else ""
             extra += f"  faltou: {', '.join(r['faltou'])}" if r["faltou"] else ""
-            print(f"[{i}/{len(casos) * a.repetir}] {r['situacao']:<12} {c['id']} ({dur:.0f} s){extra}")
+            print(f"[{i}/{len(casos) * a.repetir}] {r['situacao']:<12} {c['id']} ({dur:.0f} s){extra}", flush=True)
             if codigo != 0 and erro:
                 print(f"      erro do docker agent: {erro.splitlines()[-1][:200]}")
 

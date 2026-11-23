@@ -95,9 +95,10 @@ python evals/avaliar.py --so finops              # só uma equipe
 python evals/avaliar.py --caso finops-sem-dono   # uma pergunta
 python evals/avaliar.py --modelo dmr/ai/gemma3   # outro modelo local, mesmas perguntas, para comparar
 python evals/avaliar.py --repetir 3              # cada pergunta 3 vezes (o modelo varia de uma vez para outra)
+python evals/avaliar.py --corrigir evals/resultados/<arquivo>.json   # corrige de novo uma rodada salva, sem rodar o modelo
 ```
 
-Precisa do Docker Desktop com o modelo baixado (`docker model pull ai/qwen3`). As ferramentas rodam com
+Precisa do Docker Desktop com o Docker Model Runner ativado. Antes da primeira pergunta o script roda `docker model pull` (com o progresso na tela), para o download de um modelo novo não contar no tempo das respostas. As ferramentas rodam com
 `--safety restricted` e uma lista de permissões só com as ferramentas de leitura e geração de cada equipe; a
 sincronização com o Azure fica de fora. Cada rodada grava `evals/resultados/<data>-<modelo>.md` com as respostas
 completas, e [`evals/resultados/RESUMO.md`](evals/resultados/RESUMO.md) junta todas as rodadas numa tabela para
