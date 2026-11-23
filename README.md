@@ -27,7 +27,7 @@ e medido por uma avaliação com gabarito.**
 
 | | |
 |---|---|
-| **13 / 13** | perguntas certas do agente com o modelo local qwen3, **sem nenhum número ou recurso inventado** (inclusive nas armadilhas) |
+| **19 / 20** | perguntas certas do agente com o modelo local qwen3, **sem nenhum número, recurso ou arquivo inventado** (inclusive nas 3 armadilhas) |
 | **451.914** | verificações do leitor de Logic Apps, todas certas, com gabarito escrito à mão, exemplos oficiais e 2.000 fluxos aleatórios |
 | **R$ 2.311,32/mês** | de economia achada nos 3 ambientes fictícios (produção, desenvolvimento e integração), cada valor com evidência e conferido com gabarito, mais **R$ 153,27/mês já realizados e medidos** nos dados |
 | **15 × 15** | ações cobradas por execução: previstas só lendo o JSON × medidas pelo Azure Monitor na Logic App real |
@@ -134,7 +134,7 @@ que usa o Docker) aparecem como **Só no PC**, com o comando para rodar no termi
 | Bateria do leitor de Logic Apps | **451.914 / 451.914** verificações: agendas, 28 expressões, gatilhos, fluxos com gabarito escrito à mão, exemplos JSON da documentação oficial, 2.000 fluxos aleatórios e mutações |
 | Previsto × medido (Azure real) | **15 ações cobradas por execução previstas** só lendo o JSON e **15 medidas** pelo Azure Monitor |
 | Relatório FinOps | Acha as 4 anomalias do gabarito, com valores conferidos pelo validador |
-| Avaliação dos agentes | qwen3: **13 / 13**, nenhuma invenção. gemma3: **0 / 13**, porque não chama as ferramentas (escreve a chamada como texto) |
+| Avaliação dos agentes | qwen3: **19 / 20**, nenhuma invenção. gemma3: **0 / 13**, porque não chama as ferramentas (escreve a chamada como texto) |
 | Receptor de alertas | **36 / 36** verificações com alertas reais do Grafana, incluindo a assinatura (sem assinatura, segredo errado, alterado ou velho → recusado) |
 | Agendador e histórico | **24 / 24** verificações: comando do Agendador de Tarefas, rodada que para no primeiro erro, carga que acumula no Postgres |
 | Comparação de versões | **24 / 24** verificações com mudanças de gabarito e versões do Azure lidas de um servidor falso |
@@ -161,27 +161,46 @@ e o `gitleaks` antes de cada commit.
 ## Avaliação dos agentes
 
 Os testes conferem o **código**. A avaliação confere o **agente** (modelo + instruções + ferramentas): faz às duas equipes
-19 perguntas cuja resposta já se sabe ([`evals/casos.json`](evals/casos.json)) e mede quanto ele acerta e quanto ele **inventa**.
+20 perguntas cuja resposta já se sabe ([`evals/casos.json`](evals/casos.json)) e mede quanto ele acerta e quanto ele **inventa**.
 
 - **Acerto:** a resposta precisa trazer os nomes e valores do gabarito (ex.: `stgbackupantigo` e R$ 732,00). Números são
   comparados como números, em formato brasileiro ou americano.
-- **Invenção:** qualquer recurso com cara de nuvem (`vm-…`, `stg…`, `lgc-…`) ou valor em R$ que **não aparece na saída das
-  ferramentas** conta como inventado, mesmo que a resposta tenha acertado o resto.
-- **Perguntas armadilha:** duas perguntas citam um recurso e uma Logic App que não existem. O certo é dizer que não encontrou.
+- **Invenção:** qualquer recurso com cara de nuvem (`vm-…`, `stg…`, `lgc-…`), valor em R$ ou **arquivo** (`.pdf`, `.xlsx`,
+  `.md`…) que **não aparece na saída das ferramentas** nem existe no projeto conta como inventado, mesmo que a resposta tenha
+  acertado o resto.
+- **Isolamento:** nas perguntas de um ambiente, citar recurso ou nome de outro ambiente também conta como invenção.
+- **Perguntas armadilha:** três perguntas citam um recurso, uma Logic App e um app que não existem. O certo é dizer que não
+  encontrou.
 - **Ferramenta em texto:** quando o modelo escreve `transfer_task(...)` na resposta em vez de chamar a ferramenta, a avaliação
   avisa. É o sinal de um modelo sem suporte a chamada de ferramentas.
 - O corretor também é testado (`tests/testar_avaliador.py`, roda no CI) com respostas boas, ruins (inclusive o relatório
   alucinado da primeira tentativa) e respostas reais dos modelos.
 
-| Modelo (rodadas de 23/11, 13 perguntas) | Acertos | Invenção | Ferramenta em texto | Tempo médio |
+| Rodada (23/11, qwen3) | Perguntas | Acertos | Com invenção | Tempo médio |
 |---|---|---|---|---|
-| `ai/qwen3` | 13 / 13 | 0 | 0 / 13 | 39 s |
-| `ai/gemma3` | 0 / 13 | 0 | 13 / 13 | 6 s |
+| Final, corretor que pega arquivo inventado | 20 | **19 / 20** | **0** | 37 s |
+| Mesma rodada que antes aparecia como 13 / 13, corrigida de novo com o corretor novo | 13 | 7 / 13 | 6 | 39 s |
 
-A 1ª rodada do qwen3 ficou gravada como 12 / 13: a resposta sobre riscos estava certa, mas o corretor ainda não aceitava
-`SEM_TRATAMENTO_DE_ERRO` com sublinhado. Corrigida com `--corrigir`, dá 13 / 13, e a resposta virou caso de teste.
-Depois entraram a 14ª pergunta ("o que mudou na lgc-desvios-processo?", o qwen3 acertou) e 6 perguntas sobre os
-ambientes (orçamento, economia, economia realizada, isolamento, custo fora de produção e um ambiente que não existe).
+| Modelo (13 perguntas) | Acertos | Ferramenta em texto | Tempo médio |
+|---|---|---|---|
+| `ai/qwen3` | ver acima | 0 / 13 | 39 s |
+| `ai/gemma3` | 0 / 13 | 13 / 13 | 6 s |
+
+**O corretor ficou mais rígido e o número caiu antes de subir.** A versão anterior deste README dizia 13 / 13. Quando o
+corretor passou a conferir arquivos citados, apareceu um erro que sempre esteve lá: em 6 das 13 respostas o agente principal
+dizia "o relatório foi salvo em `relatorios/…pdf`", um arquivo que ninguém gerou. A causa era a instrução dele, que mandava
+dizer onde o relatório foi salvo depois de **qualquer** pergunta. Não há hook do Docker Agent que barre a resposta final
+(`stop` só observa), então a correção foi na instrução: um caminho por tipo de pergunta, citar só arquivo que um agente
+informou e repassar a resposta com os mesmos nomes e valores. Outras correções da mesma rodada:
+
+- a ferramenta de um recurso passou a dar o total e a média de 30 dias prontos (o modelo somava sozinho e errava);
+- a lista de nomes permitidos de `detalhar_recurso` saiu: com ela o modelo não conseguia perguntar por um recurso que não
+  existe e respondia com os números de outro; agora a ferramenta responde "RECURSO NÃO ENCONTRADO";
+- a armadilha de ambiente foi trocada: "homologação" é apelido válido de Integração, então a pergunta antiga era ambígua, não
+  difícil.
+
+O erro que sobrou (`ambientes-realizada`): o valor e a ação vêm certos, mas o agente escreve "o disco" sem o nome
+`disk-hml-antigo`, nas 3 últimas rodadas.
 
 ```bash
 python evals/avaliar.py                          # 20 perguntas com o modelo dos YAMLs (ai/qwen3)

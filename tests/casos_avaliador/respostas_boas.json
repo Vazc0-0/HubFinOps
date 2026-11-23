@@ -18,5 +18,5 @@
  "ambientes-realizada": "O ambiente de integração já economiza R$ 153,27 por mês: o disco órfão disk-hml-antigo foi excluído em 14/10/2026 e o custo zerou nos dados.",
  "ambientes-isolamento": "Não. A Contoso Produção não tem disco órfão, IP sem uso nem snapshot antigo: o disk-dados-01 está anexado à vm-erp-conector-prd. A única oportunidade em produção é reduzir o tamanho da vm-erp-conector-prd.",
  "ambientes-nao-producao": "Desenvolvimento e integração custaram R$ 5.431,41 em 30 dias, 85,5% do custo de produção. O app que mais pesa fora de produção é o pedidos: R$ 2.876,19 fora de produção contra R$ 1.742,48 em produção (165,1%).",
- "ambientes-armadilha": "Não existe um ambiente de homologação de pagamentos nos dados. Os tenants disponíveis são Contoso Produção, Contoso Desenvolvimento e Contoso Integração."
+ "ambientes-armadilha": "O app pagamentos não existe nos dados de produção. Os apps de produção são integracao-erp e pedidos."
 }

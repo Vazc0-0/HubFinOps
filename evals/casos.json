@@ -78,7 +78,7 @@
     {
       "id": "ambientes-armadilha",
       "equipe": "finops",
-      "pergunta": "Quanto o ambiente de homologação de pagamentos gasta por mês no Azure?",
+      "pergunta": "Quanto o app pagamentos custa por mês no ambiente de produção?",
       "deve_conter": [{"qualquer": ["nao encontr", "nao existe", "nao ha", "nao consta", "nao aparece", "nao esta", "nao tem", "inexistente", "nao foi encontrad", "nao possui"]}],
       "armadilha": "pagamentos"
     },

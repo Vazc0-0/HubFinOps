@@ -44,6 +44,7 @@ TOLERANCIA = 0.011
 # nomes que parecem recurso de nuvem: prefixos usuais do Azure (e da AWS, que o modelo já inventou antes)
 PREFIXOS = ("vm", "stg", "st", "func", "fn", "lgc", "la", "sqldb", "sql", "db", "apim", "appi", "kv", "rg", "aks", "acr",
             "app", "web", "cosmos", "redis", "nsg", "vnet", "pip", "lb", "disk", "ec2", "s3", "bucket", "lambda", "rds")
+RE_ARQUIVO = re.compile(r"[\w./\\-]+\.(?:pdf|md|docx|xlsx|pptx|csv|json|html)\b", re.I)
 RE_NOME = re.compile(r"(?<![\w.@/-])([a-z][a-z0-9]*(?:-[a-z0-9]+)+|stg[a-z0-9]{3,}|ec2|s3)(?![\w-])")
 RE_REAIS = re.compile(r"R\$\s*(-?[\d.,]*\d)")
 RE_NUMERO = re.compile(r"(?<![\w])-?\d[\d.,]*")
@@ -138,6 +139,12 @@ class Universo:
     def __init__(self, texto):
         self.nomes = {n for n in RE_NOME.findall(texto.lower())}
         self.valores = reais(texto) + numeros(texto)
+        self.texto = texto.lower()
+
+    def arquivo_conhecido(self, caminho):
+        """Arquivo citado na resposta: vale se apareceu na saída das ferramentas ou se existe no projeto."""
+        c = caminho.strip("`'\"./").replace("\\", "/")
+        return Path(c).name.lower() in self.texto or (ROOT / c).exists()
 
     def valor_conhecido(self, v):
         return any(abs(v - x) <= TOLERANCIA for x in self.valores)
@@ -174,6 +181,9 @@ def corrigir(caso, resposta, universo):
     for v in reais(resposta):
         if not universo.valor_conhecido(v):
             inventados.append(f"valor R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+    for arq in sorted(set(RE_ARQUIVO.findall(resposta))):  # arquivo/relatório que ninguém gerou
+        if not universo.arquivo_conhecido(arq) and arq.lower() not in caso["pergunta"].lower():
+            inventados.append(f"arquivo '{arq}'")
     for proibido in caso.get("nao_deve_conter", []):  # isolamento: dado de outro tenant na resposta
         if sem_acento(proibido) in norm:
             inventados.append(f"vazou '{proibido}' (de outro tenant)")
@@ -312,8 +322,9 @@ def atualiza_resumo():
         linhas.append(f"| {d['quando'][:16].replace('T', ' ')} | `{d['modelo']}` | {r['acertos']}/{r['perguntas']} | {r['pontos_pct']}% "
                       f"| {r['invencao_pct']}% | {texto_}/{r['perguntas']} | {r['tempo_medio_s']} s | [{p.stem}]({p.stem}.md) |")
     texto = ["# Comparação das rodadas", "",
-             "Pontuação = parte do que cada resposta precisava trazer. Invenção = respostas que citaram recurso ou valor em R$ "
-             "que não saiu das ferramentas. Ferramenta em texto = respostas em que o modelo escreveu a chamada da ferramenta "
+             "Pontuação = parte do que cada resposta precisava trazer. Invenção = respostas que citaram recurso, valor em R$ "
+             "ou arquivo que não saiu das ferramentas (arquivo conta desde 23/11 15:48; recorrigida com o corretor novo, "
+             "a rodada de 23/11 11:11 dá 7/13). Ferramenta em texto = respostas em que o modelo escreveu a chamada da ferramenta "
              "(ex.: `transfer_task(...)`) em vez de chamá-la: sinal de modelo sem suporte a ferramentas.", "",
              "| Quando | Modelo | Acertos | Pontuação | Invenção | Ferramenta em texto | Tempo médio | Detalhes |",
              "|---|---|---|---|---|---|---|---|",

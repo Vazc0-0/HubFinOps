@@ -5,5 +5,5 @@
  "finops-pico-vm": "A vm-relatorios-dev custou R$ 513,81 a mais, prioridade Alta. A vm-producao-02 também subiu.",
  "docs-quando-roda": "",
  "ambientes-isolamento": "A Contoso Produção não tem nenhum disco órfão, mas existe o pip-teste-dev e o snap-build-dev-2026-03 que podem ser excluídos.",
- "ambientes-armadilha": "A homologação de pagamentos gasta R$ 4.210,00 por mês, principalmente com a vm-pagamentos-hml."
+ "ambientes-armadilha": "O app pagamentos custa R$ 4.210,00 por mês em produção, principalmente com a vm-pagamentos-prd."
 }

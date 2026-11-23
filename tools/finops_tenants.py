@@ -317,6 +317,9 @@ def texto_consolidado(analises):
     L += ["", f"Total: economia potencial {rs(tot_pot)}/mês ({rs(tot_pot * 12)}/ano) · economia realizada {rs(tot_real)}/mês.",
           "Estouram o orçamento neste mês: " + (", ".join(a["nome"] for a in analises if a["estoura_orcamento"]) or "nenhum") + "."]
     for a in analises:
+        for r in a["realizadas"]:
+            L.append(f"Economia realizada em {a['nome']}: {rs(r['economia_mensal'])}/mês, recurso {r['recurso']} "
+                     f"({r['acao']} em {_corte_br(r['implementada_em'])}).")
         if a["estoura_orcamento"] and a["aumentos"]:
             L.append(f"Causa do estouro em {a['nome']}: {_aumento_txt(a['aumentos'][0])}.")
     e = analisar_empresa(analises)
@@ -341,6 +344,7 @@ def texto_tenant(a):
          + (f"; sem tags: {', '.join(a['sem_tags'])}" if a["sem_tags"] else ""),
          "", "Custo por centro de custo (30 dias):"]
     L += [f"  {k}: {rs(v)}" for k, v in a["showback_centro_custo"].items()]
+    L += ["", "Custo por app (30 dias):"] + [f"  {k}: {rs(v)}" for k, v in a["showback_app"].items()]
     L += ["", "Maiores custos (30 dias):"] + [f"  {n}: {rs(v)}" for n, v in a["top_recursos"]]
     L += ["", f"Economia potencial: {rs(a['economia_potencial_mensal'])}/mês ({len(a['oportunidades'])} oportunidade(s))"]
     L += [f"  {o['recurso']}: {NOME_OPORTUNIDADE[o['tipo']]} → {rs(o['economia_mensal'])}/mês" for o in a["oportunidades"]]
@@ -348,8 +352,9 @@ def texto_tenant(a):
         L.append("  nenhuma oportunidade encontrada pelas regras (discos, IPs, snapshots e VMs conferidos)")
     if a["nao_sao_oportunidades"]:
         L.append("  conferidos e sem desperdício: " + ", ".join(a["nao_sao_oportunidades"]))
-    L += [f"Economia realizada: {rs(a['economia_realizada_mensal'])}/mês"]
-    L += [f"  {r['recurso']}: {r['acao']} em {_corte_br(r['implementada_em'])} → {rs(r['economia_mensal'])}/mês "
+    L += [f"Economia realizada: {rs(a['economia_realizada_mensal'])}/mês"
+          + "".join(f" (recurso {r['recurso']})" for r in a["realizadas"])]
+    L += [f"  recurso {r['recurso']}: {r['acao']} em {_corte_br(r['implementada_em'])} → {rs(r['economia_mensal'])}/mês "
           f"({'comprovada: custo zerou nos dados' if r['comprovada'] else 'parcial: ainda há custo depois'})"
           for r in a["realizadas"]]
     return "\n".join(L)

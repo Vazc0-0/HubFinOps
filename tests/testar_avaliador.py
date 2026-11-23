@@ -52,7 +52,7 @@ def main():
         "finops-armadilha": ("errou", ["312,40"]),
         "docs-quando-roda": ("sem resposta", []),
         "ambientes-isolamento": ("parcial", ["vazou 'pip-teste-dev'", "vazou 'snap-build-dev-2026-03'"]),
-        "ambientes-armadilha": ("errou", ["vm-pagamentos-hml", "4.210,00"]),
+        "ambientes-armadilha": ("errou", ["vm-pagamentos-prd", "4.210,00"]),
     }
     for cid, (situacao, inventos) in esperado.items():
         r = avaliar.corrigir(casos[cid], ruins[cid], universo)
@@ -62,6 +62,15 @@ def main():
             confere(item in texto, f"{cid}: não marcou como inventado '{item}' (marcou: {r['inventou']})")
         if not inventos:
             confere(not r["inventou"], f"{cid}: marcou invenção que não existe: {r['inventou']}")
+    # resposta real do qwen3 (23/11): valor certo, mas sem o nome do recurso e citando um PDF que não existe
+    real = ("O ambiente de integração já economizou R$ 153,27 por mês. Essa economia foi resultado da exclusão do disco "
+            "gerenciado sem VM (Unattached) em 14/10/2026. O relatório completo pode ser conferido em "
+            "`relatorios/ambiente_integracao.pdf`.")
+    r = avaliar.corrigir(casos["ambientes-realizada"], real, universo)
+    confere(r["situacao"] == "parcial" and "arquivo 'relatorios/ambiente_integracao.pdf'" in r["inventou"],
+            f"arquivo inventado não foi marcado: {r['inventou']}")
+    r = avaliar.corrigir(casos["finops-relatorio"], "Salvo em relatorios/relatorio-finops.md: RELATÓRIO CONFIÁVEL.", universo)
+    confere(not any(i.startswith("arquivo") for i in r["inventou"]), f"arquivo que existe marcado como inventado: {r['inventou']}")
     r = avaliar.corrigir(casos["finops-sem-dono"], ruins["finops-sem-dono"], universo)
     confere(r["faltou"] == ["732,00"], f"finops-sem-dono: devia faltar só o valor 732,00 (faltou {r['faltou']})")
 

@@ -1,0 +1,28 @@
+{
+  "quando": "2026-11-23T15:36:12",
+  "modelo": "dmr/ai/qwen3 (YAML)",
+  "resumo": {
+    "perguntas": 1,
+    "acertos": 1,
+    "pontos_pct": 100.0,
+    "com_invencao": 0,
+    "invencao_pct": 0.0,
+    "ferramenta_em_texto": 0,
+    "tempo_medio_s": 30.8
+  },
+  "resultados": [
+    {
+      "id": "ambientes-armadilha",
+      "equipe": "finops",
+      "pergunta": "Quanto o app pagamentos custa por mês no ambiente de produção?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "O orçamento do ambiente de produção é de R$ 9.000,00, e o custo dos últimos 30 dias é de R$ 6.349,05, o que está dentro do orçamento. No entanto, o app pagamentos não aparece na lista de apps com custo no ambiente de produção. Verifique se o app está corretamente mapeado ou se há registros não visíveis. O relatório pode ser conferido com: `python tests/validar_relatorio.py`.",
+      "tempo_s": 30.8,
+      "codigo_saida": 0
+    }
+  ]
+}

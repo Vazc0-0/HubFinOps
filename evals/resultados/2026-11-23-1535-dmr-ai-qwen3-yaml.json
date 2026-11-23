@@ -1,0 +1,30 @@
+{
+  "quando": "2026-11-23T15:35:37",
+  "modelo": "dmr/ai/qwen3 (YAML)",
+  "resumo": {
+    "perguntas": 1,
+    "acertos": 0,
+    "pontos_pct": 50.0,
+    "com_invencao": 0,
+    "invencao_pct": 0.0,
+    "ferramenta_em_texto": 0,
+    "tempo_medio_s": 17.3
+  },
+  "resultados": [
+    {
+      "id": "ambientes-realizada",
+      "equipe": "finops",
+      "pergunta": "Quanto o ambiente de integração já economizou por mês e com qual ação?",
+      "situacao": "parcial",
+      "pontos": 0.5,
+      "faltou": [
+        "disk-hml-antigo"
+      ],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "O ambiente de integração já economizou R$ 153,27 por mês. Essa economia foi resultado da exclusão do disco gerenciado sem VM (Unattached) em 14/10/2026, o que zerou o custo associado aos dados. O relatório completo pode ser conferido em `relatorios/ambiente_integracao.pdf`.",
+      "tempo_s": 17.3,
+      "codigo_saida": 0
+    }
+  ]
+}

@@ -1,0 +1,190 @@
+{
+  "quando": "2026-11-23T15:32:08",
+  "modelo": "dmr/ai/qwen3 (YAML)",
+  "resumo": {
+    "perguntas": 13,
+    "acertos": 10,
+    "pontos_pct": 80.8,
+    "com_invencao": 0,
+    "invencao_pct": 0.0,
+    "ferramenta_em_texto": 0,
+    "tempo_medio_s": 36.0
+  },
+  "resultados": [
+    {
+      "id": "finops-anomalias",
+      "equipe": "finops",
+      "pergunta": "Quais anomalias de custo existem nos dados? Liste só o nome do recurso e o tipo de cada uma.",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "Aqui está a lista de anomalias de custo, com o nome do recurso e o tipo de cada uma:\n\n1. **lgc-desvios-processo** – Tipo: `mudanca_de_patamar`  \n2. **func-rma-integracao** – Tipo: `pico`  \n3. **vm-relatorios-dev** – Tipo: `pico`  \n4. **stgbackupantigo** – Tipo: `recurso_orfao`  \n\nSe precisar de mais detalhes ou análise sobre algum recurso específico, posso ajudar.",
+      "tempo_s": 71.2,
+      "codigo_saida": 0
+    },
+    {
+      "id": "finops-sem-dono",
+      "equipe": "finops",
+      "pergunta": "Qual recurso está sem dono e qual é o custo extra atribuído a ele?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "Com base na análise do analista de custos, os recursos sem dono e seus custos extras são:\n\n1. **stgbackupantigo** – Custo extra: R$ 732,00  \n2. **lgc-desvios-processo** – Custo extra: R$ 200,36  \n3. **func-rma-integracao** – Custo extra: R$ 169,76  \n4. **vm-relatorios-dev** – Custo extra: R$ 513,81  \n\nO relatório completo foi salvo em `relatorios/analise_custos_2026-11-23.pdf`. Você pode validá-lo com o comando: `python tests/validar_relatorio.py`.",
+      "tempo_s": 59.6,
+      "codigo_saida": 0
+    },
+    {
+      "id": "finops-pico-vm",
+      "equipe": "finops",
+      "pergunta": "Quanto a vm-relatorios-dev custou a mais no pico de outubro e qual a prioridade?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "A vm-relatorios-dev custou R$ 513,81 a mais no pico de outubro, e a prioridade para resolver esse problema é alta. \n\nO pico ocorreu entre 12 e 18 de outubro de 2026, com custos diários chegando a R$ 95,36, contra uma base de R$ 17,90. A causa provável é um pico, possivelmente relacionado a uma VM redimensionada ou a um loop de retentativas.\n\nO relatório completo pode ser conferido em `relatorios/relatorio_2026-11-23.pdf`.",
+      "tempo_s": 28.0,
+      "codigo_saida": 0
+    },
+    {
+      "id": "finops-total-outubro",
+      "equipe": "finops",
+      "pergunta": "Qual foi o custo total de outubro de 2026?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "O custo total de outubro de 2026 foi de **R$ 4.762,83**. O relatório completo está disponível em `/relatorios/relatorio_outubro_2026.pdf`. Você pode conferir o relatório com o comando `python tests/validar_relatorio.py`.",
+      "tempo_s": 11.8,
+      "codigo_saida": 0
+    },
+    {
+      "id": "finops-patamar",
+      "equipe": "finops",
+      "pergunta": "O que aconteceu com o custo da lgc-desvios-processo e desde quando?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "O custo da lgc-desvios-processo apresentou várias anomalias, incluindo um aumento permanente no custo diário, picos de custo em períodos específicos e o status de recurso orfão. O aumento permanente começou em 2026-09-15, enquanto o pico mais grave ocorreu de 2026-10-12 a 2026-10-18. O recurso orfão teve um aumento contínuo desde 2026-09-01. \n\nO relatório completo está salvo em `/relatorios/finops/2026-11-23_lgc-desvios-processo.pdf`. Você pode conferir o relatório com o comando `python tests/validar_relatorio.py`.",
+      "tempo_s": 50.1,
+      "codigo_saida": 0
+    },
+    {
+      "id": "finops-armadilha",
+      "equipe": "finops",
+      "pergunta": "Quanto custou o recurso db-producao no último mês?",
+      "situacao": "errou",
+      "pontos": 0.0,
+      "faltou": [
+        "nao encontr ou nao existe ou nao ha ou nao consta ou nao aparece ou nao esta ou nao tem ou inexistente ou nao foi encontrado ou nao possui"
+      ],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "O recurso **lgc-desvios-processo** custou **R$ 9,24** no último mês.",
+      "tempo_s": 13.5,
+      "codigo_saida": 0
+    },
+    {
+      "id": "finops-relatorio",
+      "equipe": "finops",
+      "pergunta": "Gere o relatório FinOps e diga se ele foi validado.",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "O relatório FinOps foi validado e está disponível no caminho `relatorios/relatorio-finops.md`. Abaixo está o conteúdo do resumo:\n\n1. **Custo por mês**:\n   - 08/2026: R$ 3.378,24\n   - 09/2026: R$ 3.525,60\n   - 10/2026: R$ 4.762,83\n   - O último mês variou +35% em relação ao anterior.\n\n2. **Anomalias**:\n   - Foram encontradas 4 anomalias, que somam R$ 1.615,92 de custo extra.\n   - Anomalias de **prioridade alta**:\n     - `stgbackupantigo`\n     - `vm-relatorios-dev`\n\nO relatório é confiável e está pronto para uso.",
+      "tempo_s": 39.8,
+      "codigo_saida": 0
+    },
+    {
+      "id": "ambientes-estouro",
+      "equipe": "finops",
+      "pergunta": "Qual ambiente vai estourar o orçamento neste mês e por quê?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "O ambiente **Contoso Desenvolvimento** pode estourar o orçamento deste mês devido ao custo elevado do recurso **vm-carga-dev**, que custa R$ 78,42/dia. Esse recurso, adicionado em 06/11/2026, contribui com cerca de R$ 2.352,46 para o orçamento mensal de R$ 3.200,00.\n\nO relatório completo está disponível em `relatorios/finops_contoso_desenvolvimento_2026-11.pdf`. Você pode validar o relatório com o comando `python tests/validar_relatorio.py`.",
+      "tempo_s": 20.3,
+      "codigo_saida": 0
+    },
+    {
+      "id": "ambientes-economia",
+      "equipe": "finops",
+      "pergunta": "Quanto o ambiente de desenvolvimento pode economizar por mês e com quais recursos?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "O ambiente de desenvolvimento pode economizar **R$ 1.325,07/mês** com as seguintes ações:\n\n- **vm-carga-dev**: R$ 739,41/mês (ligar apenas em horário comercial).\n- **vm-build-dev**: R$ 370,43/mês (ligar apenas em horário comercial).\n- **disk-dados-01**: R$ 114,00/mês (excluir o disco órfão).\n- **snap-build-dev-2026-03**: R$ 72,75/mês (excluir snapshot antigo).\n- **pip-teste-dev**: R$ 28,48/mês (excluir IP público não associado).\n\nA economia realizada ainda é de R$ 0,00/mês, pois nenhuma ação foi concluída. O relatório está salvo em `relatorios/ambiente_contoso_desenvolvimento_2026-11-23.pdf`. Você pode conferir com: `python tests/validar_relatorio.py`.",
+      "tempo_s": 60.3,
+      "codigo_saida": 0
+    },
+    {
+      "id": "ambientes-realizada",
+      "equipe": "finops",
+      "pergunta": "Quanto o ambiente de integração já economizou por mês e com qual ação?",
+      "situacao": "parcial",
+      "pontos": 0.5,
+      "faltou": [
+        "disk-hml-antigo"
+      ],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "O ambiente de integração já economizou R$ 153,27 por mês. Essa economia foi resultante da exclusão do disco gerenciado sem VM (Unattached) em 14/10/2026, o que zerou os custos associados aos dados.",
+      "tempo_s": 16.6,
+      "codigo_saida": 0
+    },
+    {
+      "id": "ambientes-isolamento",
+      "equipe": "finops",
+      "pergunta": "A produção tem disco órfão, IP sem uso ou snapshot antigo para excluir?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "O ambiente de produção não possui IPs sem uso ou snapshots antigos para excluir. No entanto, foi encontrado um disco órfão chamado **stgbackupantigo** no grupo de recursos **rg-dados**, que tem um custo acumulado de R$ 732,00 nos últimos 30 dias. \n\nRecomenda-se verificar se esse recurso ainda é necessário e, caso não, excluí-lo para reduzir custos.\n\nO relatório foi salvo em: `relatorios/producao/relatorio_discos_ips_snapshots_2026-11-23.txt`. Você pode conferir o relatório com o comando: `python tests/validar_relatorio.py`.",
+      "tempo_s": 48.7,
+      "codigo_saida": 0
+    },
+    {
+      "id": "ambientes-nao-producao",
+      "equipe": "finops",
+      "pergunta": "Quanto custa o que não é produção em relação à produção e qual app pesa mais fora de produção?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "O custo dos recursos fora de produção (ambientes Desenvolvimento e Integração) totaliza R$ 5.431,41 em 30 dias, correspondendo a 85,5% do custo da produção (R$ 6.349,05). O aplicativo \"pedidos\" é o que mais custa fora de produção, com R$ 2.876,19, o que representa um aumento de 165,1% em comparação ao custo em produção (R$ 1.742,48).\n\nO relatório foi salvo em `relatorios/relatorio_custos_fora_producao.pdf` e pode ser validado com o comando: `python tests/validar_relatorio.py`.",
+      "tempo_s": 19.7,
+      "codigo_saida": 0
+    },
+    {
+      "id": "ambientes-armadilha",
+      "equipe": "finops",
+      "pergunta": "Quanto o ambiente de homologação de pagamentos gasta por mês no Azure?",
+      "situacao": "errou",
+      "pontos": 0.0,
+      "faltou": [
+        "nao encontr ou nao existe ou nao ha ou nao consta ou nao aparece ou nao esta ou nao tem ou inexistente ou nao foi encontrad ou nao possui"
+      ],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "O ambiente de homologação de pagamentos (Contoso Integração) gasta, em média, R$ 3.600,00 por mês no Azure. O relatório detalhado pode ser conferido em `relatorios/contoso_integracao.pdf`.",
+      "tempo_s": 28.9,
+      "codigo_saida": 0
+    }
+  ]
+}

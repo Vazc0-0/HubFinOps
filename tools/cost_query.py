@@ -175,13 +175,17 @@ def tabela(series, meta):
 
 def recurso(series, meta, name):
     if name not in series:
-        return f"Recurso '{name}' não encontrado. Disponíveis: {', '.join(sorted(series))}"
+        return (f"Recurso '{name}' não encontrado nos dados (não existe). Disponíveis: {', '.join(sorted(series))}\n"
+                "RESULTADO: RECURSO NÃO ENCONTRADO")
     s = series[name]
     last = max(s)
     m = meta[name]
     out = [f"{name} | serviço: {m['servico']} | rg: {m['rg']} | tags: {json.dumps(m['tags'], ensure_ascii=False)}",
            "Custo diário (últimos 30 dias):"]
-    out += [f"  {d}: {brl(s[d])}" for d in sorted(s) if d > last - timedelta(days=30)]
+    dias = [d for d in sorted(s) if d > last - timedelta(days=30)]
+    out += [f"  {d}: {brl(s[d])}" for d in dias]
+    total = sum(s[d] for d in dias)
+    out.append(f"TOTAL DOS ÚLTIMOS 30 DIAS: {brl(total)} | MÉDIA DIÁRIA: {brl(total / len(dias)) if dias else brl(0)}")
     return "\n".join(out)
 
 

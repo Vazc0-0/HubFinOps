@@ -1,0 +1,193 @@
+{
+  "quando": "2026-11-23T15:58:41",
+  "modelo": "dmr/ai/qwen3 (YAML)",
+  "resumo": {
+    "perguntas": 13,
+    "acertos": 10,
+    "pontos_pct": 88.5,
+    "com_invencao": 1,
+    "invencao_pct": 7.7,
+    "ferramenta_em_texto": 0,
+    "tempo_medio_s": 37.2
+  },
+  "resultados": [
+    {
+      "id": "finops-anomalias",
+      "equipe": "finops",
+      "pergunta": "Quais anomalias de custo existem nos dados? Liste só o nome do recurso e o tipo de cada uma.",
+      "situacao": "errou",
+      "pontos": 0.0,
+      "faltou": [
+        "lgc-desvios-processo",
+        "func-rma-integracao",
+        "vm-relatorios-dev",
+        "stgbackupantigo"
+      ],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "- **mudanca_de_patamar** – Configuração alterada  \n- **pico** – Funcionalidade de integração – pico de custo  \n- **pico** – VM de relatórios – pico de custo  \n- **recurso_orfao** – Storage sem dono",
+      "tempo_s": 58.6,
+      "codigo_saida": 0
+    },
+    {
+      "id": "finops-sem-dono",
+      "equipe": "finops",
+      "pergunta": "Qual recurso está sem dono e qual é o custo extra atribuído a ele?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "Aqui está a lista de recursos sem dono e seus respectivos custos extras:\n\n1. **stgbackupantigo** (Storage, rg-dados)  \n   - **Custo extra**: R$ 732,00  \n   - **Causa provável**: Recurso sem tag 'owner', indicando que não tem dono definido. O custo cresceu de R$ 1,50/dia para R$ 22,50/dia.  \n   - **Ação sugerida**: Atribuir um dono ao recurso (tag 'owner') e revisar se o recurso ainda é necessário.\n\n2. **vm-relatorios-dev** (Virtual Machines, rg-automacao-dev)  \n   - **Custo extra**: R$ 513,81  \n   - **Causa provável**: Pico de custo entre 2026-10-12 a 2026-10-18, onde o custo diário atingiu até R$ 95,36/dia.  \n   - **Ação sugerida**: Verificar se houve uma atividade anormal ou um processo de longa execução no recurso.\n\n3. **func-rma-integracao** (Functions, rg-automacao-prod)  \n   - **Custo extra**: R$ 169,76  \n   - **Causa provável**: Pico de custo entre 2026-10-25 a 2026-10-27, onde o custo diário atingiu até R$ 76,24/dia.  \n   - **Ação sugerida**: Investigar se há loops de retentativas ou processos mal configurados causando o pico.\n\n4. **lgc-desvios-processo** (Logic Apps, rg-automacao-prod)  \n   - **Custo extra**: R$ 200,36  \n   - **Causa provável**: Mudança de patamar, onde o custo diário típico subiu de R$ 4,02 para R$ 8,97 e não voltou.  \n   - **Ação sugerida**: Revisar a configuração do recurso para identificar a causa da mudança e verificar se é necessária.",
+      "tempo_s": 63.9,
+      "codigo_saida": 0
+    },
+    {
+      "id": "finops-pico-vm",
+      "equipe": "finops",
+      "pergunta": "Quanto a vm-relatorios-dev custou a mais no pico de outubro e qual a prioridade?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "O custo adicional da vm-relatorios-dev no pico de outubro foi de **R$ 513,81**, com prioridade **Alta**.  \n\n**Detalhamento:**  \n- **Período do pico:** 12 a 18 de outubro de 2026  \n- **Custo diário máximo:** R$ 95,36/dia  \n- **Custo base:** R$ 17,90/dia  \n- **Custo extra:** R$ 513,81  \n\n**Causa provável:**  \nO pico pode ter sido causado por uma atividade intensa no recurso, como execução de processos longos, aumento na carga de trabalho ou uma configuração temporária que elevou o uso da VM.  \n\n**Ação sugerida:**  \nVerificar as atividades e configurações da VM durante o período do pico para identificar a causa exata. Se for um uso excessivo ou uma configuração inadequada, considerar ajustes no plano de recursos ou otimizações na arquitetura.",
+      "tempo_s": 28.6,
+      "codigo_saida": 0
+    },
+    {
+      "id": "finops-total-outubro",
+      "equipe": "finops",
+      "pergunta": "Qual foi o custo total de outubro de 2026?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "O custo total de outubro de 2026 foi de **R$ 4.762,83**.",
+      "tempo_s": 11.0,
+      "codigo_saida": 0
+    },
+    {
+      "id": "finops-patamar",
+      "equipe": "finops",
+      "pergunta": "O que aconteceu com o custo da lgc-desvios-processo e desde quando?",
+      "situacao": "parcial",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [
+        "valor R$ 247,50"
+      ],
+      "ferramenta_em_texto": false,
+      "resposta": "O custo do recurso **lgc-desvios-processo** teve uma mudança significativa, onde o custo diário típico subiu de R$ 4,02 para R$ 8,97 (2,2x) entre **2026-09-15** e **2026-10-31**. Esse aumento não voltou ao nível anterior, e o custo extra dessa anomalia foi de R$ 200,36.\n\n### Resumo do recurso:\n- **Custo diário médio (últimos 30 dias)**: R$ 8,25\n- **Custo total (últimos 30 dias)**: R$ 247,50\n- **Tags**: {\"owner\": \"automacao\", \"env\": \"prod\"}\n\nA causa provável está relacionada a uma mudança na configuração do recurso, como aumento na frequência de execução ou uso de recursos mais caros. É recomendado revisar a configuração do recurso e contato com o dono do recurso (automacao) para entender o impacto e se há uma justificativa para o aumento no custo.",
+      "tempo_s": 41.3,
+      "codigo_saida": 0
+    },
+    {
+      "id": "finops-armadilha",
+      "equipe": "finops",
+      "pergunta": "Quanto custou o recurso db-producao no último mês?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "O recurso \"db-producao\" não foi encontrado nos dados fornecidos. Os recursos disponíveis são os listados acima. Por favor, verifique o nome do recurso ou consulte os dados disponíveis para obter informações sobre o custo.",
+      "tempo_s": 13.7,
+      "codigo_saida": 0
+    },
+    {
+      "id": "finops-relatorio",
+      "equipe": "finops",
+      "pergunta": "Gere o relatório FinOps e diga se ele foi validado.",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "O relatório FinOps foi validado como confiável. O caminho do arquivo é `relatorios/relatorio-finops.md`.\n\n### Resumo:\n- **Custo por mês**:  \n  - 08/2026: R$ 3.378,24  \n  - 09/2026: R$ 3.525,60  \n  - 10/2026: R$ 4.762,83  \n- **Variação do último mês**: +35% em relação ao anterior.  \n- **Anomalias identificadas**:  \n  - 4 anomalias, totalizando R$ 1.615,92 de custo extra.  \n  - Prioridade alta: `stgbackupantigo`, `vm-relatorios-dev`.",
+      "tempo_s": 20.0,
+      "codigo_saida": 0
+    },
+    {
+      "id": "ambientes-estouro",
+      "equipe": "finops",
+      "pergunta": "Qual ambiente vai estourar o orçamento neste mês e por quê?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "O ambiente **Contoso Desenvolvimento** vai estourar o orçamento neste mês, conforme os dados abaixo:\n\n- **Orçamento**: R$ 3.200,00\n- **Custo previsto para o mês**: R$ 3.794,69\n- **Causa do estouro**: O recurso **vm-carga-dev** é novo e custa R$ 78,42/dia, totalizando cerca de R$ 2.352,46 por mês.",
+      "tempo_s": 19.7,
+      "codigo_saida": 0
+    },
+    {
+      "id": "ambientes-economia",
+      "equipe": "finops",
+      "pergunta": "Quanto o ambiente de desenvolvimento pode economizar por mês e com quais recursos?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "O ambiente de desenvolvimento pode economizar **R$ 1.325,07/mês** com os seguintes recursos:\n\n1. **vm-carga-dev** – Valor potencial de economia mensal: **R$ 739,41**\n2. **vm-build-dev** – Valor potencial de economia mensal: **R$ 370,43**\n3. **disk-dados-01** – Valor potencial de economia mensal: **R$ 114,00**\n4. **snap-build-dev-2026-03** – Valor potencial de economia mensal: **R$ 72,75**\n5. **pip-teste-dev** – Valor potencial de economia mensal: **R$ 28,48**\n\n**Total de economia potencial mensal:** **R$ 1.325,07**\n\n**Economia realizada:** **R$ 0,00/mês** (não há economia medida até o momento).\n\n**Conferidos e sem desperdício:** **vm-teste-dev**.",
+      "tempo_s": 57.6,
+      "codigo_saida": 0
+    },
+    {
+      "id": "ambientes-realizada",
+      "equipe": "finops",
+      "pergunta": "Quanto o ambiente de integração já economizou por mês e com qual ação?",
+      "situacao": "parcial",
+      "pontos": 0.5,
+      "faltou": [
+        "disk-hml-antigo"
+      ],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "O ambiente de integração já economizou R$ 153,27 por mês. A ação responsável por essa economia foi a exclusão de um disco gerenciado sem VM (Unattached) em 14/10/2026.",
+      "tempo_s": 37.5,
+      "codigo_saida": 0
+    },
+    {
+      "id": "ambientes-isolamento",
+      "equipe": "finops",
+      "pergunta": "A produção tem disco órfão, IP sem uso ou snapshot antigo para excluir?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "A produção tem os seguintes recursos com anomalias:\n\n#### 1. **[recurso_orfao] stgbackupantigo**\n- **Descrição**: O recurso não tem dono (sem tag 'owner') e o custo aumentou de R$ 1,50/dia para R$ 22,50/dia.\n- **Período**: 2026-09-01 a 2026-10-31.\n- **Custo Extra**: R$ 732,00.\n- **Prioridade**: Alta.\n- **Causa Provável**: O recurso não está sendo monitorado e pode estar armazenando dados desnecessários.\n- **Ação Sugerida**: Verificar se o recurso é necessário e, caso não seja, remover ou atribuir dono ao recurso.\n\nNenhum disco órfão, IP sem uso ou snapshot antigo foi identificado para exclusão.",
+      "tempo_s": 61.4,
+      "codigo_saida": 0
+    },
+    {
+      "id": "ambientes-nao-producao",
+      "equipe": "finops",
+      "pergunta": "Quanto custa o que não é produção em relação à produção e qual app pesa mais fora de produção?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "O custo dos ambientes não de produção em relação ao ambiente de produção é de **R$ 5.431,41 em 30 dias**, que representa **85,5% do custo de produção**.\n\nO aplicativo com o maior custo fora de produção é o **pedidos**, que custa **165,1%** do custo em produção, ou seja, **R$ 2.876,19 fora de produção × R$ 1.742,48 em produção**.",
+      "tempo_s": 18.0,
+      "codigo_saida": 0
+    },
+    {
+      "id": "ambientes-armadilha",
+      "equipe": "finops",
+      "pergunta": "Quanto o app pagamentos custa por mês no ambiente de produção?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "O custo mensal do app pagamentos no ambiente de produção não foi encontrado nos dados fornecidos. Porém, aqui está a informação detalhada sobre o ambiente de produção:\n\n- **Custo dos últimos 30 dias:** R$ 6.349,05\n- **Previsão para o mês de novembro/2026:** R$ 6.329,97\n- **Orçamento:** R$ 9.000,00\n- **Porcentagem do orçamento utilizada:** 70,3%\n- **Status:** Dentro do orçamento\n\n**Custo por centro de custo (30 dias):**\n- CC-420: R$ 4.381,22\n- CC-410: R$ 1.742,48\n- (sem centro de custo): R$ 225,35\n\n**Custo por app (30 dias):**\n- integracao-erp: R$ 4.381,22\n- pedidos: R$ 1.742,48\n- (sem app): R$ 225,35\n\n**Maiores custos (30 dias):**\n- apim-integracao-prd: R$ 2.764,88\n- sqldb-pedidos-prd: R$ 1.420,82\n- vm-erp-conector-prd: R$ 1.230,91\n- stgintegracaoprd: R$ 270,00\n- appi-integracao-prd: R$ 225,35\n\n**Economia potencial:** R$ 615,46/mês (1 oportunidade)\n- vm-erp-conector-prd: VM superdimensionada → R$ 615,46/mês\n\n**Economia realizada:** R$ 0,00/mês\n\nSe você estiver se referindo a um app específico, como \"pagamentos\", por favor, confirme se ele está listado em \"Custo por app\". Caso contrário, não há dados disponíveis sobre ele.",
+      "tempo_s": 52.3,
+      "codigo_saida": 0
+    }
+  ]
+}

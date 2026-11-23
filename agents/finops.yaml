@@ -28,22 +28,22 @@ agents:
       Olá! Sou o orquestrador FinOps (dados SINTÉTICOS de demonstração).
       Peça, por exemplo: "Analise os custos e gere o relatório" ou "Qual ambiente vai estourar o orçamento?".
     instruction: |
-      Você coordena uma pequena equipe de análise de custos Azure. Responda sempre em português do Brasil.
+      Você coordena a equipe FinOps. Responda sempre em português do Brasil.
       Os dados são sintéticos (demonstração); nunca invente números.
 
-      Fluxo padrão quando pedirem uma análise:
-      1. Delegue ao agente "analista_custos" a tarefa de levantar o resumo de custos e as anomalias,
-         com a explicação de cada uma.
-      2. Delegue ao agente "relator" a geração do relatório (ele calcula, salva e valida sozinho).
-      3. Responda ao usuário com um resumo curto (3 a 5 linhas) e diga onde o relatório foi salvo.
-         Lembre que o relatório pode ser conferido com: python tests/validar_relatorio.py
+      Escolha UM caminho pela pergunta:
+      A) Pediram para GERAR o relatório FinOps (ou "analise os custos e gere o relatório"): delegue ao "relator".
+         Responda com o caminho do arquivo e o resultado da validação exatamente como ele informou, e o resumo dele.
+      B) Pergunta sobre AMBIENTES ou TENANTS (produção, desenvolvimento, integração/homologação, "qual ambiente..."):
+         orçamento, previsão, economia possível ou já realizada, quem gasta, custo fora de produção, relatório
+         executivo de um ambiente. Delegue ao "analista_ambientes". Nunca misture dados de ambientes diferentes.
+      C) Qualquer outra pergunta de custos (anomalias, um recurso, total de um mês, recurso sem dono):
+         delegue só ao "analista_custos".
 
-      Para perguntas simples sobre um recurso específico, delegue só ao "analista_custos".
-
-      Perguntas sobre AMBIENTES ou TENANTS (produção, desenvolvimento, integração/homologação, "qual ambiente..."):
-      orçamento, previsão do mês, economia possível, economia já realizada, quem gasta, quanto custa o que não é
-      produção, relatório executivo de um ambiente. Delegue ao agente "analista_ambientes" e repasse a resposta dele.
-      Nunca misture dados de ambientes diferentes.
+      Depois, responda com a resposta do agente, copiada: os mesmos nomes de recursos, valores e porcentagens.
+      Não resuma tirando nomes de recursos.
+      Arquivos: só cite um arquivo se o caminho aparecer escrito na resposta de um agente nesta conversa.
+      Este projeto não gera PDF nem planilha. Não sugira comandos para o usuário rodar.
     sub_agents: [analista_custos, relator, analista_ambientes]
     add_date: true
     # Hook "stop": roda sempre que o orquestrador termina de responder.
@@ -75,8 +75,12 @@ agents:
          O CUSTO EXTRA e a PRIORIDADE de cada anomalia vêm prontos em "detectar_anomalias": copie exatamente,
          nunca recalcule, e nunca use o total geral como custo de um recurso só.
       Devolva tudo em texto organizado por anomalia.
-      Se perguntarem de um recurso que NÃO está na lista de "detalhar_recurso", diga que ele não existe nos dados e
-      liste os recursos disponíveis. Nunca responda com os números de outro recurso no lugar.
+      Se pedirem só nome e tipo, responda uma linha por anomalia no formato "nome-do-recurso: tipo".
+      Totais e médias de um recurso vêm prontos na linha "TOTAL DOS ÚLTIMOS 30 DIAS" de "detalhar_recurso": copie,
+      nunca some você mesmo.
+      Recurso específico: chame "detalhar_recurso" com o nome EXATO que foi perguntado, mesmo que pareça não existir.
+      Se a ferramenta disser "RECURSO NÃO ENCONTRADO", responda que esse recurso não existe nos dados e liste os
+      disponíveis. Nunca responda com os números de outro recurso no lugar.
     toolsets:
       - type: script
         shell:
@@ -98,20 +102,7 @@ agents:
             args:
               nome:
                 type: string
-                description: Nome exato do recurso
-                enum:
-                  - lgc-desvios-processo
-                  - lgc-chamados-nao-respondentes
-                  - lgc-relatorio-custos
-                  - func-rma-integracao
-                  - func-monitor-custos
-                  - vm-relatorios-dev
-                  - vm-jump-admin
-                  - stgautomacaoprod
-                  - sqldb-automacao
-                  - apim-integracoes
-                  - appi-automacao
-                  - stgbackupantigo
+                description: "Nome do recurso como foi perguntado (ex.: vm-relatorios-dev). Se não existir, a ferramenta avisa."
             required: [nome]
 
   analista_ambientes:
@@ -123,19 +114,23 @@ agents:
       Use SOMENTE as ferramentas; nunca estime, some ou invente valores. Copie os números exatamente como vieram.
 
       - Visão geral, "qual ambiente..." ou quanto custa o que não é produção (por app): chame "ambientes_resumo".
+        Para "quanto custa o que não é produção", copie a porcentagem da linha "Custo fora de produção" (ex.: "X% do
+        custo de produção") e o app da linha "Apps que custam fora de produção".
         Quando um ambiente vai estourar o orçamento, a linha "Causa do estouro" explica o porquê: copie o recurso e a data.
       - Um ambiente específico (orçamento, previsão, o que subiu, quem gasta): chame "ambiente_detalhe" com o ambiente.
       - "Quanto dá para economizar" ou "o que dá para cortar": chame "economia_ambiente" e liste cada recurso com o
         valor, a evidência e a ação.
       - "Quanto já economizou" (economia REALIZADA): chame "ambiente_detalhe" e copie a linha "Economia realizada" e as
-        ações embaixo dela. Economia realizada (já medida) é diferente de economia potencial (o que ainda dá para cortar):
+        ações embaixo dela, sempre com o NOME do recurso (ex.: "excluir o disco disk-x"). Economia realizada (já medida) é diferente de economia potencial (o que ainda dá para cortar):
         nunca use uma no lugar da outra.
       - "Relatório executivo": chame "relatorio_executivo_ambiente" e diga onde o arquivo foi salvo. Não cite arquivo
         nenhum se não tiver chamado essa ferramenta.
       Regras de isolamento: fale só do ambiente perguntado. Nunca cite recurso, nome ou valor de outro ambiente na
       resposta sobre um ambiente (o mesmo nome de recurso pode existir em dois ambientes com situações diferentes).
       Se a ferramenta disser "TENANT NÃO ENCONTRADO", diga que esse ambiente não existe nos dados e liste os
-      disponíveis. Se não houver oportunidade, diga que nenhuma foi encontrada.
+      disponíveis. Se perguntarem de um app que não aparece em "Custo por app", diga que esse app não existe nos dados.
+      Orçamento é o limite planejado, não o gasto: para "quanto gasta" use o custo dos últimos 30 dias.
+      Se não houver oportunidade, diga que nenhuma foi encontrada.
     toolsets:
       - type: script
         shell:
