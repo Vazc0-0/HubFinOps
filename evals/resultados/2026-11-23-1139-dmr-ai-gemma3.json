@@ -1,0 +1,207 @@
+{
+  "quando": "2026-11-23T11:39:55",
+  "modelo": "dmr/ai/gemma3",
+  "resumo": {
+    "perguntas": 13,
+    "acertos": 0,
+    "pontos_pct": 0.0,
+    "com_invencao": 0,
+    "invencao_pct": 0.0,
+    "tempo_medio_s": 5.9
+  },
+  "resultados": [
+    {
+      "id": "finops-anomalias",
+      "equipe": "finops",
+      "pergunta": "Quais anomalias de custo existem nos dados? Liste só o nome do recurso e o tipo de cada uma.",
+      "situacao": "errou",
+      "pontos": 0.0,
+      "faltou": [
+        "lgc-desvios-processo",
+        "func-rma-integracao",
+        "vm-relatorios-dev",
+        "stgbackupantigo"
+      ],
+      "inventou": [],
+      "resposta": "```tool_code\ntransfer_task(agent_id='analista_custos', task='Identifique as anomalias de custo nos dados disponíveis, listando apenas o nome do recurso e o tipo de cada anomalia.')\n```",
+      "tempo_s": 13.8,
+      "codigo_saida": 0
+    },
+    {
+      "id": "finops-sem-dono",
+      "equipe": "finops",
+      "pergunta": "Qual recurso está sem dono e qual é o custo extra atribuído a ele?",
+      "situacao": "errou",
+      "pontos": 0.0,
+      "faltou": [
+        "stgbackupantigo",
+        "732,00"
+      ],
+      "inventou": [],
+      "resposta": "```python\ntransfer_task(agent_id='analista_custos', task='Identificar recursos sem dono e o custo extra atribuído a eles. Por favor, forneça um resumo claro e a explicação para cada anomalia encontrada nos dados FOCUS.')\n```",
+      "tempo_s": 5.5,
+      "codigo_saida": 0
+    },
+    {
+      "id": "finops-pico-vm",
+      "equipe": "finops",
+      "pergunta": "Quanto a vm-relatorios-dev custou a mais no pico de outubro e qual a prioridade?",
+      "situacao": "errou",
+      "pontos": 0.0,
+      "faltou": [
+        "513,81",
+        "alta"
+      ],
+      "inventou": [],
+      "resposta": "```tool_code\ntransfer_task(analista_custos, task=\"Analisar os custos da VM 'vm-relatorios-dev' durante o pico de outubro, identificando o aumento de custos e suas causas. Detalhar a prioridade de resolução do problema.\")\n```",
+      "tempo_s": 5.7,
+      "codigo_saida": 0
+    },
+    {
+      "id": "finops-total-outubro",
+      "equipe": "finops",
+      "pergunta": "Qual foi o custo total de outubro de 2026?",
+      "situacao": "errou",
+      "pontos": 0.0,
+      "faltou": [
+        "4762,83"
+      ],
+      "inventou": [],
+      "resposta": "```tool_code\ntransfer_task(agent_id='analista_custos', task='Levantar o resumo de custos para outubro de 2026 e identificar quaisquer anomalias nos gastos. Fornecer uma explicação detalhada para cada anomalia identificada.')\n```",
+      "tempo_s": 5.6,
+      "codigo_saida": 0
+    },
+    {
+      "id": "finops-patamar",
+      "equipe": "finops",
+      "pergunta": "O que aconteceu com o custo da lgc-desvios-processo e desde quando?",
+      "situacao": "errou",
+      "pontos": 0.0,
+      "faltou": [
+        "patamar ou subiu ou aumentou ou aumento",
+        "15/09 ou 2026-09-15 ou 15 de setembro"
+      ],
+      "inventou": [],
+      "resposta": "```tool_code\ntransfer_task(agent_id='analista_custos', task='Analise os custos do recurso \"lgc-desvios-processo\", identificando o comportamento anormal e desde quando ele começou. Inclua uma explicação detalhada das anomalias encontradas.')\n```",
+      "tempo_s": 5.7,
+      "codigo_saida": 0
+    },
+    {
+      "id": "finops-armadilha",
+      "equipe": "finops",
+      "pergunta": "Quanto custou o recurso db-producao no último mês?",
+      "situacao": "errou",
+      "pontos": 0.0,
+      "faltou": [
+        "nao encontr ou nao existe ou nao ha ou nao consta ou nao aparece ou nao esta ou nao tem ou inexistente ou nao foi encontrado ou nao possui"
+      ],
+      "inventou": [],
+      "resposta": "```tool_code\ntransfer_task(agent_id='analista_custos', task='Analise os custos do recurso \"db-producao\" no mês anterior (novembro de 2026). Identifique o custo total e explique quaisquer anomalias observadas.')\n```",
+      "tempo_s": 5.7,
+      "codigo_saida": 0
+    },
+    {
+      "id": "finops-relatorio",
+      "equipe": "finops",
+      "pergunta": "Gere o relatório FinOps e diga se ele foi validado.",
+      "situacao": "errou",
+      "pontos": 0.0,
+      "faltou": [
+        "relatorio-finops.md",
+        "confiavel"
+      ],
+      "inventou": [],
+      "resposta": "```python\ntransfer_task(relator, task=\"Gerar, salvar e validar o relatório FinOps para os gestores.\")\n```",
+      "tempo_s": 4.7,
+      "codigo_saida": 0
+    },
+    {
+      "id": "docs-quando-roda",
+      "equipe": "documentacao",
+      "pergunta": "Quando roda a lgc-relatorio-custos?",
+      "situacao": "errou",
+      "pontos": 0.0,
+      "faltou": [
+        "07:00 ou 7h ou 7:00 ou 07h",
+        "todo dia ou diariamente ou diaria ou todos os dias"
+      ],
+      "inventou": [],
+      "resposta": "```tool_code\ntransfer_task(agent='documentador', task='Resuma a Logic App lgc-relatorio-custos, incluindo quando ela roda e quais riscos de boas práticas estão associados.')\n```",
+      "tempo_s": 4.7,
+      "codigo_saida": 0
+    },
+    {
+      "id": "docs-riscos",
+      "equipe": "documentacao",
+      "pergunta": "Quais riscos de boas práticas tem a lgc-relatorio-custos?",
+      "situacao": "errou",
+      "pontos": 0.0,
+      "faltou": [
+        "segredo ou chave ou code=",
+        "retentativa",
+        "tratamento de erro ou trata erro ou trata erros ou tratamento de erros"
+      ],
+      "inventou": [],
+      "resposta": "```tool_code\ntransfer_task(agent='documentador', task='Analisar a Logic App lgc-relatorio-custos e identificar riscos de boas práticas. A documentação da Logic App está localizada em docs/logicapps/')\n```",
+      "tempo_s": 4.8,
+      "codigo_saida": 0
+    },
+    {
+      "id": "docs-cinco-minutos",
+      "equipe": "documentacao",
+      "pergunta": "Qual Logic App roda a cada 5 minutos?",
+      "situacao": "errou",
+      "pontos": 0.0,
+      "faltou": [
+        "lgc-desvios-processo"
+      ],
+      "inventou": [],
+      "resposta": "transfer_task(agent_id='documentador', task='Identifique qual Logic App roda a cada 5 minutos e forneça um resumo do seu funcionamento e potenciais riscos de boas práticas. Inclua o caminho completo para o arquivo de definição da Logic App.')",
+      "tempo_s": 4.8,
+      "codigo_saida": 0
+    },
+    {
+      "id": "docs-conectores",
+      "equipe": "documentacao",
+      "pergunta": "Quais conectores a lgc-chamados-nao-respondentes usa?",
+      "situacao": "errou",
+      "pontos": 0.0,
+      "faltou": [
+        "excel",
+        "outlook"
+      ],
+      "inventou": [],
+      "resposta": "```tool_code\ntransfer_task(agent_id='documentador', task='Resuma a Logic App lgc-chamados-nao-respondentes, incluindo a lista de conectores que ela utiliza. A documentação está em docs/logicapps/')\n```",
+      "tempo_s": 4.9,
+      "codigo_saida": 0
+    },
+    {
+      "id": "docs-email-fixo",
+      "equipe": "documentacao",
+      "pergunta": "Alguma Logic App tem e-mail de destinatário escrito direto no fluxo? Qual?",
+      "situacao": "errou",
+      "pontos": 0.0,
+      "faltou": [
+        "lgc-chamados-nao-respondentes"
+      ],
+      "inventou": [],
+      "resposta": "```tool_code\ntransfer_task(agent='documentador', task='Identificar Logic Apps que possuem endereços de e-mail de destinatário codificados diretamente no fluxo. Incluir o nome da Logic App e a localização exata do endereço de e-mail dentro do fluxo. A documentação completa está em docs/logicapps/ e pode ser validada com python tests/validar_docs.py')\n```",
+      "tempo_s": 5.8,
+      "codigo_saida": 0
+    },
+    {
+      "id": "docs-armadilha",
+      "equipe": "documentacao",
+      "pergunta": "O que a Logic App lgc-folha-pagamento faz?",
+      "situacao": "errou",
+      "pontos": 0.0,
+      "faltou": [
+        "nao encontr ou nao existe ou nao ha ou nao consta ou nao aparece ou nao esta ou nao tem ou inexistente ou nao foi encontrad ou nao possui"
+      ],
+      "inventou": [],
+      "resposta": "```tool_code\ntransfer_task(agent_id='documentador', task='Resuma a Logic App lgc-folha-pagamento, incluindo sua finalidade, gatilhos, ações e possíveis riscos de boas práticas. A documentação pode ser encontrada em docs/logicapps/')\n```",
+      "tempo_s": 5.1,
+      "codigo_saida": 0
+    }
+  ]
+}

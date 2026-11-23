@@ -70,6 +70,15 @@ def main():
         confere(r["situacao"] == "acertou" and not r["inventou"],
                 f"{cid} (qwen3, 23/11): {r['situacao']}, faltou {r['faltou']}, inventou {r['inventou']}")
 
+    print("5. Ferramenta escrita como texto (gemma3 e qwen3 1.7B, respostas reais) é detectada; respostas boas não")
+    texto = json.loads((ROOT / "tests/casos_avaliador/respostas_ferramenta_texto.json").read_text(encoding="utf-8"))
+    for cid, resp in texto.items():
+        r = avaliar.corrigir(casos[cid], resp, universo)
+        confere(r["ferramenta_em_texto"] and r["situacao"] == "errou", f"{cid}: ferramenta em texto não detectada ({r})")
+    for cid, resp in {**boas, **reais}.items():
+        r = avaliar.corrigir(casos[cid], resp, universo)
+        confere(not r["ferramenta_em_texto"], f"{cid}: resposta boa marcada como ferramenta em texto")
+
     print()
     if falhas:
         print(f"{len(falhas)} falha(s).")

@@ -47,6 +47,16 @@ RE_REAIS = re.compile(r"R\$\s*(-?[\d.,]*\d)")
 RE_NUMERO = re.compile(r"(?<![\w])-?\d[\d.,]*")
 
 
+# ferramenta "escrita como texto": o modelo devolve `transfer_task(...)` na resposta em vez de chamar a ferramenta.
+# Acontece com modelo sem suporte a chamada de ferramentas no Docker Model Runner (ex.: gemma3) ou pequeno demais.
+FERRAMENTAS = sorted({f for fs in PERMITIDAS.values() for f in fs} | {"sincronizar_azure"})
+RE_CHAMADA_TEXTO = re.compile(r"(?i)```tool_code|\b(?:" + "|".join(FERRAMENTAS) + r")\b\s*[({]")
+
+
+def chamada_em_texto(resposta):
+    return bool(RE_CHAMADA_TEXTO.search(resposta or ""))
+
+
 # ------------------------------------------------------------------ normalização
 def sem_acento(t):
     t = unicodedata.normalize("NFKD", t)
@@ -164,7 +174,8 @@ def corrigir(caso, resposta, universo):
     else:
         situacao = "parcial"
     return {"id": caso["id"], "equipe": caso["equipe"], "pergunta": caso["pergunta"], "situacao": situacao,
-            "pontos": round(pontos, 3), "faltou": faltou, "inventou": inventados}
+            "pontos": round(pontos, 3), "faltou": faltou, "inventou": inventados,
+            "ferramenta_em_texto": chamada_em_texto(resposta)}
 
 
 # ------------------------------------------------------------------ rodar os agentes
@@ -250,6 +261,7 @@ def resumo(resultados):
             "pontos_pct": round(100 * sum(r["pontos"] for r in resultados) / n, 1),
             "com_invencao": sum(bool(r["inventou"]) for r in resultados),
             "invencao_pct": round(100 * sum(bool(r["inventou"]) for r in resultados) / n, 1),
+            "ferramenta_em_texto": sum(chamada_em_texto(r.get("resposta", "")) for r in resultados),
             "tempo_medio_s": round(sum(r.get("tempo_s", 0) for r in resultados) / n, 1)}
 
 
@@ -284,12 +296,15 @@ def atualiza_resumo():
         except ValueError:
             continue
         r = d["resumo"]
+        texto_ = sum(chamada_em_texto(x.get("resposta", "")) for x in d["resultados"])  # recalcula: vale para rodadas antigas
         linhas.append(f"| {d['quando'][:16].replace('T', ' ')} | `{d['modelo']}` | {r['acertos']}/{r['perguntas']} | {r['pontos_pct']}% "
-                      f"| {r['invencao_pct']}% | {r['tempo_medio_s']} s | [{p.stem}]({p.stem}.md) |")
+                      f"| {r['invencao_pct']}% | {texto_}/{r['perguntas']} | {r['tempo_medio_s']} s | [{p.stem}]({p.stem}.md) |")
     texto = ["# Comparação das rodadas", "",
              "Pontuação = parte do que cada resposta precisava trazer. Invenção = respostas que citaram recurso ou valor em R$ "
-             "que não saiu das ferramentas.", "",
-             "| Quando | Modelo | Acertos | Pontuação | Invenção | Tempo médio | Detalhes |", "|---|---|---|---|---|---|---|",
+             "que não saiu das ferramentas. Ferramenta em texto = respostas em que o modelo escreveu a chamada da ferramenta "
+             "(ex.: `transfer_task(...)`) em vez de chamá-la: sinal de modelo sem suporte a ferramentas.", "",
+             "| Quando | Modelo | Acertos | Pontuação | Invenção | Ferramenta em texto | Tempo médio | Detalhes |",
+             "|---|---|---|---|---|---|---|---|",
              *linhas]
     (SAIDA / "RESUMO.md").write_text("\n".join(texto) + "\n", encoding="utf-8")
 
@@ -350,6 +365,7 @@ def main(argv=None):
             resultados.append(r)
             extra = f"  inventou: {', '.join(r['inventou'])}" if r["inventou"] else ""
             extra += f"  faltou: {', '.join(r['faltou'])}" if r["faltou"] else ""
+            extra += "  [escreveu a chamada da ferramenta como texto, não chamou]" if r["ferramenta_em_texto"] else ""
             print(f"[{i}/{len(casos) * a.repetir}] {r['situacao']:<12} {c['id']} ({dur:.0f} s){extra}", flush=True)
             if codigo != 0 and erro:
                 print(f"      erro do docker agent: {erro.splitlines()[-1][:200]}")
@@ -358,6 +374,9 @@ def main(argv=None):
               "resumo": resumo(resultados), "resultados": resultados}
     arq = grava(rodada)
     r = rodada["resumo"]
+    if r["ferramenta_em_texto"]:
+        print(f"\nAtenção: em {r['ferramenta_em_texto']} resposta(s) o modelo escreveu a chamada da ferramenta como texto em vez de "
+              "chamá-la. Esse modelo provavelmente não tem suporte a chamada de ferramentas no Docker Model Runner.")
     print(f"\nAcertos: {r['acertos']}/{r['perguntas']} · pontuação {r['pontos_pct']}% · com invenção {r['invencao_pct']}% "
           f"· {r['tempo_medio_s']} s por resposta")
     print(f"Detalhes: {arq.relative_to(ROOT)}  ·  comparação: evals/resultados/RESUMO.md")

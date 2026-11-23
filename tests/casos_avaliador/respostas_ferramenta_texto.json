@@ -1,0 +1,4 @@
+{
+ "finops-anomalias": "```tool_code\ntransfer_task(agent_id='analista_custos', task='Identifique as anomalias de custo nos dados disponíveis, listando apenas o nome do recurso e o tipo de cada anomalia.')\n```",
+ "finops-sem-dono": "Transfer_task\n{\"agent\": \"analista_custos\", \"task\": \"Identificar o recurso sem dono e calcular o custo extra atribuído a ele\", \"expected_output\": \"Resumo de custos e explicação das anomalias\"}"
+}
