@@ -41,7 +41,7 @@ services:
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
 
   receptor:
-    image: python:3.12-slim
+    image: python:3.15-slim
     working_dir: /app
     command: ["python", "tools/receptor_chamados.py", "--porta", "8088"]
     environment:
