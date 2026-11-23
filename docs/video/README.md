@@ -35,6 +35,20 @@ painéis do Grafana, métodos de teste e documentos.
 **Tudo o que aparece é real no projeto:** as telas são do hub rodando, e os números são os dos dados de demonstração
 (fictícios), os mesmos conferidos pelos testes.
 
+## Prévia no README
+
+`previa.gif` (21 s, sem som) junta trechos da apresentação com música: o GitHub não toca vídeo sozinho ao abrir a página,
+mas toca GIF. Ela é gerada a partir do vídeo final:
+
+```bash
+# trechos (início e duração, em segundos) da apresentação com música, juntados e convertidos para GIF
+ffmpeg -ss 0.3 -t 3.5 -i "apresentacao-musica.mp4" -an -vf "fps=10,scale=800:-2" trecho_0.mp4   # ... um por trecho
+ffmpeg -f concat -safe 0 -i lista.txt -c copy previa.mp4
+ffmpeg -i previa.mp4 -vf "fps=8,scale=720:-2,split[a][b];[a]palettegen=max_colors=128:stats_mode=diff[p];[b][p]paletteuse=dither=none:diff_mode=rectangle" -loop 0 previa.gif
+```
+
+Trechos usados: 0,3 s (3,5 s), 29,6 s (3,5 s), 47 s (4 s), 59,2 s (3,5 s), 78 s (3 s) e 106,5 s (3,5 s).
+
 ## Créditos e licenças
 
 - Voz: [Piper](https://github.com/rhasspy/piper), voz pt-BR **faber**, licença **CC0**.

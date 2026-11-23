@@ -21,11 +21,13 @@ que mostra qual tenant você está vendo e só recebe os dados dele. Os números
 
 ### Vídeos
 
-[![Hub FinOps · vídeo de apresentação](docs/video/capa.jpg)](docs/video/hub-finops-apresentacao.mp4)
+[![Prévia animada do vídeo de apresentação do Hub FinOps](docs/video/previa.gif)](docs/video/hub-finops-apresentacao.mp4)
+
+*Prévia de 21 s, sem som. Clique nela ou nos links abaixo para os vídeos completos.*
 
 - **[Apresentação com narração](docs/video/hub-finops-apresentacao.mp4)** (1:52): do desperdício que ninguém vê à economia com
   evidência, com as telas reais do hub.
-- **[Apresentação com música](docs/video/hub-finops-apresentacao-musica.mp4)** (1:52): a mesma, sem voz, com legendas e música leve.
+- **[Apresentação com música](docs/video/hub-finops-apresentacao-musica.mp4)** (1:52): a mesma, sem voz, com legendas e trilha de apresentação de produto.
 - **[Tour por todas as telas](docs/video/hub-finops-tour.mp4)**: o hub funcionando, tela por tela, com cursor e legendas.
 
 Roteiro, narração (voz Piper, CC0), música (“Motivating Mornings”, Ahjay Stelino, Mixkit) e montagem em [`docs/video/`](docs/video/README.md);
