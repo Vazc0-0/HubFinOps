@@ -3,7 +3,7 @@
 | Vídeo | Para quê | Duração |
 |---|---|---|
 | **[Apresentação com narração](hub-finops-apresentacao.mp4)** | Vender a ideia: da dor ao produto, com voz e legendas | 1:52 |
-| **[Apresentação com música](hub-finops-apresentacao-musica.mp4)** | O mesmo vídeo sem voz, só legendas e música leve (para tocar sem som alto ou em loop num evento) | 1:52 |
+| **[Apresentação com música](hub-finops-apresentacao-musica.mp4)** | O mesmo vídeo sem voz, só legendas e trilha de apresentação de produto (para tocar sem som alto ou em loop num evento) | 1:52 |
 | **[Tour por todas as telas](hub-finops-tour.mp4)** | Mostrar o produto funcionando: cada tela do hub, com cursor, cliques e uma legenda por passo | ver abaixo |
 
 [![Hub FinOps · vídeo de apresentação](capa.jpg)](hub-finops-apresentacao.mp4)
@@ -38,8 +38,11 @@ painéis do Grafana, métodos de teste e documentos.
 ## Créditos e licenças
 
 - Voz: [Piper](https://github.com/rhasspy/piper), voz pt-BR **faber**, licença **CC0**.
-- Música (apresentação com música e tour): “Local Forecast - Elevator”, Kevin MacLeod ([incompetech.com](https://incompetech.com)),
-  licença [Creative Commons BY 4.0](https://creativecommons.org/licenses/by/4.0/). O crédito também aparece no fim dos dois vídeos.
+- Música (apresentação com música e tour): “Motivating Mornings”, Ahjay Stelino, do [Mixkit](https://mixkit.co/free-stock-music/tag/corporate/),
+  sob a [Mixkit Stock Music Free License](https://mixkit.co/license/modal/musicFree/): uso comercial liberado em vídeos
+  para web, redes sociais, anúncios online e YouTube; **não** vale para TV/rádio, CD/DVD ou jogos.
+  A licença não exige crédito, mas ele aparece no fim dos dois vídeos. A faixa tem 1:36; para cobrir 1:52 ela é estendida repetindo
+  8 compassos no ponto em que a música se repete, com um corte no tempo da batida (`fonte/musica.sh`).
 
 ## Como foi feito (e como refazer)
 
@@ -55,6 +58,7 @@ cada 1/30 s, então as animações saem suaves. O ffmpeg junta os quadros, a voz
 | 4 | `fonte/render.js` | Monta cada cena quadro a quadro (30 fps) a partir do `palco.html` e grava um MP4 por cena |
 | 5 | `fonte/audio.py` | Narração sincronizada com as cenas, volume normalizado (-16 LUFS) e o `legendas.srt` |
 | 6 | `fonte/demo.js` | O tour: roteiro de cliques e legendas, gravado quadro a quadro; termina em `fonte/fim_demo.html` |
+| 7 | `fonte/musica.sh` | Baixa a trilha do Mixkit, estende até a duração do vídeo e mistura com o vídeo mudo |
 
 ```bash
 # com o hub no ar (docker compose up -d --build) e Node + Playwright instalados

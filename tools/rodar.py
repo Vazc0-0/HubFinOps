@@ -43,6 +43,9 @@ TAREFAS = {
     "finops_tenants_teste": ("Teste do FinOps por ambiente", [PY, "tests/testar_finops_tenants.py"],
                              "Confere com o gabarito dos 3 ambientes fictícios (produção, desenvolvimento, integração): custo, "
                              "previsão × orçamento, oportunidades, economia realizada, custo fora de produção e o ISOLAMENTO.", "Testes"),
+    "paginas_hub_teste": ("Teste das páginas do hub", [PY, "tests/testar_paginas_hub.py"],
+                          "Confere que painel, operação e documentos usam as mesmas cores, o mesmo modo claro/escuro e a "
+                          "mesma barra de ícones, e que cada ícone abre a sua seção.", "Testes"),
     "relatorio_finops": ("Relatório FinOps", [PY, "tools/gerar_relatorio.py"],
                          "Gera relatorios/relatorio-finops.md em código e valida contra os dados.", "Gerar"),
     "docs_logicapps": ("Documentação das Logic Apps", [PY, "tools/doc_logicapp.py", "gerar"],
@@ -85,7 +88,7 @@ def falta(tarefa):
 
 # o que roda sem Docker, sem Azure e sem modelo: é o que o GitHub Actions roda a cada push
 SEQUENCIA_CI = ["testes", "gabarito_finops", "chamados_teste", "avaliador_teste", "agendador_teste", "comparacao_teste",
-               "finops_tenants_teste", "relatorio_finops", "docs_logicapps", "comparar_versoes", "executivo_ambientes"]
+               "finops_tenants_teste", "paginas_hub_teste", "relatorio_finops", "docs_logicapps", "comparar_versoes", "executivo_ambientes"]
 SEQUENCIA_TUDO = SEQUENCIA_CI + ["azure", "grafana"]
 SEQUENCIAS = {"tudo": SEQUENCIA_TUDO, "ci": SEQUENCIA_CI}
 

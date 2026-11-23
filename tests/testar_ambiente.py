@@ -216,7 +216,8 @@ def main():
             with urllib.request.urlopen(f"{HUB}{caminho}", timeout=15) as r:
                 return r.read().decode("utf-8")
         confere("Hub FinOps" in pagina("/") and "/api/finops" in pagina("/"), "página inicial é o painel FinOps")
-        confere("Hub do Piloto" in pagina("/operacao"), "painel de operação continua em /operacao")
+        op = pagina("/operacao")
+        confere("Hub FinOps · Operação" in op and 'href="/operacao#executar"' in op, "painel de operação continua em /operacao")
         fin = chama(f"{HUB}/api/finops", auth=False)
         confere(len(fin["ambientes"]) == 3 and all(len(a["serie"]) == 30 for a in fin["ambientes"]),
                 f"/api/finops traz os 3 ambientes com 30 dias: {[a['nome'] for a in fin['ambientes']]}")

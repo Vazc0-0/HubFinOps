@@ -28,7 +28,7 @@ que mostra qual tenant você está vendo e só recebe os dados dele. Os números
 - **[Apresentação com música](docs/video/hub-finops-apresentacao-musica.mp4)** (1:52): a mesma, sem voz, com legendas e música leve.
 - **[Tour por todas as telas](docs/video/hub-finops-tour.mp4)**: o hub funcionando, tela por tela, com cursor e legendas.
 
-Roteiro, narração (voz Piper, CC0), música (Kevin MacLeod, CC BY 4.0) e montagem em [`docs/video/`](docs/video/README.md);
+Roteiro, narração (voz Piper, CC0), música (“Motivating Mornings”, Ahjay Stelino, Mixkit) e montagem em [`docs/video/`](docs/video/README.md);
 dá para gerar tudo de novo.
 
 > *English summary:* a hands-on project with [Docker Agent](https://docs.docker.com/ai/docker-agent/) teams running on a
