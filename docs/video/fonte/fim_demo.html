@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800;900&display=swap">
+<style>
+html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#0B0C0E;color:#F3F4F6;font-family:Inter,sans-serif}
+.fundo{position:absolute;inset:0;background:radial-gradient(900px 520px at 78% 12%,rgba(129,140,248,.10),transparent 70%),radial-gradient(800px 500px at 12% 92%,rgba(45,212,191,.07),transparent 70%)}
+.c{position:absolute;left:0;right:0;text-align:center}
+</style>
+</head>
+<body>
+<div class="fundo"></div>
+<div class="c" id="logo" style="top:230px"><svg width="150" height="150" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#2A2C32" stroke-width="3.6"/><path d="M12 3a9 9 0 0 1 9 9" fill="none" stroke="#818CF8" stroke-width="3.6"/><path d="M21 12a9 9 0 0 1-6 8.5" fill="none" stroke="#2DD4BF" stroke-width="3.6"/><path d="M15 20.5a9 9 0 0 1-5.5.2" fill="none" stroke="#FBBF24" stroke-width="3.6"/></svg></div>
+<div class="c" id="nome" style="top:410px;font-size:120px;font-weight:900;letter-spacing:-4px">Hub FinOps</div>
+<div class="c" id="frase" style="top:570px;font-size:50px;font-weight:700;color:#C9CCD4">Pare de pagar pelo que você não usa.</div>
+<div class="c" id="cta" style="top:690px"><span style="display:inline-block;padding:20px 40px;border-radius:999px;background:#F3F4F6;color:#0B0C0E;font-size:34px;font-weight:800">Agende uma demonstração</span></div>
+<div class="c" id="cred" style="top:1000px;font-size:20px;color:#8B8F9A;font-weight:500">Música: “Local Forecast - Elevator”, Kevin MacLeod (incompetech.com) · Licença Creative Commons BY 4.0 · Dados de demonstração</div>
+<script>
+const ini = performance.now();
+const els = [['logo', 0], ['nome', 150], ['frase', 900], ['cta', 1700], ['cred', 1700]];
+function passo() {
+  const t = performance.now() - ini;
+  els.forEach(([id, a]) => { const k = Math.max(0, Math.min(1, (t - a) / 700)); const e = 1 - Math.pow(1 - k, 3);
+    const el = document.getElementById(id); el.style.opacity = e; el.style.transform = `translateY(${(1 - e) * 24}px)`; });
+  requestAnimationFrame(passo);
+}
+passo();
+</script>
+</body>
+</html>

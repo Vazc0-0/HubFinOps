@@ -1,0 +1,123 @@
+1
+00:00:00,350 --> 00:00:02,590
+Todo mês, a fatura da nuvem chega.
+
+2
+00:00:02,590 --> 00:00:06,213
+E quase ninguém sabe dizer quanto dela foi desperdício.
+
+3
+00:00:07,463 --> 00:00:10,231
+Máquinas de teste ligadas no fim de semana.
+
+4
+00:00:10,231 --> 00:00:11,712
+Discos que ninguém usa.
+
+5
+00:00:11,712 --> 00:00:16,025
+Ambientes de desenvolvimento custando quase o mesmo que a produção.
+
+6
+00:00:16,025 --> 00:00:19,050
+E nada disso aparece, até o orçamento estourar.
+
+7
+00:00:20,100 --> 00:00:22,020
+FinOps não é só cortar custos.
+
+8
+00:00:22,020 --> 00:00:24,771
+É parar de perder um dinheiro que já é seu.
+
+9
+00:00:24,771 --> 00:00:28,482
+Cada real que deixa de ser desperdiçado volta como margem.
+
+10
+00:00:29,532 --> 00:00:32,859
+O Hub FinOps reúne todos os seus ambientes numa única tela.
+
+11
+00:00:32,859 --> 00:00:33,931
+Quanto você gastou,
+
+12
+00:00:33,931 --> 00:00:37,822
+quanto vai gastar até o fim do mês e quanto dá para economizar agora.
+
+13
+00:00:38,872 --> 00:00:42,511
+A previsão compara o custo do mês com o orçamento, dia a dia.
+
+14
+00:00:42,511 --> 00:00:45,733
+Você enxerga o problema antes da fatura, e não depois.
+
+15
+00:00:46,783 --> 00:00:50,564
+Quando um ambiente vai estourar, o painel aponta a causa.
+
+16
+00:00:50,564 --> 00:00:55,340
+Aqui, uma máquina de teste de carga, criada em 06/11 e esquecida ligada,
+
+17
+00:00:55,340 --> 00:00:58,126
+vai fechar o mês 18,6% acima do orçamento.
+
+18
+00:00:59,176 --> 00:01:03,575
+Cada oportunidade vem com a evidência, o dono e o valor.
+
+19
+00:01:03,575 --> 00:01:07,032
+Neste exemplo, são mais de R$ 2.300 por mês.
+
+20
+00:01:07,032 --> 00:01:08,917
+Quase R$ 28 mil por ano.
+
+21
+00:01:09,967 --> 00:01:12,423
+E ele mostra o que quase ninguém mede:
+
+22
+00:01:12,423 --> 00:01:16,689
+desenvolvimento e integração custam 85,5% do que custa a produção.
+
+23
+00:01:17,739 --> 00:01:21,706
+Cada time abre a página do seu tenant e vê apenas o que é dele.
+
+24
+00:01:21,706 --> 00:01:26,365
+Produção, desenvolvimento e integração, isolados, como a governança exige.
+
+25
+00:01:27,415 --> 00:01:30,531
+No modo escuro ou no claro, do analista ao diretor,
+
+26
+00:01:30,531 --> 00:01:32,547
+todo mundo lê a mesma informação.
+
+27
+00:01:33,597 --> 00:01:37,805
+Os números são calculados em código e conferidos automaticamente.
+
+28
+00:01:37,805 --> 00:01:41,106
+A inteligência artificial explica, mas não inventa:
+
+29
+00:01:41,106 --> 00:01:44,731
+19 de 20 respostas certas, nenhuma informação inventada.
+
+30
+00:01:45,781 --> 00:01:46,577
+Hub FinOps.
+
+31
+00:01:46,577 --> 00:01:49,183
+Pare de pagar pelo que você não usa.

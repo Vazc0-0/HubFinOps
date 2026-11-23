@@ -1,0 +1,11 @@
+cap/
+voz/
+cenas/
+stills/
+conf/
+vozes/
+*.wav
+video_mudo.mp4
+roteiro_tempos.json
+roteiro_final.json
+narracao.wav

@@ -19,6 +19,18 @@ claro. Os botões no topo abrem uma página por tenant (`/ambiente/producao`, `/
 que mostra qual tenant você está vendo e só recebe os dados dele. Os números vêm de `/api/finops`, calculados em código por
 `tools/finops_tenants.py`.*
 
+### Vídeos
+
+[![Hub FinOps · vídeo de apresentação](docs/video/capa.jpg)](docs/video/hub-finops-apresentacao.mp4)
+
+- **[Apresentação com narração](docs/video/hub-finops-apresentacao.mp4)** (1:52): do desperdício que ninguém vê à economia com
+  evidência, com as telas reais do hub.
+- **[Apresentação com música](docs/video/hub-finops-apresentacao-musica.mp4)** (1:52): a mesma, sem voz, com legendas e música leve.
+- **[Tour por todas as telas](docs/video/hub-finops-tour.mp4)**: o hub funcionando, tela por tela, com cursor e legendas.
+
+Roteiro, narração (voz Piper, CC0), música (Kevin MacLeod, CC BY 4.0) e montagem em [`docs/video/`](docs/video/README.md);
+dá para gerar tudo de novo.
+
 > *English summary:* a hands-on project with [Docker Agent](https://docs.docker.com/ai/docker-agent/) teams running on a
 > **local model** (qwen3 via Docker Model Runner). One team analyses Azure costs (FOCUS format) and writes a FinOps report;
 > another documents Azure Logic Apps from their JSON definitions and compares versions. The rule throughout: **code computes,

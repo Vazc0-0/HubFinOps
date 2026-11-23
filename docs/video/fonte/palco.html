@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#0B0C0E;font-family:Inter,'Segoe UI',sans-serif;color:#F3F4F6}
+#cena{position:absolute;inset:0;overflow:hidden}
+.fundo{position:absolute;inset:0;background:
+  radial-gradient(900px 520px at 78% 12%, rgba(129,140,248,.10), transparent 70%),
+  radial-gradient(800px 500px at 12% 92%, rgba(45,212,191,.07), transparent 70%), #0B0C0E}
+.grade{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:64px 64px}
+.mundo{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+.mundo img{display:block;width:1920px;border-radius:22px;box-shadow:0 40px 120px rgba(0,0,0,.65)}
+.real{position:absolute;border-radius:16px;pointer-events:none}
+.leg{position:absolute;left:50%;bottom:54px;transform:translateX(-50%);max-width:1560px;padding:14px 30px;border-radius:16px;
+  background:rgba(8,9,11,.78);border:1px solid rgba(255,255,255,.10);font-size:36px;line-height:1.35;font-weight:600;text-align:center;
+  color:#FFFFFF;letter-spacing:-.2px;backdrop-filter:blur(6px);white-space:pre-line}
+.chip{position:absolute;padding:14px 22px;border-radius:14px;font-weight:800;font-size:30px;color:#0B0C0E;box-shadow:0 18px 50px rgba(0,0,0,.45);white-space:nowrap}
+.t-centro{position:absolute;left:0;right:0;text-align:center}
+.card-dor{position:absolute;width:500px;height:330px;border-radius:24px;background:#16171B;border:1px solid #2A2C32;padding:36px;box-shadow:0 30px 80px rgba(0,0,0,.45)}
+.card-dor .ic{width:72px;height:72px;border-radius:20px;display:flex;align-items:center;justify-content:center}
+.card-dor h3{margin:26px 0 0;font-size:34px;line-height:1.2;font-weight:800;letter-spacing:-.4px}
+.card-dor p{margin:16px 0 0;font-size:24px;color:#A1A5B0;line-height:1.4}
+.check{display:flex;align-items:center;gap:26px;font-size:36px;font-weight:700;margin:0 0 34px}
+.check .bola{flex:none;width:58px;height:58px;border-radius:29px;background:#34D399;display:flex;align-items:center;justify-content:center}
+.marca{position:absolute;left:56px;top:44px;display:flex;align-items:center;gap:14px;font-weight:800;font-size:26px;opacity:.9}
+</style>
+</head>
+<body>
+<div id="cena"></div>
+<script>
+const VW = 1920, VH = 1080;
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const ease = (t) => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+const ap = (t, ini, dur = .6) => easeOut(clamp((t - ini) / dur));   // aparece (segundos)
+const lerp = (a, b, k) => a + (b - a) * k;
+const brl = (v) => 'R$ ' + Math.round(v).toLocaleString('pt-BR');
+let META = {}, ROT = [], IMGS = {};
+
+const LOGO = (s) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#2A2C32" stroke-width="3.6"/><path d="M12 3a9 9 0 0 1 9 9" fill="none" stroke="#818CF8" stroke-width="3.6"/><path d="M21 12a9 9 0 0 1-6 8.5" fill="none" stroke="#2DD4BF" stroke-width="3.6"/><path d="M15 20.5a9 9 0 0 1-5.5.2" fill="none" stroke="#FBBF24" stroke-width="3.6"/></svg>`;
+const ICO = {
+  vm: '<svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#0B0C0E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>',
+  disco: '<svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#0B0C0E" stroke-width="2.2" stroke-linecap="round"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>',
+  amb: '<svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#0B0C0E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg>',
+  ok: '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#0B0C0E" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
+};
+
+// ------------------------------------------------------------ legendas (pedaços proporcionais ao texto da fala)
+function pedacos(txt) {
+  const frases = txt.split(/(?<=[.!?:])\s+/).map((s) => s.trim()).filter(Boolean);
+  const out = [];
+  frases.forEach((f) => {
+    if (f.length <= 78) { out.push(f); return; }
+    const partes = f.split(/,\s+/); let atual = '';
+    partes.forEach((p, i) => {
+      const pedaco = p + (i < partes.length - 1 ? ',' : '');
+      if ((atual + ' ' + pedaco).trim().length > 78 && atual) { out.push(atual.trim()); atual = pedaco; } else atual += ' ' + pedaco;
+    });
+    if (atual.trim()) out.push(atual.trim());
+  });
+  return out;
+}
+function legenda(s, t) {
+  const ini = s.voz_ini, fim = s.voz_ini + s.dur_voz;
+  if (t < ini - .05 || t > fim + .35) return '';
+  const pcs = pedacos(s.legenda), tot = pcs.reduce((a, p) => a + p.length, 0);
+  let acc = ini;
+  for (const p of pcs) {
+    const d = s.dur_voz * p.length / tot;
+    if (t < acc + d || p === pcs[pcs.length - 1]) return `<div class="leg">${p}</div>`;
+    acc += d;
+  }
+  return '';
+}
+
+// ------------------------------------------------------------ câmera sobre as capturas (coordenadas da página de 1920 px)
+function camera(r, pad = 50) {
+  const [x, y, w, h] = r;
+  const areaH = VH - 150; // deixa espaço para a legenda
+  const s = Math.min(VW / (w + 2 * pad), areaH / (h + 2 * pad));
+  return { s, cx: x + w / 2, cy: y + h / 2 };
+}
+function camInterp(kfs, k) {
+  // kfs: [[fração, retângulo, pad], ...]
+  let a = kfs[0], b = kfs[kfs.length - 1];
+  for (let i = 0; i < kfs.length - 1; i++) if (k >= kfs[i][0] && k <= kfs[i + 1][0]) { a = kfs[i]; b = kfs[i + 1]; break; }
+  const ca = camera(a[1], a[2]), cb = camera(b[1], b[2]);
+  const u = b[0] === a[0] ? 1 : ease(clamp((k - a[0]) / (b[0] - a[0])));
+  return { s: Math.exp(lerp(Math.log(ca.s), Math.log(cb.s), u)), cx: lerp(ca.cx, cb.cx, u), cy: lerp(ca.cy, cb.cy, u) };
+}
+const tela = (c, x, y) => [(x - c.cx) * c.s + VW / 2, (y - c.cy) * c.s + (VH - 150) / 2];
+function realce(c, r, op, cor = '#FBBF24') {
+  if (op <= 0) return '';
+  const [x, y] = tela(c, r[0] - 8, r[1] - 8), w = (r[2] + 16) * c.s, h = (r[3] + 16) * c.s;
+  return `<div class="real" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;opacity:${op};
+    border:4px solid ${cor};box-shadow:0 0 0 9999px rgba(5,6,8,${.55 * op}),0 0 40px ${cor}66"></div>`;
+}
+function chip(c, r, texto, op, cor = '#FBBF24', lado = 'abaixo') {
+  if (op <= 0) return '';
+  let [x, y] = tela(c, r[0] + r[2] / 2, lado === 'abaixo' ? r[1] + r[3] : r[1]);
+  y += lado === 'abaixo' ? 26 : -86;
+  return `<div class="chip" style="left:${x}px;top:${y + (1 - op) * 14}px;transform:translateX(-50%);opacity:${op};background:${cor}">${texto}</div>`;
+}
+function mundo(img, c, op = 1, clip = '') {
+  const tx = VW / 2 - c.cx * c.s, ty = (VH - 150) / 2 - c.cy * c.s;
+  return `<div class="mundo" style="transform:translate(${tx}px,${ty}px) scale(${c.s});opacity:${op};${clip}"><img src="cap/${img}.jpg"></div>`;
+}
+const KP = (m, i) => { const [x, y, w, h] = m.kpis, n = 4, g = 14, cw = (w - g * (n - 1)) / n; return [x + i * (cw + g), y, cw, h]; };
+const TOPO = (m) => [m.topo[0] - 10, m.topo[1] - 10, Math.max(m.topo[2], 1200) + 20, m.abas[1] + m.abas[3] - m.topo[1] + 20];
+
+// ------------------------------------------------------------ cenas
+const CENAS = {
+  s01_gancho(t, s) {
+    const n = 12541 * easeOut(clamp((t - .4) / 2.4));
+    return `<div class="fundo"></div><div class="grade"></div>
+      <div class="t-centro" style="top:250px;font-size:30px;letter-spacing:6px;color:#A1A5B0;font-weight:700;opacity:${ap(t, .2)}">FATURA DA NUVEM · NOVEMBRO</div>
+      <div class="t-centro" style="top:310px;font-size:190px;font-weight:900;letter-spacing:-6px;opacity:${ap(t, .3)}">${brl(n)}</div>
+      <div class="t-centro" style="top:560px;font-size:64px;font-weight:800;color:#FB923C;opacity:${ap(t, 2.9)};transform:translateY(${(1 - ap(t, 2.9)) * 30}px)">Quanto disso foi desperdício?</div>`;
+  },
+  s02_dores(t, s) {
+    const cards = [
+      [.6, '#FBBF24', 'vm', 'VMs de teste ligadas no fim de semana', 'Pagando 168 horas por semana para usar 60.'],
+      [3.1, '#818CF8', 'disco', 'Discos e IPs que ninguém usa', 'Cobrando todo mês, sem dono e sem alerta.'],
+      [4.9, '#2DD4BF', 'amb', 'Dev quase do tamanho da produção', 'Fora de produção = 85,5% do custo de produção.']];
+    let h = `<div class="fundo"></div><div class="grade"></div>
+      <div class="t-centro" style="top:120px;font-size:56px;font-weight:800;letter-spacing:-1px;opacity:${ap(t, .1)}">O desperdício que ninguém vê</div>`;
+    cards.forEach(([ini, cor, ic, tit, txt], i) => {
+      const a = ap(t, ini, .7);
+      h += `<div class="card-dor" style="left:${150 + i * 560}px;top:${260 + (1 - a) * 40}px;opacity:${a}">
+        <div class="ic" style="background:${cor}">${ICO[ic]}</div><h3>${tit}</h3><p>${txt}</p></div>`;
+    });
+    const b = ap(t, 8.6, 1.6), pct = 118.6 * b;
+    h += `<div style="position:absolute;left:310px;top:700px;width:1300px;opacity:${ap(t, 8.4)}">
+        <div style="display:flex;justify-content:space-between;font-size:28px;font-weight:700"><span>Orçamento do mês</span>
+        <span style="color:${pct > 100 ? '#FB923C' : '#F3F4F6'}">${pct.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%${pct > 100 ? ' · estourou' : ''}</span></div>
+        <div style="position:relative;height:26px;border-radius:13px;background:#23252B;margin-top:14px">
+          <div style="height:26px;border-radius:13px;width:${Math.min(pct, 118.6) / 118.6 * 100}%;background:${pct > 100 ? '#FB923C' : '#A78BFA'}"></div>
+          <div style="position:absolute;left:${100 / 118.6 * 100}%;top:-10px;width:4px;height:46px;background:#F3F4F6;border-radius:2px"></div>
+        </div></div>`;
+    return h;
+  },
+  s03_virada(t, s) {
+    const a2 = ap(t, 2.7), a3 = ap(t, 5.4);
+    return `<div class="fundo"></div><div class="grade"></div>
+      <div class="t-centro" style="top:220px;font-size:76px;font-weight:800;letter-spacing:-2px;color:#A1A5B0;opacity:${ap(t, .2)}">FinOps não é só cortar custos.</div>
+      <div class="t-centro" style="top:340px;font-size:84px;font-weight:900;letter-spacing:-2.5px;opacity:${a2};transform:translateY(${(1 - a2) * 30}px)">
+        É parar de perder um dinheiro <span style="color:#34D399">que já é seu.</span></div>
+      <div style="position:absolute;left:0;right:0;top:560px;display:flex;justify-content:center;align-items:center;gap:40px;opacity:${a3}">
+        <div style="padding:22px 36px;border-radius:18px;background:#16171B;border:1px solid #2A2C32;font-size:40px;font-weight:700">Desperdício evitado</div>
+        <svg width="90" height="40" viewBox="0 0 90 40"><path d="M4 20h70M60 6l16 14-16 14" fill="none" stroke="#34D399" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div style="padding:22px 36px;border-radius:18px;background:#34D399;color:#0B0C0E;font-size:40px;font-weight:900">Margem</div>
+      </div>`;
+  },
+  s04_produto(t, s, k) {
+    const m = META.geral;
+    const c = camInterp([[0, [0, 0, 1920, m.h], 30], [.24, [0, 0, 1920, m.h], 30], [.4, m.kpis, 60], [1, m.kpis, 60]], k);
+    const rot = [['#34D399', 'Quanto você gastou', .4, .51], ['#A78BFA', 'Quanto vai gastar no mês', .51, .73], ['#22D3EE', 'Quanto dá para economizar', .73, 1.01]];
+    let h = `<div class="fundo"></div>` + mundo('geral', c);
+    rot.forEach(([cor, txt, a, b], i) => {
+      const op = clamp((k - a) * 12) * clamp((b - k) * 12);
+      h += realce(c, KP(m, i), op, cor) + chip(c, KP(m, i), txt, op, cor);
+    });
+    if (k < .26) h += `<div class="chip" style="left:50%;top:${(VH - 150) - 30}px;transform:translateX(-50%);background:#F3F4F6;opacity:${clamp(k * 8) * clamp((.26 - k) * 12)}">Todos os ambientes numa única tela</div>`;
+    return h;
+  },
+  s05_previsao(t, s, k) {
+    const m = META.geral;
+    const c = camInterp([[0, m.kpis, 60], [.2, m.grafico, 40], [.62, m.grafico, 40], [.78, m.medidor, 40], [1, m.medidor, 50]], k);
+    const o1 = clamp((k - .22) * 10) * clamp((.62 - k) * 10), o2 = clamp((k - .8) * 10);
+    return `<div class="fundo"></div>` + mundo('geral', c)
+      + realce(c, m.grafico, o1, '#A78BFA') + chip(c, m.grafico, 'Custo acumulado × orçamento, com projeção até o fim do mês', o1, '#A78BFA')
+      + realce(c, m.medidor, o2, '#34D399') + chip(c, m.medidor, '79,4% do orçamento: dentro', o2, '#34D399');
+  },
+  s06_causa(t, s, k) {
+    const m = META.dev;
+    const c = camInterp([[0, [0, 0, 1920, m.h], 30], [.14, [0, 0, 1920, m.h], 30], [.3, m.aviso, 40], [.7, m.aviso, 40], [.82, m.medidor, 40], [1, m.medidor, 50]], k);
+    const o0 = clamp(k * 10) * clamp((.24 - k) * 10), o1 = clamp((k - .3) * 10) * clamp((.7 - k) * 10), o2 = clamp((k - .84) * 10);
+    return `<div class="fundo"></div>` + mundo('dev', c)
+      + realce(c, TOPO(m), o0, '#FBBF24')
+      + realce(c, m.aviso, o1, '#FB923C') + chip(c, m.aviso, 'A causa, com nome e data', o1, '#FB923C')
+      + realce(c, m.medidor, o2, '#FB923C') + chip(c, m.medidor, '118,6% do orçamento', o2, '#FB923C');
+  },
+  s07_economia(t, s, k) {
+    const md = META.dev_evidencia, mg = META.geral;
+    const ac = md.acoes, ev = [ac[0] + 10, ac[1] + 60, ac[2] - 20, 210];
+    if (k < .58) {
+      const kk = k / .58;
+      const c = camInterp([[0, ac, 40], [.25, ev, 50], [1, ev, 60]], kk);
+      const o = clamp((kk - .25) * 8);
+      return `<div class="fundo"></div>` + mundo('dev_evidencia', c) + realce(c, ev, o, '#22D3EE') + chip(c, ev, 'Evidência · o que fazer · dono', o, '#22D3EE');
+    }
+    const kk = (k - .58) / .42;
+    const c = camInterp([[0, mg.kpis, 60], [.35, KP(mg, 2), 70], [1, KP(mg, 2), 80]], kk);
+    const o = clamp((kk - .3) * 8), fade = clamp(kk * 6);
+    return `<div class="fundo"></div>` + mundo('geral', c, fade) + realce(c, KP(mg, 2), o, '#22D3EE') + chip(c, KP(mg, 2), 'R$ 27,7 mil por ano', o, '#22D3EE');
+  },
+  s08_fora_prod(t, s, k) {
+    const m = META.ranking_app;
+    const c = camInterp([[0, m.ranking, 40], [.55, m.ranking, 50], [.72, m.rosca, 40], [1, m.rosca, 50]], k);
+    const o1 = clamp((k - .08) * 8) * clamp((.6 - k) * 10), o2 = clamp((k - .74) * 10);
+    return `<div class="fundo"></div>` + mundo('ranking_app', c)
+      + realce(c, m.ranking, o1, '#FBBF24') + chip(c, m.ranking, 'Cada cor é um ambiente: o custo de cada app, separado', o1, '#FBBF24')
+      + realce(c, m.rosca, o2, '#2DD4BF') + chip(c, m.rosca, 'Dev + integração = 85,5% da produção', o2, '#2DD4BF');
+  },
+  s09_tenants(t, s, k) {
+    const shots = [['prod', '#818CF8', 'Produção'], ['dev', '#FBBF24', 'Desenvolvimento'], ['int', '#2DD4BF', 'Integração']];
+    const i = Math.min(2, Math.floor(k * 3)), kk = k * 3 - i, [img, cor, nome] = shots[i], m = META[img];
+    const r = TOPO(m);
+    const c = camInterp([[0, [0, 0, 1920, 620], 20], [1, r, 40]], kk);
+    const fade = i === 0 ? 1 : clamp(kk * 7), o = clamp((kk - .2) * 6);
+    return `<div class="fundo"></div>` + mundo(img, c, fade) + realce(c, r, o, cor) + chip(c, r, 'Você está vendo: ' + nome, o, cor);
+  },
+  s10_tema(t, s, k) {
+    const m = META.geral;
+    const c = camInterp([[0, [0, 0, 1920, m.h], 40], [1, [0, 0, 1920, m.h], 10]], k);
+    const w = ease(clamp((k - .38) / .3)) * 100;
+    return `<div class="fundo"></div>` + mundo('geral', c) + mundo('geral_claro', c, 1, `clip-path:inset(0 0 0 ${100 - w}%)`)
+      + (w > 0 && w < 100 ? `<div style="position:absolute;top:0;bottom:150px;left:${(100 - w) / 100 * VW}px;width:4px;background:#F3F4F6;box-shadow:0 0 30px #F3F4F6"></div>` : '');
+  },
+  s11_confianca(t, s) {
+    const itens = [[.4, 'Números calculados em código, não estimados pela IA'], [3.0, 'Conferidos automaticamente com gabarito a cada mudança'], [5.6, 'IA que explica, mas não inventa']];
+    let h = `<div class="fundo"></div><div class="grade"></div>
+      <div style="position:absolute;left:180px;top:170px;font-size:30px;letter-spacing:6px;color:#A1A5B0;font-weight:700;opacity:${ap(t, .1)}">CONFIANÇA ANTES DE TUDO</div>
+      <div style="position:absolute;left:180px;top:260px">`;
+    itens.forEach(([ini, txt]) => { const a = ap(t, ini); h += `<div class="check" style="opacity:${a};transform:translateX(${(1 - a) * -30}px)"><span class="bola">${ICO.ok}</span>${txt}</div>`; });
+    const a = ap(t, 7.2, .8);
+    h += `</div><div style="position:absolute;right:120px;top:250px;width:400px;padding:40px;border-radius:28px;background:#16171B;border:1px solid #2A2C32;opacity:${a};transform:scale(${.92 + .08 * a})">
+        <div style="font-size:24px;color:#A1A5B0;font-weight:600">Avaliação do agente de IA</div>
+        <div style="font-size:120px;font-weight:900;letter-spacing:-4px;margin-top:10px">19<span style="color:#A1A5B0">/20</span></div>
+        <div style="font-size:30px;font-weight:700">respostas certas</div>
+        <div style="margin-top:22px;display:inline-block;padding:10px 18px;border-radius:12px;background:#34D399;color:#0B0C0E;font-size:28px;font-weight:900">0 informações inventadas</div></div>`;
+    return h;
+  },
+  s12_fecho(t, s) {
+    const a = ap(t, .1, .9), b = ap(t, 1.1), c2 = ap(t, 2.3);
+    return `<div class="fundo"></div><div class="grade"></div>
+      <div class="t-centro" style="top:220px;opacity:${a};transform:scale(${.85 + .15 * a})">${LOGO(150)}</div>
+      <div class="t-centro" style="top:400px;font-size:120px;font-weight:900;letter-spacing:-4px;opacity:${a}">Hub FinOps</div>
+      <div class="t-centro" style="top:560px;font-size:52px;font-weight:700;color:#C9CCD4;opacity:${b}">Pare de pagar pelo que você não usa.</div>
+      <div class="t-centro" style="top:680px;opacity:${c2}"><span style="display:inline-block;padding:20px 40px;border-radius:999px;background:#F3F4F6;color:#0B0C0E;font-size:34px;font-weight:800">Agende uma demonstração</span></div>`
+      + (window.CREDITO ? `<div class="t-centro" style="top:1000px;font-size:20px;color:#8B8F9A;font-weight:500;opacity:${c2}">${window.CREDITO}</div>` : '');
+  }
+};
+
+window.preparar = async (meta, rot) => {
+  META = meta; ROT = rot;
+  const nomes = new Set(Object.keys(meta));
+  await Promise.all([...nomes].map((n) => new Promise((ok) => { const im = new Image(); im.onload = () => im.decode().then(ok, ok); im.onerror = ok; im.src = `cap/${n}.jpg`; IMGS[n] = im; })));
+  await document.fonts.ready;
+  return true;
+};
+window.quadro = (i, t) => {
+  const s = ROT[i];
+  const k = clamp(t / s.dur);
+  const marcaProduto = s.tipo === 'produto' ? '' : '';
+  document.getElementById('cena').innerHTML = CENAS[s.id](t, s, k) + marcaProduto + legenda(s, t);
+};
+</script>
+</body>
+</html>
