@@ -18,7 +18,6 @@ import os
 import subprocess
 import sys
 from datetime import datetime
-from fractions import Fraction
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -337,8 +336,9 @@ def documento(i):
             L.append("- **Roda em paralelo com:** " + ", ".join(f"`{p}`" for p in x["paralelo_com"]))
         rt = x["retentativa"]
         if rt["tipo"] != "default" and x["tipo"] not in lp.CONTAINERS:
-            L.append(f"- **Retentativa:** {RETRY_PT.get(rt['tipo'], rt['tipo'])}" + (f", {rt['tentativas']} tentativa(s)" if rt["tentativas"] else "")
-                     + (f", intervalo {rt['intervalo']}" if rt["intervalo"] else ""))
+            tentativas = f", {rt['tentativas']} tentativa(s)" if rt["tentativas"] else ""
+            intervalo = f", intervalo {rt['intervalo']}" if rt["intervalo"] else ""
+            L.append(f"- **Retentativa:** {RETRY_PT.get(rt['tipo'], rt['tipo'])}{tentativas}{intervalo}")
         if x["dados_protegidos"]:
             L.append("- **Dados ocultos no histórico:** " + ", ".join(x["dados_protegidos"]))
         L.append("")

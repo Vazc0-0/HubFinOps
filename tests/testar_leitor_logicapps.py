@@ -26,8 +26,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
-import logicapp_parser as lp  # noqa: E402
 import doc_logicapp as dl  # noqa: E402
+import logicapp_parser as lp  # noqa: E402
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -113,7 +113,7 @@ for parte, json_fluxo, arq in alvos:
         confere(parte, t in g["texto"], f"texto do gatilho sem '{t}'")
     lida = [[x["numero"], x["nome"], x["tipo"], x["pai"], x["ramo"]] for x in info["acoes"]]
     confere(parte, len(lida) == len(esp["ordem"]), f"{len(lida)} ações lidas, esperadas {len(esp['ordem'])}")
-    for a, e in zip(lida, esp["ordem"]):
+    for a, e in zip(lida, esp["ordem"], strict=False):  # o tamanho já foi conferido acima
         confere(parte, a == e, f"ordem/estrutura: leu {a}, esperado {e}")
     por = {x["nome"]: x for x in info["acoes"]}
     for n, refs in esp["usa"].items():

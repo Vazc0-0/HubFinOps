@@ -69,8 +69,8 @@ def _execucoes(la):
 
 
 def diag_logicapp_falha(alvo, alerta):
-    import logicapp_parser as lp
     import doc_logicapp as dl
+    import logicapp_parser as lp
     reais, simuladas = _execucoes(alvo)
     falhas = [dict(e, simulada=False) for e in reais if e["status"] == "Failed"] + [dict(e, simulada=True) for e in simuladas]
     real = ROOT / "logicapps" / "reais" / f"{alvo}.json"

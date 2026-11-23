@@ -1,0 +1,11 @@
+# Opcional: roda o ruff e o gitleaks antes de cada commit na sua máquina.
+#   pip install pre-commit==4.6.2 && pre-commit install
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.5
+    hooks:
+      - id: ruff-check
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.29.1
+    hooks:
+      - id: gitleaks

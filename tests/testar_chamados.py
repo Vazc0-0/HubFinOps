@@ -24,8 +24,8 @@ os.environ["PILOTO_CHAMADOS_DIR"] = str(TMP / "chamados")
 os.environ["PILOTO_HISTORICO"] = str(TMP / "historico.jsonl")
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
-import receptor_chamados as r  # noqa: E402
 import carregar_grafana as cg  # noqa: E402
+import receptor_chamados as r  # noqa: E402
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")

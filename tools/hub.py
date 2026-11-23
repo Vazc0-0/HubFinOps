@@ -112,7 +112,8 @@ def ranking_logicapps():
             p = cg.previsto_x_medido(la)
             out.append({"nome": la, "origem": "medido no Azure", "real": True, "custo_30d": round(p.get("custo_mes_brl") or 0, 2),
                         "custo_30d_anteriores": None, "variacao_pct": None, "custo_periodo": None, "grupo": None, "dono": None,
-                        "acoes_mes": round((p.get("medido_por_execucao") or p.get("previsto_por_execucao") or 0) * p.get("execucoes_mes", 0))})
+                        "acoes_mes": round((p.get("medido_por_execucao") or p.get("previsto_por_execucao") or 0)
+                                           * p.get("execucoes_mes", 0))})
     except Exception:  # noqa: BLE001  (sem Azure sincronizado, o ranking mostra só os dados de custo)
         pass
     out.sort(key=lambda x: -x["custo_30d"])
@@ -175,7 +176,8 @@ def estado():
             "servicos": {"grafana": servico(f"{GRAFANA}/api/health"), "receptor": servico(f"{RECEPTOR}/")},
             "tarefas": tarefas, "historico": hist, "em_andamento": [h for h in hist if h.get("status") == "em andamento"],
             "finops": _seguro(finops), "logicapps": _seguro(logicapps, []), "azure": _seguro(azure),
-            "ranking_logicapps": _seguro(ranking_logicapps, {"itens": []}), "chamados": _seguro(chamados, []), "documentos": _seguro(documentos, {}),
+            "ranking_logicapps": _seguro(ranking_logicapps, {"itens": []}), "chamados": _seguro(chamados, []),
+            "documentos": _seguro(documentos, {}),
             "grafana": {"url": GRAFANA, "paineis": [
                 {"uid": "piloto-operacao", "titulo": "Logic App real e operação do piloto"},
                 {"uid": "finops-custos-demo", "titulo": "FinOps: custos Azure (dados sintéticos)"}]}}

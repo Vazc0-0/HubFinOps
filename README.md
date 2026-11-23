@@ -2,7 +2,8 @@
 
 **FinOps, documentação automática de Logic Apps e um hub para acompanhar tudo, com um modelo de IA rodando localmente.**
 
-![Python](https://img.shields.io/badge/Python-3-3776AB?logo=python&logoColor=white)
+[![CI](https://github.com/Vazc0-0/agentes-ia-docker/actions/workflows/ci.yml/badge.svg)](https://github.com/Vazc0-0/agentes-ia-docker/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
 ![Docker Agent](https://img.shields.io/badge/Docker_Agent-modelo_local_qwen3-2496ED?logo=docker&logoColor=white)
 ![Grafana](https://img.shields.io/badge/Grafana-12-F46800?logo=grafana&logoColor=white)
 ![Azure Logic Apps](https://img.shields.io/badge/Azure-Logic_Apps-0078D4?logo=microsoftazure&logoColor=white)
@@ -52,6 +53,28 @@ Daí vieram as regras do projeto:
 | Receptor de alertas | **30 / 30** verificações com alertas reais capturados do Grafana 12 |
 | Relatório FinOps | Acha as 4 anomalias do gabarito, com valores conferidos pelo validador |
 
+## Testes automáticos (CI)
+
+A cada `push`, o [GitHub Actions](.github/workflows/ci.yml) roda quatro verificações, sem Azure, sem modelo de IA e sem nenhum segredo:
+
+| Verificação | O que garante |
+|---|---|
+| **Qualidade do código** | `ruff` sem erros (armadilhas comuns, imports, estilo) |
+| **Testes** no Linux e no Windows, Python 3.10 e 3.13 | bateria do leitor de Logic Apps, gabarito FinOps, receptor de alertas, relatório e documentação validados; e a documentação versionada continua igual ao que o código gera |
+| **Ambiente Docker de ponta a ponta** | sobe Postgres + Grafana + receptor, confere painéis, alertas e permissões do usuário só-leitura, e espera um **alerta real do Grafana virar chamado** com o diagnóstico certo |
+| **Segredos** | `gitleaks` confere que nenhuma chave ou senha real entrou no histórico |
+
+Na sua máquina, o mesmo conjunto roda com:
+
+```bash
+python tools/rodar.py ci              # testes (não precisa de Docker)
+docker compose up -d --wait           # e, com o ambiente no ar:
+python tests/testar_ambiente.py       # RESULTADO: AMBIENTE OK
+```
+
+O [Dependabot](.github/dependabot.yml) abre pull requests quando saem versões novas das actions e das imagens Docker.
+Opcional: `pip install pre-commit==4.6.2 && pre-commit install` roda o `ruff` e o `gitleaks` antes de cada commit.
+
 ## Arquitetura
 
 ```mermaid
@@ -90,9 +113,8 @@ flowchart LR
 **Pré-requisitos:** Docker Desktop 4.63+ (já traz o Docker Agent), Docker Model Runner ativado e Python 3 no PATH.
 
 ```bash
-# 1. Conferir os dados e o leitor (não precisa de Docker)
-python tests/validar_gabarito.py            # RESULTADO: PASSOU
-python tests/testar_leitor_logicapps.py     # RESULTADO: LEITURA 100% CORRETA
+# 1. Rodar todos os testes (não precisa de Docker)
+python tools/rodar.py ci                    # leitor, gabarito, receptor, relatório e documentação
 
 # 2. Subir Postgres + Grafana + receptor de alertas
 docker compose up -d                        # Grafana em http://localhost:3000 (admin / admin)
@@ -133,7 +155,8 @@ python tools/carregar_grafana.py --limpar-simulacao  # o alerta volta ao normal 
 ```text
 agents/        equipes do Docker Agent (FinOps e documentação)
 tools/         ferramentas em Python, receptor de alertas e hub
-tests/         validadores e baterias de teste, com casos e gabaritos
+tests/         validadores e baterias de teste, com casos e gabaritos (testar_ambiente.py: Docker de ponta a ponta)
+.github/       testes automáticos (CI) e Dependabot
 data/          gerador de custos no formato FOCUS + gabarito das anomalias
 logicapps/     Logic Apps de exemplo (fictícias) e a Logic App real de teste
 azure/         definição e modelo ARM da Logic App de teste + passo a passo

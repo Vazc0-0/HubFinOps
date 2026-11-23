@@ -1,0 +1,33 @@
+[project]
+name = "agentes-ia-docker"
+version = "0.4.0"
+description = "Agentes de IA com Docker Agent e modelo local: FinOps, documentação de Logic Apps, alertas do Grafana e um hub para acompanhar tudo."
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Gabriel Vaz Franco" }]
+requires-python = ">=3.10"
+dependencies = []  # só biblioteca padrão do Python
+
+[project.optional-dependencies]
+dev = ["ruff==0.17.5", "pre-commit==4.6.2"]
+
+[project.urls]
+Repository = "https://github.com/Vazc0-0/agentes-ia-docker"
+
+[tool.ruff]
+line-length = 140
+target-version = "py310"
+extend-exclude = ["docs", "relatorios"]
+
+[tool.ruff.lint]
+# E/W estilo, F erros reais, B armadilhas comuns, I ordem dos imports
+select = ["E", "F", "W", "B", "I"]
+ignore = [
+  "E741",  # nomes curtos como l/O são usados de propósito em laços pequenos
+]
+
+[tool.ruff.lint.per-file-ignores]
+"data/generate_costs.py" = ["E501"]  # tabela de recursos fictícios, uma linha por recurso
+
+[tool.ruff.lint.isort]
+known-first-party = ["cost_query", "doc_logicapp", "logicapp_parser", "historico", "rodar", "receptor_chamados", "carregar_grafana"]

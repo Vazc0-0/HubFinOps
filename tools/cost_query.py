@@ -78,7 +78,7 @@ def detectar(series, meta):
         baseline = [s[d] for d in dias if d < first + timedelta(days=30)]
         base = statistics.median(baseline)
         if len(baseline) >= 28 and statistics.median(recent) > PATAMAR_FATOR * base:
-            def semana(d):
+            def semana(d, s=s, dias=dias):
                 return [s[x] for x in dias if d <= x < d + timedelta(days=7)]
             inicio = next(d for d in dias if s[d] > PATAMAR_FATOR * base
                           and statistics.median(semana(d)) > PATAMAR_FATOR * base)
@@ -102,7 +102,6 @@ def detectar(series, meta):
         for g in grupos:
             base = statistics.median([s[x] for x in dias if g[0] - timedelta(days=JANELA) <= x < g[0]])
             pico = max(s[x] for x in g)
-            extra = sum(s[x] - base for x in g)
             achados.append({"recurso": name, "tipo": "pico", "inicio": g[0], "fim": g[-1],
                             "detalhe": f"até {brl(pico)}/dia contra base de {brl(base)}/dia ({pico / base:.1f}x)"})
     return achados

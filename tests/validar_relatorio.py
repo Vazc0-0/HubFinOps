@@ -7,7 +7,6 @@ Verifica a tabela de anomalias do relatório:
 
 Uso:  python tests/validar_relatorio.py [caminho do relatório]
 """
-import re
 import sys
 import time
 from pathlib import Path

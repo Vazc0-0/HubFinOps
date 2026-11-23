@@ -42,6 +42,9 @@ TAREFAS = {
                 "(precisa do docker compose rodando).", "Grafana"),
 }
 SEQUENCIA_TUDO = ["testes", "gabarito_finops", "chamados_teste", "relatorio_finops", "docs_logicapps", "azure", "grafana"]
+# o que roda sem Docker, sem Azure e sem modelo: é o que o GitHub Actions roda a cada push
+SEQUENCIA_CI = ["testes", "gabarito_finops", "chamados_teste", "relatorio_finops", "docs_logicapps"]
+SEQUENCIAS = {"tudo": SEQUENCIA_TUDO, "ci": SEQUENCIA_CI}
 
 
 def resultado_de(saida):
@@ -92,9 +95,10 @@ def main(argv):
         print(__doc__)
         for k, (t, _, d, g) in TAREFAS.items():
             print(f"  {k:<16} [{g}] {t}: {d}")
-        print(f"  {'tudo':<16} roda: {', '.join(SEQUENCIA_TUDO)}")
+        for nome, seq in SEQUENCIAS.items():
+            print(f"  {nome:<16} roda: {', '.join(seq)}")
         return 1
-    alvo = SEQUENCIA_TUDO if argv[1] == "tudo" else [argv[1]]
+    alvo = SEQUENCIAS.get(argv[1], [argv[1]])
     falhas = 0
     for t in alvo:
         if t not in TAREFAS:

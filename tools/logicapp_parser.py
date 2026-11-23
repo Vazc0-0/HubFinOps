@@ -601,7 +601,7 @@ def cobranca(acoes, gatilho):
     tot = conta(None, None)
     fixas = sum(v for (l, _), v in tot.items() if not l)
     por_loop = {}
-    for (l, cat), v in tot.items():
+    for (l, _cat), v in tot.items():
         if l:
             por_loop[" × ".join(l)] = por_loop.get(" × ".join(l), 0) + v
     out = {"fixas_por_execucao": fixas,

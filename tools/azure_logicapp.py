@@ -130,12 +130,12 @@ def _get_url(url):
         except ValueError:
             msg = corpo
         if e.code == 401:
-            raise ErroAzure("Login expirado. Rode: az login")
+            raise ErroAzure("Login expirado. Rode: az login") from None
         if e.code == 404:
-            raise ErroAzure(f"Não encontrado (confira assinatura, grupo e nome em config/azure.json): {msg}")
+            raise ErroAzure(f"Não encontrado (confira assinatura, grupo e nome em config/azure.json): {msg}") from None
         if e.code == 403:
-            raise ErroAzure(f"Sem permissão de leitura nesse recurso: {msg}")
-        raise ErroAzure(f"HTTP {e.code}: {msg}")
+            raise ErroAzure(f"Sem permissão de leitura nesse recurso: {msg}") from None
+        raise ErroAzure(f"HTTP {e.code}: {msg}") from None
 
 
 def salvar(nome, dados):
@@ -147,7 +147,7 @@ def salvar(nome, dados):
 
 # ------------------------------------------------------------------ comandos
 def configurar(args):
-    op = dict(zip(args[::2], args[1::2]))
+    op = dict(zip(args[::2], args[1::2], strict=False))  # número ímpar de argumentos: o último fica sem valor
     faltam = [k for k in ("--assinatura", "--grupo", "--nome") if k not in op]
     if faltam:
         print("Faltou:", ", ".join(faltam))
@@ -232,7 +232,7 @@ def precos():
         with urllib.request.urlopen(link, timeout=30) as resp:
             saida = json.loads(texto(resp.read()))
     except (urllib.error.URLError, ValueError) as e:
-        raise ErroAzure(f"Não consegui baixar a saída da ação 'Resumo': {e}")
+        raise ErroAzure(f"Não consegui baixar a saída da ação 'Resumo': {e}") from e
     corpo = saida.get("body", saida)
     p = salvar("precos_logicapps.json", {"execucao": ok["name"], **corpo})
     print(f"Preços salvos em {p.relative_to(ROOT)}: {len(corpo.get('precos', []))} medidores "
