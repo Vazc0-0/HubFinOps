@@ -1,0 +1,28 @@
+{
+  "quando": "2026-11-23T12:38:50",
+  "modelo": "dmr/ai/qwen3 (YAML)",
+  "resumo": {
+    "perguntas": 1,
+    "acertos": 1,
+    "pontos_pct": 100.0,
+    "com_invencao": 0,
+    "invencao_pct": 0.0,
+    "ferramenta_em_texto": 0,
+    "tempo_medio_s": 34.9
+  },
+  "resultados": [
+    {
+      "id": "docs-o-que-mudou",
+      "equipe": "documentacao",
+      "pergunta": "O que mudou na lgc-desvios-processo em relação à versão anterior?",
+      "situacao": "acertou",
+      "pontos": 1.0,
+      "faltou": [],
+      "inventou": [],
+      "ferramenta_em_texto": false,
+      "resposta": "A Logic App 'lgc-desvios-processo' apresenta mudanças significativas em comparação à versão anterior:\n\n- O gatilho foi alterado de \"a cada hora\" para \"a cada 5 minutos\", aumentando a frequência de execução.\n- O número de execuções mensais aumentou de 730 para 8.760.\n- Foi identificado um novo risco de severidade Média chamado \"RECORRENCIA_FREQUENTE\", que indica que a Logic App está executando 288 vezes por dia.\n- O custo estimado mensal subiu de R$ 0,51 para R$ 8,84, um aumento de aproximadamente 1100%.\n- O número de ações cobradas por mês aumentou de 1.460 para 17.520.\n\nEssas mudanças devem ser revisadas para garantir que foram feitas de forma intencional e que não haverá impacto negativo no custo ou na performance da aplicação.\n\nA documentação completa fica em `docs/logicapps/` e pode ser conferida com o comando: `python tests/validar_docs.py`.",
+      "tempo_s": 34.9,
+      "codigo_saida": 0
+    }
+  ]
+}
