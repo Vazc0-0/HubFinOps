@@ -87,15 +87,22 @@ def args_schtasks_criar(a_cada_h, comando):
     return ["schtasks", "/create", "/tn", NOME_TAREFA, "/tr", comando, *agenda, "/it", "/f"]
 
 
+def schtasks(*args):
+    """schtasks escreve na página de código OEM do console (ex.: cp850), não em UTF-8: decodifica com 'oem'."""
+    r = subprocess.run(["schtasks", *args], capture_output=True)
+    texto = (r.stdout or r.stderr).decode("oem" if os.name == "nt" else "utf-8", errors="replace").strip()
+    return r.returncode, texto
+
+
 def instalar(a_cada_h):
     if os.name != "nt":
         print("O agendamento automático usa o Agendador de Tarefas do Windows. Em Linux/macOS use cron com:")
         print(f"  0 */{a_cada_h} * * *  cd {ROOT} && {sys.executable} tools/agendador.py --uma-vez --registrar-log")
         print("Ou deixe um terminal aberto com: python tools/agendador.py --a-cada", a_cada_h)
         return 1
-    r = subprocess.run(args_schtasks_criar(a_cada_h, comando_tarefa()), capture_output=True, text=True, errors="replace")
-    print((r.stdout or r.stderr).strip())
-    if r.returncode != 0:
+    codigo, texto = schtasks(*args_schtasks_criar(a_cada_h, comando_tarefa())[1:])
+    print(texto)
+    if codigo != 0:
         print("RESULTADO: ERRO ao criar a tarefa no Agendador de Tarefas")
         return 1
     grava_estado(a_cada_h=a_cada_h, instalado_em=historico.agora(), tarefa_windows=NOME_TAREFA)
@@ -109,23 +116,24 @@ def remover():
     if os.name != "nt":
         print("Nada a remover fora do Windows (se usou cron, apague a linha com: crontab -e).")
         return 0
-    r = subprocess.run(["schtasks", "/delete", "/tn", NOME_TAREFA, "/f"], capture_output=True, text=True, errors="replace")
-    print((r.stdout or r.stderr).strip())
+    codigo, texto = schtasks("/delete", "/tn", NOME_TAREFA, "/f")
+    print(texto)
     e = ler_estado()
     for k in ("instalado_em", "tarefa_windows", "a_cada_h", "proxima_estimada"):
         e.pop(k, None)
     ESTADO.parent.mkdir(parents=True, exist_ok=True)
     ESTADO.write_text(json.dumps(e, ensure_ascii=False, indent=2), encoding="utf-8")
-    print("RESULTADO: AGENDAMENTO REMOVIDO" if r.returncode == 0 else "RESULTADO: TAREFA NÃO ENCONTRADA")
+    print("RESULTADO: AGENDAMENTO REMOVIDO" if codigo == 0 else "RESULTADO: TAREFA NÃO ENCONTRADA")
     return 0
 
 
 def status():
     e = ler_estado()
     if os.name == "nt":
-        r = subprocess.run(["schtasks", "/query", "/tn", NOME_TAREFA, "/fo", "LIST", "/v"], capture_output=True, text=True,
-                           errors="replace")
-        print((r.stdout or r.stderr).strip() or "Tarefa não encontrada.")
+        _, texto = schtasks("/query", "/tn", NOME_TAREFA, "/fo", "LIST", "/v")
+        print(texto or "Tarefa não encontrada.")
+        if "267011" in texto:  # 0x41303 = SCHED_S_TASK_HAS_NOT_RUN
+            print("(267011 = a tarefa ainda não rodou nenhuma vez; é o normal logo depois de instalar)")
     print()
     print(f"A cada: {e.get('a_cada_h', '-')} h · última rodada: {e.get('ultima_rodada', 'nunca')} "
           f"({e.get('ultimo_resultado', '-')}) · próxima estimada: {e.get('proxima_estimada', '-')}")
