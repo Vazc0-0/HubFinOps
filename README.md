@@ -15,7 +15,7 @@ e medido por uma avaliação com gabarito.**
 
 *Painel FinOps do hub (`http://localhost:8090`): custo por ambiente, previsão × orçamento, ranking por recurso, app ou centro de
 custo, e onde economizar. Cada ambiente tem a mesma cor em todos os gráficos; os filtros valem para a tela inteira; tem modo
-claro. Os botões no topo abrem uma página por tenant (`/ambiente/producao`, `/ambiente/desenvolvimento`, `/ambiente/integracao`),
+claro, e a barra de ícones à esquerda leva a todas as telas do hub. Os botões no topo abrem uma página por tenant (`/ambiente/producao`, `/ambiente/desenvolvimento`, `/ambiente/integracao`),
 que mostra qual tenant você está vendo e só recebe os dados dele. Os números vêm de `/api/finops`, calculados em código por
 `tools/finops_tenants.py`.*
 
@@ -66,7 +66,7 @@ dá para gerar tudo de novo.
 | **Logic App real no Azure** | Uma Logic App de teste na minha conta de estudante, ligada **só para leitura** e sincronizada sozinha a cada 6 h. O custo previsto pelo leitor é conferido com o medido. |
 | **Comparação de versões** | O que mudou entre duas versões de uma Logic App: fluxo, custo previsto, riscos e pontos de atenção antes de publicar. |
 | **Grafana** | Painéis de custo e de operação (com histórico) e 4 alertas que viram **chamados com diagnóstico** (simulando um Jira). |
-| **Hub** | Página local em duas partes: o **painel FinOps** (página inicial, escuro ou claro, interativo, com os números de `/api/finops`, e uma página por tenant em `/ambiente/<ambiente>`) e a **operação** (`/operacao`): executar tarefas com log ao vivo, histórico, resultados, chamados, Grafana, métodos de teste e documentos. |
+| **Hub** | Página local em duas partes, com o mesmo visual, o mesmo modo claro/escuro e a mesma barra de ícones (um por página): o **painel FinOps** (página inicial, interativo, com os números de `/api/finops`, e uma página por tenant em `/ambiente/<ambiente>`) e a **operação** (`/operacao`): executar tarefas com log ao vivo, histórico, resultados, chamados, Grafana, métodos de teste e documentos. |
 
 ## Por que assim: código calcula, IA explica
 
@@ -91,23 +91,31 @@ flowchart LR
     M["Modelo local<br/>qwen3 (Docker Model Runner)"]
     A1["Equipe FinOps"]
     A2["Equipe de documentação"]
-    T["Ferramentas em Python<br/>tools/"]
-    AG["Agendador<br/>a cada 6 h"]
     E["Avaliação<br/>evals/"]
-    C["chamados/"]
+    D[("Dados fictícios<br/>FOCUS + 3 tenants")]
+    T["Ferramentas em Python<br/>tools/ (o código calcula)"]
+    AG["Agendador do Windows<br/>a cada 6 h"]
+    ARQ[("Arquivos<br/>histórico, relatórios,<br/>docs, chamados/")]
     subgraph DC["docker compose (portas só em 127.0.0.1)"]
       P[("Postgres<br/>histórico")]
       G["Grafana 13<br/>painéis + 4 alertas"]
-      R["Receptor<br/>confere a assinatura"]
-      H["Hub<br/>localhost:8090"]
+      R["Receptor de alertas<br/>confere a assinatura"]
+      H["Hub · localhost:8090<br/>painel FinOps + operação"]
     end
   end
   AZ["Azure (só leitura)<br/>Logic App de teste"]
   M --- A1 & A2
-  A1 & A2 --> T
-  E -. pergunta e corrige .-> A1 & A2
-  AZ --> AG --> T --> P --> G -- "webhook assinado (HMAC)" --> R --> C
-  H -.-> T & P & C
+  A1 & A2 -- "ferramentas e hooks" --> T
+  E -. "pergunta e corrige" .-> A1 & A2
+  D --> T
+  AZ -- "az CLI" --> T
+  AG --> T
+  T --> ARQ
+  T -- "carregar_grafana" --> P --> G
+  G -- "webhook assinado (HMAC)" --> R -- "abre o chamado" --> ARQ
+  H -- "executa tarefas<br/>e calcula /api/finops" --> T
+  H -- "lê" --> ARQ
+  H -. "mostra os painéis" .-> G
 ```
 
 ## Telas
@@ -163,6 +171,7 @@ que usa o Docker) aparecem como **Só no PC**, com o comando para rodar no termi
 | Agendador e histórico | **24 / 24** verificações: comando do Agendador de Tarefas, rodada que para no primeiro erro, carga que acumula no Postgres |
 | Comparação de versões | **24 / 24** verificações com mudanças de gabarito e versões do Azure lidas de um servidor falso |
 | FinOps por ambiente | **138 / 138** verificações: cada número dos 3 ambientes igual ao gabarito (também os que o painel do hub mostra, inclusive na página de cada tenant), nenhum dado de um ambiente no relatório de outro e mudanças nos dados mudando o resultado do jeito certo |
+| Páginas do hub | **29 / 29** verificações: painel, operação e documentos com as mesmas cores e o mesmo modo claro/escuro, a mesma barra de ícones e cada ícone abrindo a sua seção |
 | Ambiente de ponta a ponta | Alerta real e assinado do Grafana vira chamado; alerta falso é recusado; tarefa roda pelo hub; sincronização atrasada abre chamado |
 | Sabotagem | Cada bateria foi estragada de propósito de vários jeitos e reprovou em todos |
 
@@ -173,7 +182,7 @@ A cada `push`, o [GitHub Actions](.github/workflows/ci.yml) roda quatro verifica
 | Verificação | O que garante |
 |---|---|
 | **Qualidade do código** | `ruff` sem erros (armadilhas comuns, imports, estilo) |
-| **Testes** no Linux e no Windows, Python 3.10 e 3.13 | leitor de Logic Apps, gabarito FinOps, receptor de alertas, corretor da avaliação, agendador, comparação de versões, relatório e documentação; e a documentação guardada continua igual ao que o código gera |
+| **Testes** no Linux e no Windows, Python 3.10 e 3.13 | leitor de Logic Apps, gabarito FinOps, FinOps por ambiente, receptor de alertas, corretor da avaliação, agendador, comparação de versões, páginas do hub, relatório e documentação; e a documentação guardada continua igual ao que o código gera |
 | **Ambiente Docker de ponta a ponta** | sobe Postgres + Grafana + receptor + hub, confere painéis, alertas e permissões do usuário só-leitura, espera um **alerta real e assinado do Grafana virar chamado**, confere que alerta sem assinatura é recusado, roda uma tarefa pelo hub e testa o histórico e o alerta de sincronização atrasada |
 | **Segredos** | `gitleaks` confere que nenhuma chave ou senha real entrou no histórico |
 
