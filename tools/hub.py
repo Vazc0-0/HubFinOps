@@ -170,6 +170,7 @@ def documentos():
     grupos = {"PDFs": sorted(ROOT.glob("docs/pdf/*.pdf")),
               "Relatórios FinOps": sorted(ROOT.glob("relatorios/relatorio-finops*.md")),
               "Documentação das Logic Apps": sorted(ROOT.glob("docs/logicapps/*.md")),
+              "Comparações de versões": sorted(ROOT.glob("docs/comparacoes/*.md")),
               "Guias": [p for p in (ROOT / "README.md", ROOT / "azure" / "LEIA-ME.md", ROOT / "logicapps" / "reais" / "LEIA-ME.md")
                         if p.exists()]}
     return {g: [{"nome": p.name, "caminho": p.relative_to(ROOT).as_posix(),

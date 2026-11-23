@@ -155,6 +155,9 @@ Docker do PC). Fora do Docker, `python tools/hub.py` continua funcionando como a
 | `tools/carregar_grafana.py` | Carrega no Postgres: execuções e métricas do Azure, preços, previsto × medido, histórico, chamados |
 | `grafana/dashboards/piloto-operacao.json` | Painel "Logic App real e operação do piloto" (gerado por `grafana/build_dashboard_operacao.py`) |
 | `grafana/provisioning/alerting/piloto-alertas.yaml` | 4 alertas: recurso sem dono, Logic App com falha (últimas 24 h), custo medido ≠ previsto, sincronização agendada atrasada |
+| `tools/comparar_logicapp.py` | Compara duas versões de uma Logic App (exemplo, Azure ou arquivos): gatilho, ações, custo previsto, riscos e pontos de atenção → `docs/comparacoes/` |
+| `tests/testar_comparacao.py` | Testa a comparação com mudanças de gabarito e as versões do Azure com servidor falso |
+| `logicapps/versoes/` | Versões anteriores (fictícias) usadas no exemplo da comparação |
 | `tools/agendador.py` | Sincronização agendada (Agendador de Tarefas do Windows): Azure → Grafana a cada N horas; `--instalar`, `--status`, `--remover` |
 | `tests/testar_agendador.py` | Testa o comando do `schtasks`, a rodada e o histórico no Postgres |
 | `tools/receptor_chamados.py` | Recebe os alertas do Grafana (webhook **assinado com HMAC-SHA256**) e abre chamados com diagnóstico em `chamados/` |

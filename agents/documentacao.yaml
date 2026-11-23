@@ -34,7 +34,7 @@ agents:
       Nunca invente ações, conectores ou números: tudo vem das ferramentas.
 
       - Para "documentar", "gerar documentação" ou "revisar boas práticas": delegue ao agente "documentador".
-      - Para perguntas sobre uma Logic App específica ("o que faz", "quando roda", "quais riscos"):
+      - Para perguntas sobre uma Logic App específica ("o que faz", "quando roda", "quais riscos", "o que mudou"):
         delegue ao "documentador" pedindo o resumo daquela Logic App.
       - No fim, responda em 3 a 6 linhas usando só o que o documentador trouxe.
         Diga que a documentação fica em docs/logicapps/ e pode ser conferida com: python tests/validar_docs.py
@@ -62,6 +62,10 @@ agents:
         o que faz passo a passo e o que entrega (ex.: e-mail). Use os números dos passos (1, 2, 3.S.1...).
       - Para riscos: chame "achados_boas_praticas" e liste por severidade (Alta, Média, Baixa),
         com a recomendação que veio da ferramenta.
+      - Para "o que mudou", "versão anterior" ou "comparar versões" de uma Logic App: chame "comparar_versoes"
+        com o nome exato e explique a mudança do gatilho, as execuções por mês (antes → depois), as ações
+        novas, removidas ou alteradas e os pontos de atenção, só com o que veio da ferramenta.
+        Se vier "SEM VERSÃO ANTERIOR", diga que não há versão anterior guardada dessa Logic App.
       - Para "sincronizar com o Azure" ou "o que rodou de verdade": chame "sincronizar_azure" e repasse
         o RESULTADO exatamente, as execuções e a comparação entre estimativa e medido.
         Se vier "ERRO", repita a instrução que veio na mensagem (ex.: rodar az login).
@@ -89,6 +93,18 @@ agents:
             env:
               PYTHONIOENCODING: utf-8
             description: Achados de boas práticas (custo, segurança, confiabilidade, manutenção) com severidade e recomendação.
+          comparar_versoes:
+            cmd: python tools/comparar_logicapp.py anterior   # o nome chega pela variável de ambiente 'nome'
+            env:
+              PYTHONIOENCODING: utf-8
+            description: >-
+              Compara a versão anterior guardada de uma Logic App com a atual: gatilho, execuções por mês,
+              ações novas/removidas/alteradas, riscos que apareceram ou foram resolvidos e pontos de atenção.
+            args:
+              nome:
+                type: string
+                description: Nome exato da Logic App, como aparece em listar_logicapps
+            required: [nome]
           sincronizar_azure:
             cmd: python tools/azure_logicapp.py sincronizar
             env:

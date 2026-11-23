@@ -35,7 +35,8 @@ EQUIPES = {"finops": ROOT / "agents" / "finops.yaml", "documentacao": ROOT / "ag
 # sincronizar_azure fica de fora: precisa de login no Azure e não faz parte das perguntas.
 PERMITIDAS = {
     "finops": ["resumo_custos", "detectar_anomalias", "detalhar_recurso", "gerar_relatorio", "transfer_task"],
-    "documentacao": ["listar_logicapps", "resumo_logicapp", "achados_boas_praticas", "gerar_documentacao", "transfer_task"],
+    "documentacao": ["listar_logicapps", "resumo_logicapp", "achados_boas_praticas", "comparar_versoes", "gerar_documentacao",
+                     "transfer_task"],
 }
 TOLERANCIA = 0.011
 
@@ -119,6 +120,9 @@ def saida_das_ferramentas():
             partes.append(roda(["tools/cost_query.py", "recurso"], {"nome": n}))
     for n in re.findall(r"^- ([\w-]+):", partes[2], re.M):
         partes.append(roda(["tools/doc_logicapp.py", "resumo"], {"nome": n}))
+    for arq in sorted((ROOT / "logicapps" / "versoes").glob("*.json")):  # comparações de versões que o agente pode pedir
+        partes.append(roda(["tools/comparar_logicapp.py", "anterior", arq.name.split(".")[0], "--saida",
+                            str(Path(tempfile.gettempdir()) / "avaliar-comparacao.md")]))
     rel = ROOT / "relatorios" / "relatorio-finops.md"
     if rel.exists():
         partes.append(rel.read_text(encoding="utf-8"))

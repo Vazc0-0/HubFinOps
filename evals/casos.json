@@ -1,5 +1,5 @@
 {
-  "sobre": "Perguntas com resposta conhecida para medir os agentes. Cada exigência é um texto (sem diferenciar maiúsculas e acentos), um número (aceita 732, 732,00, R$ 732,00 ou 1.615,92 / 1615.92) ou {\"qualquer\": [...]} quando vale uma de várias formas. As respostas certas foram tiradas das ferramentas (tools/cost_query.py e tools/doc_logicapp.py) e dos gabaritos (data/anomalias_esperadas.json e logicapps/achados_esperados.json).",
+  "sobre": "Perguntas com resposta conhecida para medir os agentes. Cada exigência é um texto (sem diferenciar maiúsculas e acentos), um número (aceita 732, 732,00, R$ 732,00 ou 1.615,92 / 1615.92) ou {\"qualquer\": [...]} quando vale uma de várias formas. As respostas certas foram tiradas das ferramentas (tools/cost_query.py, tools/doc_logicapp.py e tools/comparar_logicapp.py) e dos gabaritos (data/anomalias_esperadas.json e logicapps/achados_esperados.json).",
   "casos": [
     {
       "id": "finops-anomalias",
@@ -73,6 +73,12 @@
       "equipe": "documentacao",
       "pergunta": "Alguma Logic App tem e-mail de destinatário escrito direto no fluxo? Qual?",
       "deve_conter": ["lgc-chamados-nao-respondentes"]
+    },
+    {
+      "id": "docs-o-que-mudou",
+      "equipe": "documentacao",
+      "pergunta": "O que mudou na lgc-desvios-processo em relação à versão anterior?",
+      "deve_conter": [{"qualquer": ["5 minutos", "5 min"]}, {"qualquer": ["1 hora", "a cada hora", "1h", "de hora em hora", "por hora"]}, 8760]
     },
     {
       "id": "docs-armadilha",

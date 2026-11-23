@@ -53,6 +53,7 @@ Daí vieram as regras do projeto:
 | Receptor de alertas | **36 / 36** verificações com alertas reais capturados do Grafana, incluindo assinatura: sem assinatura, segredo errado, alerta alterado e reenvio velho são recusados |
 | Relatório FinOps | Acha as 4 anomalias do gabarito, com valores conferidos pelo validador |
 | Avaliação dos agentes (qwen3 local) | **13 / 13** perguntas certas, **nenhuma invenção**, inclusive nas 2 perguntas armadilha ([resultados](evals/resultados/RESUMO.md)) |
+| Comparação de versões | **24 / 24** verificações com mudanças de gabarito (gatilho, ação nova/removida/alterada, retentativa, conector, tratamento de erro, segredo) e leitura das versões do Azure com servidor falso (a versão de criação, vazia, não conta como mudança) |
 | Comparação com gemma3 | **0 / 13**: o modelo não chama as ferramentas, escreve a chamada como texto. A avaliação detecta e mostra isso |
 
 ## Testes automáticos (CI)
@@ -80,7 +81,7 @@ Opcional: `pip install pre-commit==4.6.2 && pre-commit install` roda o `ruff` e 
 
 ## Avaliação dos agentes
 
-Os testes acima conferem o **código**. A avaliação confere o **agente**: faz às duas equipes 13 perguntas cuja resposta
+Os testes acima conferem o **código**. A avaliação confere o **agente**: faz às duas equipes 14 perguntas cuja resposta
 já se sabe ([`evals/casos.json`](evals/casos.json)) e mede quanto ele acerta e quanto ele **inventa**.
 
 - **Acerto:** a resposta precisa trazer os nomes e valores do gabarito (ex.: `stgbackupantigo` e R$ 732,00).
@@ -94,6 +95,8 @@ já se sabe ([`evals/casos.json`](evals/casos.json)) e mede quanto ele acerta e 
 - O corretor é testado com respostas boas e ruins conhecidas (`tests/testar_avaliador.py`, roda no CI), incluindo o
   relatório alucinado da primeira tentativa e respostas reais dos modelos.
 
+Rodadas de 23/11, com as 13 perguntas da época (a 14ª, "o que mudou", veio com a comparação de versões):
+
 | Modelo | Acertos | Invenção | Ferramenta em texto | Tempo médio |
 |---|---|---|---|---|
 | `ai/qwen3` | 13 / 13 | 0 | 0 / 13 | 39 s |
@@ -103,7 +106,7 @@ A rodada do qwen3 foi gravada como 12 / 13: a resposta sobre riscos estava certa
 e o corretor ainda não aceitava o sublinhado. Corrigida com `--corrigir`, dá 13 / 13, e a resposta virou caso de teste.
 
 ```bash
-python evals/avaliar.py                          # 13 perguntas com o modelo dos YAMLs (ai/qwen3)
+python evals/avaliar.py                          # 14 perguntas com o modelo dos YAMLs (ai/qwen3)
 python evals/avaliar.py --so finops              # só uma equipe
 python evals/avaliar.py --caso finops-sem-dono   # uma pergunta
 python evals/avaliar.py --modelo dmr/ai/gemma3   # outro modelo local, mesmas perguntas, para comparar
@@ -213,6 +216,25 @@ python tools/agendador.py --remover                 # apaga a tarefa
   expirado, Docker parado), o Grafana abre um chamado com o passo que falhou e o que conferir.
 - O alerta de falha da Logic App passou a olhar só as últimas 24 h, para uma falha antiga não alertar para sempre.
 
+### Comparar versões de uma Logic App
+
+```bash
+python tools/comparar_logicapp.py exemplo                 # versão anterior × atual da lgc-desvios-processo (fictícia)
+python tools/comparar_logicapp.py azure                   # as 2 últimas versões da Logic App real (só leitura)
+python tools/comparar_logicapp.py antes.json depois.json  # quaisquer dois arquivos (definição ou exportação)
+```
+
+Gera `docs/comparacoes/<nome>.md`, calculado em código pelo mesmo leitor da documentação: mudança do gatilho e das
+execuções por mês, ações novas, removidas e alteradas (entradas, ordem, retentativa, lugar no fluxo), conectores,
+custo previsto antes × depois e os riscos que **apareceram** ou foram **resolvidos**. No fim, os pontos de atenção
+para revisar antes de publicar: aumento de custo acima de 20%, risco novo, tratamento de erro removido, conector novo.
+
+O exemplo é a mudança por trás da anomalia A4 dos dados de custo: a recorrência passou de **1 hora para 5 minutos**
+(730 → 8.760 execuções por mês) e apareceu o risco RECORRENCIA_FREQUENTE. A equipe de documentação também responde
+"o que mudou na lgc-desvios-processo?" pela ferramenta `comparar_versoes`, e essa pergunta entrou na avaliação.
+As versões do Azure vêm da API oficial (*Workflow Versions - List*) e ficam em `relatorios/azure/versoes/`, fora do Git,
+só com a definição (os parâmetros podem ter valores sensíveis).
+
 ### Testar o alerta de falha
 
 ```bash
@@ -232,7 +254,7 @@ data/          gerador de custos no formato FOCUS + gabarito das anomalias
 logicapps/     Logic Apps de exemplo (fictícias) e a Logic App real de teste
 azure/         definição e modelo ARM da Logic App de teste + passo a passo
 grafana/       provisionamento: datasource, painéis e alertas
-docs/          documentação gerada das Logic Apps e imagens deste README
+docs/          documentação gerada das Logic Apps, comparações de versões e imagens deste README
 relatorios/    relatórios gerados (inclui as tentativas que falharam)
 evals/         avaliação dos agentes: perguntas com gabarito, corretor e resultados por modelo
 ```
@@ -241,7 +263,7 @@ Guia detalhado de cada parte (todos os comandos, arquivos e o gabarito das anoma
 
 ## Limites conhecidos
 
-- A avaliação tem 13 perguntas e uma rodada por modelo: mostra a tendência, não é uma medida estatística. Use `--repetir` para ver a variação.
+- A avaliação tem 14 perguntas e uma rodada por modelo: mostra a tendência, não é uma medida estatística. Use `--repetir` para ver a variação.
 - O modelo local é pequeno: por isso a redação dos números fica em código. Com um modelo maior, dá para devolver a redação ao agente mantendo os validadores.
 - O que um trecho de JavaScript (ação *Execute JavaScript Code*) lê de outras ações não é analisado; a documentação avisa quando isso acontece.
 - Os chamados são arquivos locais. Ligar no Jira de verdade é o próximo passo.
@@ -251,7 +273,7 @@ Guia detalhado de cada parte (todos os comandos, arquivos e o gabarito das anoma
 - [Docker Agent](https://docs.docker.com/ai/docker-agent/) · [Docker Model Runner (provider dmr)](https://docs.docker.com/ai/docker-agent/providers/dmr/) · [Ferramenta script](https://docs.docker.com/ai/docker-agent/tools/script/)
 - [Workflow Definition Language](https://learn.microsoft.com/azure/logic-apps/workflow-definition-language-schema) · [Gatilhos e ações](https://learn.microsoft.com/azure/logic-apps/logic-apps-workflow-actions-triggers) · [Tratamento de erros](https://learn.microsoft.com/azure/logic-apps/error-exception-handling)
 - [Cobrança das Logic Apps](https://learn.microsoft.com/azure/logic-apps/logic-apps-pricing) · [Métricas das Logic Apps](https://learn.microsoft.com/azure/logic-apps/monitor-logic-apps-reference#metrics) · [Esquema FOCUS do Azure](https://learn.microsoft.com/azure/cost-management-billing/dataset-schema/cost-usage-details-focus)
-- [Agendador de Tarefas do Windows (schtasks create)](https://learn.microsoft.com/windows-server/administration/windows-commands/schtasks-create) · [Assinatura HMAC do webhook do Grafana](https://grafana.com/docs/grafana/latest/alerting/configure-notifications/manage-contact-points/integrations/webhook-notifier/) · [Alertas do Grafana por arquivo](https://grafana.com/docs/grafana/latest/alerting/set-up/provision-alerting-resources/file-provisioning/) · [Webhook do Grafana](https://grafana.com/docs/grafana/latest/alerting/configure-notifications/manage-contact-points/integrations/webhook-notifier/) · [Datasource PostgreSQL](https://grafana.com/docs/grafana/v12.4/datasources/postgres/configure/)
+- [Versões de uma Logic App (Workflow Versions - List)](https://learn.microsoft.com/rest/api/logic/workflow-versions/list) · [Agendador de Tarefas do Windows (schtasks create)](https://learn.microsoft.com/windows-server/administration/windows-commands/schtasks-create) · [Assinatura HMAC do webhook do Grafana](https://grafana.com/docs/grafana/latest/alerting/configure-notifications/manage-contact-points/integrations/webhook-notifier/) · [Alertas do Grafana por arquivo](https://grafana.com/docs/grafana/latest/alerting/set-up/provision-alerting-resources/file-provisioning/) · [Webhook do Grafana](https://grafana.com/docs/grafana/latest/alerting/configure-notifications/manage-contact-points/integrations/webhook-notifier/) · [Datasource PostgreSQL](https://grafana.com/docs/grafana/v12.4/datasources/postgres/configure/)
 
 ## Licença
 

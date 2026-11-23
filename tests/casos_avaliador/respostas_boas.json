@@ -11,5 +11,6 @@
  "docs-cinco-minutos": "A lgc-desvios-processo roda a cada 5 minutos (288 execuções por dia).",
  "docs-conectores": "Ela usa os conectores Excel Online (Business) e Office 365 Outlook.",
  "docs-email-fixo": "Sim: a lgc-chamados-nao-respondentes tem o destinatário escrito direto na ação Enviar_ranking_ao_coordenador.",
- "docs-armadilha": "Não existe uma Logic App chamada lgc-folha-pagamento. As disponíveis são la-precos-logicapps, lgc-chamados-nao-respondentes, lgc-desvios-processo e lgc-relatorio-custos."
+ "docs-armadilha": "Não existe uma Logic App chamada lgc-folha-pagamento. As disponíveis são la-precos-logicapps, lgc-chamados-nao-respondentes, lgc-desvios-processo e lgc-relatorio-custos.",
+ "docs-o-que-mudou": "A recorrência da lgc-desvios-processo mudou de a cada hora para a cada 5 minutos. Com isso as execuções por mês passaram de 730 para 8.760 e as ações fixas por mês de 1.460 para 17.520 (alta de 1100%). Nenhuma ação foi adicionada, removida ou alterada. Apareceu o risco RECORRENCIA_FREQUENTE (288 execuções por dia)."
 }

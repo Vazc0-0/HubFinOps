@@ -391,10 +391,11 @@ def documento(i):
 PRECOS = ROOT / "relatorios" / "azure" / "precos_logicapps.json"
 
 
-def custo_em_reais(i):
-    """Converte as execuções em R$ com os preços oficiais trazidos pela Logic App de teste (se existirem)."""
-    if not PRECOS.exists():
-        return []
+def custo_mes(i):
+    """Custo do mês (gatilho + ações fixas, sem loops) com os preços oficiais trazidos pela Logic App de teste.
+    Devolve None sem arquivo de preços ou sem agenda; {"erro": ...} se o arquivo vier em formato inesperado."""
+    if not PRECOS.exists() or "execucoes_por_mes" not in i["cobranca"]:
+        return None
     try:
         p = json.loads(PRECOS.read_text(encoding="utf-8"))
         tab = {}
@@ -403,7 +404,7 @@ def custo_em_reais(i):
         nativa = sorted(tab["Consumption Built-in Actions"])
         conector = max(v for _, v in tab["Consumption Standard Connector Actions"])
     except (KeyError, ValueError, TypeError):
-        return ["| Preços em R$ | arquivo de preços em formato inesperado |"]
+        return {"erro": "arquivo de preços em formato inesperado"}
     c, g = i["cobranca"], i["gatilho"]
     gratis = nativa[1][0] if len(nativa) > 1 else 0
     preco_nat = nativa[-1][1]
@@ -411,15 +412,29 @@ def custo_em_reais(i):
     nat_mes = c["execucoes_por_mes"] * (c["fixas_por_execucao"] - c["conector_fixas"] + (0 if gat_conector else 1))
     con_mes = c["execucoes_por_mes"] * (c["conector_fixas"] + (1 if gat_conector else 0))
     custo = max(0, float(nat_mes) - gratis) * preco_nat + float(con_mes) * conector
-    moeda = "R$" if p.get("moeda") == "BRL" else p.get("moeda", "")
-    def br(v, casas=4):
-        return f"{v:,.{casas}f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    return [f"| Preço por ação nativa | {moeda} {br(preco_nat)} (as primeiras {br(gratis, 0)} do mês são grátis, "
+    return {"custo": custo, "moeda": "R$" if p.get("moeda") == "BRL" else p.get("moeda", ""), "preco_nativa": preco_nat,
+            "preco_conector": conector, "gratis": gratis, "regiao": p.get("regiao"),
+            "consultado_em": str(p.get("consultado_em", ""))[:10]}
+
+
+def br(v, casas=4):
+    return f"{v:,.{casas}f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def custo_em_reais(i):
+    """Converte as execuções em R$ com os preços oficiais trazidos pela Logic App de teste (se existirem)."""
+    c = custo_mes(i)
+    if c is None:
+        return []
+    if "erro" in c:
+        return ["| Preços em R$ | arquivo de preços em formato inesperado |"]
+    moeda = c["moeda"]
+    return [f"| Preço por ação nativa | {moeda} {br(c['preco_nativa'])} (as primeiras {br(c['gratis'], 0)} do mês são grátis, "
             "somando todas as Logic Apps da assinatura) |",
-            f"| Preço por ação de conector Standard | {moeda} {br(conector)} |",
-            f"| Custo estimado por mês (gatilho + ações fixas, sem loops) | {moeda} {br(custo, 2)} |",
-            f"| Fonte dos preços | API oficial de preços do Azure, região {p.get('regiao')}, consultada pela Logic App "
-            f"de teste em {str(p.get('consultado_em', ''))[:10]} |"]
+            f"| Preço por ação de conector Standard | {moeda} {br(c['preco_conector'])} |",
+            f"| Custo estimado por mês (gatilho + ações fixas, sem loops) | {moeda} {br(c['custo'], 2)} |",
+            f"| Fonte dos preços | API oficial de preços do Azure, região {c['regiao']}, consultada pela Logic App "
+            f"de teste em {c['consultado_em']} |"]
 
 
 def indice(infos):

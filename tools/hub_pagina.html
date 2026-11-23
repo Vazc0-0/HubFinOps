@@ -421,6 +421,9 @@ const METODOS = [
   ['Sabotagem dos testes', 'Para provar que os testes pegam erro de verdade, o leitor foi estragado de propósito de vários jeitos; em todos a bateria reprovou.', null, 'registro no Obsidian e no PDF'],
   ['Conferência com o Azure real', 'Compara o que rodou no Azure com o que o leitor entendeu do JSON (ações e ramos) e as ações cobradas medidas pelo Azure Monitor com a previsão (15 × 15).', 'azure', 'tools/azure_logicapp.py'],
   ['Alertas → chamados', 'Alertas reais do Grafana 12 foram capturados e viraram casos de teste: o receptor tem que abrir o chamado certo, não duplicar e fechar quando o alerta é resolvido.', 'chamados_teste', 'tests/testar_chamados.py, tests/casos_chamados/'],
+  ['Avaliação dos agentes', 'Perguntas com resposta conhecida feitas às duas equipes; o corretor em código mede acerto e marca como invenção nome ou valor que não saiu das ferramentas. O próprio corretor é testado com respostas boas e ruins.', 'avaliador_teste', 'evals/, tests/testar_avaliador.py'],
+  ['Agendador e histórico', 'Comando do Agendador de Tarefas do Windows, rodada que para no primeiro erro e carga que acumula execuções e sincronizações no Postgres.', 'agendador_teste', 'tools/agendador.py, tests/testar_agendador.py'],
+  ['Comparação de versões', 'Mudanças de gabarito (gatilho, ação nova/removida/alterada, retentativa, conector, tratamento de erro, segredo): a comparação tem que apontar exatamente cada uma, e nada além.', 'comparacao_teste', 'tools/comparar_logicapp.py, tests/testar_comparacao.py'],
 ];
 function renderMetodos(){
   $('#metodos').innerHTML = METODOS.map(([t, d, tarefa, arq]) => { const x = tarefa && E.tarefas.find(k => k.id === tarefa); const u = x && x.ultimo;

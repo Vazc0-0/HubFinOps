@@ -4,6 +4,7 @@ Usa a Azure CLI (`az`), já logada com `az login`, para chamar as APIs oficiais:
   - Workflows - Get ............ definição da Logic App
   - Workflow Runs - List ........ últimas execuções
   - Workflow Run Actions - List . status de cada ação em cada execução
+  - Workflow Versions - List ... versões salvas da Logic App (para comparar o que mudou)
   - Azure Monitor Metrics ...... BillableActionExecutions, BillableTriggerExecutions, TotalBillableExecutions
 A Azure CLI só entrega o token de acesso (az account get-access-token); as chamadas são feitas direto.
 Nada é criado, alterado ou apagado no Azure.
@@ -11,6 +12,7 @@ Nada é criado, alterado ou apagado no Azure.
 Referências oficiais:
   https://learn.microsoft.com/rest/api/logic/workflows/get?view=rest-logic-2019-05-01
   https://learn.microsoft.com/rest/api/logic/workflow-runs/list?view=rest-logic-2019-05-01
+  https://learn.microsoft.com/rest/api/logic/workflow-versions/list
   https://learn.microsoft.com/rest/api/logic/workflow-run-actions/list?view=rest-logic-2019-05-01
   https://learn.microsoft.com/azure/azure-monitor/reference/supported-metrics/microsoft-logic-workflows-metrics
   https://learn.microsoft.com/rest/api/monitor/metrics/list
@@ -22,6 +24,7 @@ Comandos (rodar na raiz do projeto):
   python tools/azure_logicapp.py execucoes     últimas execuções e o status de cada ação
   python tools/azure_logicapp.py metricas      execuções cobradas por dia (últimos 7 dias)
   python tools/azure_logicapp.py precos        saída da ação 'Resumo' da última execução com sucesso
+  python tools/azure_logicapp.py versoes       versões salvas -> relatorios/azure/versoes/ (compare com comparar_logicapp.py)
   python tools/azure_logicapp.py conferir      compara o que rodou no Azure com a leitura do JSON
   python tools/azure_logicapp.py sincronizar   tudo acima, em sequência
 """
@@ -143,6 +146,28 @@ def salvar(nome, dados):
     p = SAIDA / nome
     p.write_text(json.dumps(dados, ensure_ascii=False, indent=2), encoding="utf-8")
     return p
+
+
+def versoes(quantas=10):
+    """Baixa as últimas versões salvas da Logic App (Workflow Versions - List). Guarda só a definição, a versão e
+    a data de alteração (os parâmetros podem ter valores sensíveis). Devolve os arquivos, da mais nova para a mais antiga."""
+    c = cfg()
+    lista = get(f"{c['id']}/versions?api-version={API}&$top={quantas}")
+    lista = sorted(lista, key=lambda v: (v.get("properties") or {}).get("changedTime") or "", reverse=True)[:quantas]
+    pasta = SAIDA / "versoes"
+    pasta.mkdir(parents=True, exist_ok=True)
+    arquivos = []
+    for v in lista:
+        p = v.get("properties") or {}
+        num = p.get("version") or v.get("name")
+        arq = pasta / f"{c['nome']}-{num}.json"
+        arq.write_text(json.dumps({"version": num, "changedTime": p.get("changedTime"), "definition": p.get("definition") or {}},
+                                  ensure_ascii=False, indent=2), encoding="utf-8")
+        arquivos.append(arq)
+        print(f"- versão {num} | alterada em {(p.get('changedTime') or '')[:19].replace('T', ' ')} | "
+              f"{len((p.get('definition') or {}).get('actions') or {})} ações no nível principal")
+    print(f"{len(arquivos)} versão(ões) em {pasta.relative_to(ROOT) if pasta.is_relative_to(ROOT) else pasta}")
+    return arquivos
 
 
 # ------------------------------------------------------------------ comandos
@@ -314,6 +339,8 @@ def main(argv):
             execucoes()
         elif cmd == "metricas":
             metricas()
+        elif cmd == "versoes":
+            versoes()
         elif cmd == "precos":
             precos()
         elif cmd == "conferir":
