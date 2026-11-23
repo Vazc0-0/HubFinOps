@@ -14,7 +14,7 @@ services:
     volumes:
       - ./data:/data:ro
       - ./grafana/postgres-init:/docker-entrypoint-initdb.d:ro
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql   # serve no Postgres 17 e no 18+ (que guarda os dados numa subpasta por versão)
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U finops_admin -d finops"]
       interval: 5s

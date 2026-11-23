@@ -4,6 +4,7 @@ name: CI
 
 on:
   push:
+    branches: [main]   # nos branches do Dependabot quem roda é o pull_request (evita rodar 2 vezes)
   pull_request:
   workflow_dispatch:
 
