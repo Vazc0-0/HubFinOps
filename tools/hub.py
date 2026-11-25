@@ -100,6 +100,11 @@ def logicapps():
     return out
 
 
+def catalogo():
+    import catalogo_logicapps as cl
+    return cl.publico(cl.montar())
+
+
 def ranking_logicapps():
     """Logic Apps que mais custam: custo diário de cada uma nos dados de custo (formato FOCUS) + a real medida no Azure."""
     import cost_query as cq
@@ -259,7 +264,7 @@ def estado():
     return {"gerado_em": datetime.now().astimezone().isoformat(timespec="seconds"),
             "servicos": {"grafana": servico(f"{GRAFANA}/api/health"), "receptor": servico(f"{RECEPTOR}/")},
             "tarefas": tarefas, "historico": hist, "em_andamento": [h for h in hist if h.get("status") == "em andamento"],
-            "finops": _seguro(finops), "logicapps": _seguro(logicapps, []), "azure": _seguro(azure),
+            "finops": _seguro(finops), "logicapps": _seguro(logicapps, []), "catalogo": _seguro(catalogo, {}), "azure": _seguro(azure),
             "ranking_logicapps": _seguro(ranking_logicapps, {"itens": []}), "chamados": _seguro(chamados, []),
             "documentos": _seguro(documentos, {}), "agendador": _seguro(agendador, {}), "tenants": _seguro(tenants, {}),
             "grafana": {"url": GRAFANA_NAVEGADOR, "paineis": [
@@ -404,6 +409,8 @@ class Hub(BaseHTTPRequestHandler):
             if u.path.split("/")[2] not in ambientes_validos():
                 return self._envia(404, "Ambiente não encontrado.", "text/plain; charset=utf-8")
             return self._envia(200, _pagina("hub_painel.html", "<h1>hub_painel.html não encontrado</h1>"), "text/html; charset=utf-8")
+        if u.path == "/api/catalogo":
+            return self._envia(200, json.dumps(catalogo(), ensure_ascii=False, default=str), "application/json; charset=utf-8")
         if u.path == "/api/estado":
             return self._envia(200, json.dumps(estado(), ensure_ascii=False, default=str), "application/json; charset=utf-8")
         if u.path.startswith("/api/log/"):

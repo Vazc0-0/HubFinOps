@@ -2,11 +2,11 @@
 type: nota
 tags: [documentacao, logic-apps, gerado-automaticamente]
 area: projetos
-created: 2026-11-11
-updated: 2026-11-11
+created: 2026-11-25
+updated: 2026-11-25
 ---
 # Documentação — lgc-chamados-nao-respondentes
-> Gerada automaticamente a partir de `logicapps/exemplos/lgc-chamados-nao-respondentes.json` em 11/11/2026 11:57:22. Conteúdo extraído do JSON por código (tools/logicapp_parser.py) e conferido por `tests/validar_docs.py`. Exemplo fictício.
+> Gerada automaticamente a partir de `logicapps/exemplos/lgc-chamados-nao-respondentes.json` em 25/11/2026 10:17:36. Conteúdo extraído do JSON por código (tools/logicapp_parser.py) e conferido por `tests/validar_docs.py`. Exemplo fictício.
 
 ## Resumo
 Roda todo mês, às 09:00 (no dia 1) — fuso E. South America Standard Time. Usa Excel Online (Business), Office 365 Outlook. Tem 7 ações e trata erros. Achados de boas práticas: **1**.
@@ -97,6 +97,41 @@ No plano Consumption, cada execução de gatilho e de ação é medida; dentro d
 | Só rodam se algo falhar (não entram na conta) | Avisar_falha |
 | Execuções do gatilho por mês | 1 |
 | Ações fixas por mês (execuções × ações fixas) | 6 |
+
+## Conexões
+Conexões são recursos separados no Azure (Microsoft.Web/connections); uma conexão com erro derruba todas as ações que a usam ([Microsoft Learn](https://learn.microsoft.com/azure/logic-apps/manage-logic-apps-with-azure-portal#view-connections)).
+
+| Chave no fluxo | Serviço | Recurso de conexão | Ações que usam | Status | Também usada por |
+|---|---|---|---|---|---|
+| excelonlinebusiness | Excel Online (Business) | excelonlinebusiness | Ler_planilha_de_chamados | Connected | - |
+| office365 | Office 365 Outlook | office365 | Enviar_ranking_ao_coordenador, Avisar_falha | Connected | [[lgc-desvios-processo]], [[lgc-relatorio-custos]] |
+
+## Dependências
+O fluxo precisa destes serviços de pé:
+
+- `Ler_planilha_de_chamados` → conector Excel Online (Business) (conexão `excelonlinebusiness`)
+- `Enviar_ranking_ao_coordenador` → conector Office 365 Outlook (conexão `office365`)
+- `Avisar_falha` → conector Office 365 Outlook (conexão `office365`)
+
+## Tratamento de erro
+- `Avisar_falha` roda se `Tentar` falhar ou esgotar o tempo (cobre 6 ação(ões): Enviar_ranking_ao_coordenador, Filtrar_nao_respondidos, Ler_planilha_de_chamados, Montar_top_5, Tabela_top_5, Tentar).
+- Retentativa: todas as ações usam a política padrão (até 4 novas tentativas em erros 408, 429 e 5xx).
+- Referência: [tratar erros e exceções](https://learn.microsoft.com/azure/logic-apps/error-exception-handling).
+
+## Runbook: quando falhar
+1. **Ver o erro:** portal do Azure > Logic App `lgc-chamados-nao-respondentes` > Visão geral (Overview) > Histórico de execuções (Runs history) > abrir a execução com falha. A ação em vermelho mostra o código e a mensagem ([Microsoft Learn](https://learn.microsoft.com/azure/logic-apps/view-workflow-status-run-history)).
+2. **Identificar a causa pelo código:**
+   - **401/403 (não autorizado/proibido):** conexão expirada ou sem permissão. Logic App > Conexões de API (API connections) > a conexão > Editar conexão de API (Edit API connection) > autorizar de novo com a conta certa. Conexões deste fluxo: Excel Online (Business), Office 365 Outlook.
+   - **404 (não encontrado):** lista, arquivo, caixa ou endereço foi renomeado ou apagado; ajustar a ação.
+   - **408, 429 ou 5xx (passageiro):** costuma resolver sozinho; com a retentativa padrão o Azure tenta de novo até 4 vezes.
+   - Pontos que dependem de fora (os primeiros a conferir): `Ler_planilha_de_chamados` (conector Excel Online (Business) (conexão `excelonlinebusiness`)); `Enviar_ranking_ao_coordenador` (conector Office 365 Outlook (conexão `office365`)); `Avisar_falha` (conector Office 365 Outlook (conexão `office365`)).
+3. **Reenviar depois de corrigir:** na execução com falha, **Reenviar** (Resubmit) roda o fluxo inteiro de novo com as mesmas entradas e a mesma versão do fluxo, ou **Enviar a partir desta ação** (Submit from this action) para recomeçar do ponto da falha (não vale para ações dentro de loops e de ramos de condição).
+   - **Cuidado, reenviar repete:** `Enviar_ranking_ao_coordenador` (Office 365 Outlook (POST)); `Avisar_falha` (Office 365 Outlook (POST)). Confira se isso já aconteceu na execução que falhou para não duplicar.
+4. **Quem acionar:** a Logic App não tem dono definido (tag owner); defina um antes de precisar.
+
+### Situação atual (dados de operação fictícios)
+- **Atenção** · 1 execução(ões) nos últimos 30 dias, 0 com falha · última em 01/11/2026 (Succeeded).
+- SEM_DONO (Média): tag owner ausente
 
 ## Ações
 | # | Ação | Tipo | Conector | Dentro de | Executa após |

@@ -9,7 +9,7 @@ e medido por uma avaliação com gabarito.**
 ![Grafana](https://img.shields.io/badge/Grafana-13-F46800?logo=grafana&logoColor=white)
 ![Azure Logic Apps](https://img.shields.io/badge/Azure-Logic_Apps-0078D4?logo=microsoftazure&logoColor=white)
 ![Avaliação](https://img.shields.io/badge/avaliação_qwen3-19%2F20_sem_invenção-1F8F5A)
-![Leitor](https://img.shields.io/badge/leitor_de_Logic_Apps-451.914_verificações-1F8F5A)
+![Leitor](https://img.shields.io/badge/leitor_de_Logic_Apps-451.916_verificações-1F8F5A)
 
 ![Painel FinOps do hub](docs/img/hub-painel-escuro.png)
 
@@ -48,7 +48,7 @@ dá para gerar tudo de novo.
 | | |
 |---|---|
 | **19 / 20** | perguntas certas do agente com o modelo local qwen3, **sem nenhum número, recurso ou arquivo inventado** (inclusive nas 3 armadilhas) |
-| **451.914** | verificações do leitor de Logic Apps, todas certas, com gabarito escrito à mão, exemplos oficiais e 2.000 fluxos aleatórios |
+| **451.916** | verificações do leitor de Logic Apps, todas certas, com gabarito escrito à mão, exemplos oficiais e 2.000 fluxos aleatórios |
 | **R$ 2.311,32/mês** | de economia achada nos 3 ambientes fictícios (produção, desenvolvimento e integração), cada valor com evidência e conferido com gabarito, mais **R$ 153,27/mês já realizados e medidos** nos dados |
 | **15 × 15** | ações cobradas por execução: previstas só lendo o JSON × medidas pelo Azure Monitor na Logic App real |
 | **4** | verificações a cada `push` no GitHub, inclusive o ambiente Docker inteiro de ponta a ponta |
@@ -60,13 +60,14 @@ dá para gerar tudo de novo.
 |---|---|
 | **Equipe FinOps** | Orquestrador → analista de custos → relator → analista de ambientes. Lê custos no formato **FOCUS 1.0** (o mesmo da exportação do Azure Cost Management), acha anomalias e escreve um relatório. |
 | **FinOps por ambiente (multi-tenant)** | Uma empresa com um tenant do Azure por ambiente (produção, desenvolvimento, integração), **sempre isolados**: previsão do mês × orçamento (e o que causou o estouro), quem gasta, quanto dá para economizar (com evidência), quanto já foi economizado (medido), **quanto custa o que não é produção** e um relatório executivo de 1 página por ambiente. |
-| **Equipe de documentação** | Lê a definição JSON de Logic Apps (*Workflow Definition Language*) e gera documentação com passo a passo, diagrama Mermaid, custo estimado, achados de boas práticas e o que mudou entre versões. |
+| **Equipe de documentação** | Lê a definição JSON de Logic Apps (*Workflow Definition Language*) e gera documentação com passo a passo, diagrama Mermaid, custo estimado, achados de boas práticas, **conexões, dependências, cobertura do tratamento de erro e um runbook "quando falhar"**, e o que mudou entre versões. |
+| **Catálogo de automações** | Todas as Logic Apps num lugar só: **situação (Crítico, Atenção, OK)**, dono, execuções e falhas dos últimos 30 dias, última execução, **causa provável** das falhas, conexões compartilhadas (e quais estão com erro) e **quem chama quem**. |
 | **Leitor exato de Logic Apps** | Parser determinístico (sem IA): ordem real de execução pelo `runAfter`, ramos, loops, retentativas, agenda e ações cobradas por execução. |
 | **Avaliação dos agentes** | Perguntas com resposta conhecida feitas aos agentes; um corretor em código mede acerto e **invenção** e compara modelos. |
 | **Logic App real no Azure** | Uma Logic App de teste na minha conta de estudante, ligada **só para leitura** e sincronizada sozinha a cada 6 h. O custo previsto pelo leitor é conferido com o medido. |
 | **Comparação de versões** | O que mudou entre duas versões de uma Logic App: fluxo, custo previsto, riscos e pontos de atenção antes de publicar. |
 | **Grafana** | Painéis de custo e de operação (com histórico) e 4 alertas que viram **chamados com diagnóstico** (simulando um Jira). |
-| **Hub** | Página local em duas partes, com o mesmo visual, o mesmo modo claro/escuro e a mesma barra de ícones (um por página): o **painel FinOps** (página inicial, interativo, com os números de `/api/finops`, e uma página por tenant em `/ambiente/<ambiente>`) e a **operação** (`/operacao`): executar tarefas com log ao vivo, histórico, resultados, chamados, Grafana, métodos de teste e documentos. |
+| **Hub** | Página local em duas partes, com o mesmo visual, o mesmo modo claro/escuro e a mesma barra de ícones (um por página): o **painel FinOps** (página inicial, interativo, com os números de `/api/finops`, e uma página por tenant em `/ambiente/<ambiente>`) e a **operação** (`/operacao`): catálogo de automações, executar tarefas com log ao vivo, histórico, resultados, chamados, Grafana, métodos de teste e documentos. |
 
 ## Por que assim: código calcula, IA explica
 
@@ -131,6 +132,8 @@ flowchart LR
 | ![Avaliação](docs/img/avaliacao-resumo.png) | ![Comparação](docs/img/hub-comparacao.png) |
 | **Executar com log ao vivo** | **Chamados abertos pelos alertas** |
 | ![Executar](docs/img/hub-executar-log.png) | ![Chamados](docs/img/hub-chamados.png) |
+| **Catálogo de automações** | |
+| ![Catálogo de automações](docs/img/hub-catalogo.png) | |
 
 ## Como rodar
 
@@ -163,14 +166,15 @@ que usa o Docker) aparecem como **Só no PC**, com o comando para rodar no termi
 
 | O que | Resultado |
 |---|---|
-| Bateria do leitor de Logic Apps | **451.914 / 451.914** verificações: agendas, 28 expressões, gatilhos, fluxos com gabarito escrito à mão, exemplos JSON da documentação oficial, 2.000 fluxos aleatórios e mutações |
+| Bateria do leitor de Logic Apps | **451.916 / 451.916** verificações: agendas, 28 expressões, gatilhos, fluxos com gabarito escrito à mão, exemplos JSON da documentação oficial, 2.000 fluxos aleatórios e mutações |
 | Previsto × medido (Azure real) | **15 ações cobradas por execução previstas** só lendo o JSON e **15 medidas** pelo Azure Monitor |
 | Relatório FinOps | Acha as 4 anomalias do gabarito, com valores conferidos pelo validador |
-| Avaliação dos agentes | qwen3: **19 / 20**, nenhuma invenção. gemma3: **0 / 13**, porque não chama as ferramentas (escreve a chamada como texto) |
+| Avaliação dos agentes | qwen3: **19 / 20** na última rodada (antes das 3 perguntas do catálogo, ainda não rodadas com o modelo), nenhuma invenção. gemma3: **0 / 13**, porque não chama as ferramentas (escreve a chamada como texto) |
 | Receptor de alertas | **36 / 36** verificações com alertas reais do Grafana, incluindo a assinatura (sem assinatura, segredo errado, alterado ou velho → recusado) |
 | Agendador e histórico | **24 / 24** verificações: comando do Agendador de Tarefas, rodada que para no primeiro erro, carga que acumula no Postgres |
 | Comparação de versões | **24 / 24** verificações com mudanças de gabarito e versões do Azure lidas de um servidor falso |
 | FinOps por ambiente | **138 / 138** verificações: cada número dos 3 ambientes igual ao gabarito (também os que o painel do hub mostra, inclusive na página de cada tenant), nenhum dado de um ambiente no relatório de outro e mudanças nos dados mudando o resultado do jeito certo |
+| Catálogo de automações | **26 / 26** verificações: gabarito escrito à mão (execuções, falhas, taxa, dono, conexões, quem chama quem, causa provável), casos de borda (parada, exatamente 10% de falhas, desabilitada, sem dono), a leitura do Azure com um Azure falso (sem gravar credencial) e sabotagem |
 | Páginas do hub | **29 / 29** verificações: painel, operação e documentos com as mesmas cores e o mesmo modo claro/escuro, a mesma barra de ícones e cada ícone abrindo a sua seção |
 | Ambiente de ponta a ponta | Alerta real e assinado do Grafana vira chamado; alerta falso é recusado; tarefa roda pelo hub; sincronização atrasada abre chamado |
 | Sabotagem | Cada bateria foi estragada de propósito de vários jeitos e reprovou em todos |
@@ -182,7 +186,7 @@ A cada `push`, o [GitHub Actions](.github/workflows/ci.yml) roda quatro verifica
 | Verificação | O que garante |
 |---|---|
 | **Qualidade do código** | `ruff` sem erros (armadilhas comuns, imports, estilo) |
-| **Testes** no Linux e no Windows, Python 3.10 e 3.13 | leitor de Logic Apps, gabarito FinOps, FinOps por ambiente, receptor de alertas, corretor da avaliação, agendador, comparação de versões, páginas do hub, relatório e documentação; e a documentação guardada continua igual ao que o código gera |
+| **Testes** no Linux e no Windows, Python 3.10 e 3.13 | leitor de Logic Apps, gabarito FinOps, FinOps por ambiente, receptor de alertas, corretor da avaliação, agendador, comparação de versões, catálogo de automações, páginas do hub, relatório e documentação; e a documentação guardada continua igual ao que o código gera |
 | **Ambiente Docker de ponta a ponta** | sobe Postgres + Grafana + receptor + hub, confere painéis, alertas e permissões do usuário só-leitura, espera um **alerta real e assinado do Grafana virar chamado**, confere que alerta sem assinatura é recusado, roda uma tarefa pelo hub e testa o histórico e o alerta de sincronização atrasada |
 | **Segredos** | `gitleaks` confere que nenhuma chave ou senha real entrou no histórico |
 
@@ -194,7 +198,7 @@ e o `gitleaks` antes de cada commit.
 ## Avaliação dos agentes
 
 Os testes conferem o **código**. A avaliação confere o **agente** (modelo + instruções + ferramentas): faz às duas equipes
-20 perguntas cuja resposta já se sabe ([`evals/casos.json`](evals/casos.json)) e mede quanto ele acerta e quanto ele **inventa**.
+23 perguntas cuja resposta já se sabe ([`evals/casos.json`](evals/casos.json)) e mede quanto ele acerta e quanto ele **inventa**.
 
 - **Acerto:** a resposta precisa trazer os nomes e valores do gabarito (ex.: `stgbackupantigo` e R$ 732,00). Números são
   comparados como números, em formato brasileiro ou americano.
@@ -236,7 +240,7 @@ O erro que sobrou (`ambientes-realizada`): o valor e a ação vêm certos, mas o
 `disk-hml-antigo`, nas 3 últimas rodadas.
 
 ```bash
-python evals/avaliar.py                          # 20 perguntas com o modelo dos YAMLs (ai/qwen3)
+python evals/avaliar.py                          # 23 perguntas com o modelo dos YAMLs (ai/qwen3)
 python evals/avaliar.py --modelo dmr/ai/gemma3   # outro modelo local, mesmas perguntas
 python evals/avaliar.py --so finops              # só uma equipe · --caso <id> para uma pergunta
 python evals/avaliar.py --repetir 3              # cada pergunta 3 vezes (o modelo varia de uma vez para outra)
@@ -329,6 +333,39 @@ python tools/agendador.py --status                  # a tarefa e a última rodad
 Para testar sem quebrar nada: `python tools/carregar_grafana.py --simular-falha` (em ~1 min abre um chamado) e depois
 `--limpar-simulacao` (o chamado é marcado como resolvido).
 
+## Catálogo de automações
+
+```bash
+python tools/catalogo_logicapps.py            # resumo no terminal
+python tools/catalogo_logicapps.py gerar      # docs/logicapps/CATALOGO.md (Obsidian) + relatorios/catalogo_logicapps.json
+python tools/azure_logicapp.py operacao       # Logic App real: estado, tags, execuções por dia e conexões (só leitura)
+```
+
+Junta a definição de cada Logic App (lida pelo mesmo leitor da documentação) com os dados de operação: estado e tags
+(*Workflows - Get*), execuções com sucesso e com falha por dia (métricas `RunsSucceeded` e `RunsFailed` do Azure Monitor),
+últimas execuções com a ação que falhou e o status de cada conexão (*Microsoft.Web/connections*). Nada é alterado no Azure e
+nenhuma credencial das conexões é gravada.
+
+| Sinal | Quando aparece |
+|---|---|
+| **CONEXAO_COM_ERRO** (Alta) | uma conexão usada pela Logic App está com erro no Azure |
+| **FALHANDO** (Alta) | 10% ou mais das execuções dos últimos 30 dias falharam |
+| **PARADA** (Alta) | habilitada, com agenda, e sem rodar há mais de 2 intervalos (mínimo 2 dias) |
+| **FALHAS_PONTUAIS** (Média) | falhou alguma vez, abaixo de 10% |
+| **SEM_DONO** (Média) | sem a tag `owner` |
+| **DESABILITADA** (Baixa) | desligada no Azure |
+
+Quando há falha, o catálogo liga a última falha à definição e aponta a **causa provável**. Nos exemplos fictícios:
+a `lgc-desvios-processo` falha desde 18/11 porque a ação que lê o SharePoint usa uma **conexão com erro**; a
+`lgc-relatorio-custos` falha com `ServiceUnavailable` numa ação **sem retentativa** (com a política padrão o Azure tentaria
+de novo até 4 vezes). Também mostra que a conexão do Office 365 é usada por 3 Logic Apps (se cair, as 3 param) e que a
+`lgc-orquestrador-fechamento` chama a `lgc-notificar-equipe`.
+
+Cada página de documentação ganhou as seções **Conexões**, **Dependências**, **Tratamento de erro** (quem trata a falha de
+quem e o que fica fora da proteção) e **Runbook: quando falhar** (onde ver o erro, o que cada código costuma significar, como
+reenviar e **o que o reenvio repete**, como e-mails, e quem acionar), todas geradas por código e conferidas por
+`tests/validar_docs.py`.
+
 ## Comparar versões de uma Logic App
 
 ```bash
@@ -350,12 +387,12 @@ a versão de criação, ainda vazia, não conta como mudança.
 
 ```text
 agents/        equipes do Docker Agent (FinOps e documentação)
-tools/         ferramentas em Python: leitor, documentação, comparação, Azure, agendador, receptor de alertas e hub
+tools/         ferramentas em Python: leitor, documentação, catálogo, comparação, Azure, agendador, receptor de alertas e hub
 docker/        imagem do hub e do receptor (Python + cliente do Postgres)
 evals/         avaliação dos agentes: perguntas com gabarito, corretor e resultados por modelo
 tests/         validadores e baterias de teste, com casos e gabaritos (testar_ambiente.py: Docker de ponta a ponta)
 data/          gerador de custos no formato FOCUS + gabarito das anomalias; data/tenants/: 3 ambientes fictícios (um tenant cada) com gabarito
-logicapps/     Logic Apps de exemplo (fictícias), a Logic App real de teste e versões anteriores para comparar
+logicapps/     Logic Apps de exemplo (fictícias), dados de operação fictícios com gabarito, a Logic App real de teste e versões anteriores
 azure/         definição e modelo ARM da Logic App de teste + passo a passo
 grafana/       provisionamento: datasource, painéis e alertas
 docs/          documentação gerada das Logic Apps, comparações de versões, guia completo e imagens deste README
@@ -367,7 +404,7 @@ Guia detalhado de cada parte (todos os comandos, arquivos e o gabarito das anoma
 
 ## Limites conhecidos
 
-- A avaliação tem 20 perguntas e uma rodada por modelo: mostra a tendência, não é uma medida estatística (`--repetir` mostra a variação).
+- A avaliação tem 23 perguntas e uma rodada por modelo: mostra a tendência, não é uma medida estatística (`--repetir` mostra a variação).
 - O modelo local é pequeno: por isso a redação dos números fica em código. Com um modelo maior, dá para devolver a redação ao agente mantendo os validadores e a avaliação.
 - O que um trecho de JavaScript (ação *Execute JavaScript Code*) lê de outras ações não é analisado; a documentação avisa quando isso acontece.
 - Os chamados são arquivos locais (simulação do Jira).
@@ -375,6 +412,9 @@ Guia detalhado de cada parte (todos os comandos, arquivos e o gabarito das anoma
 
 ## Próximos passos
 
+- [ ] Recomendações do Azure Advisor ao lado dos achados do projeto (o que só um dos dois encontrou)
+- [ ] Conferir que o total da exportação FOCUS bate com a API do Cost Management no mesmo período
+- [ ] Catálogo com todas as Logic Apps da assinatura (Azure Resource Graph), não só as configuradas
 - [ ] Chamados num Jira de verdade (API oficial do Jira Cloud)
 - [ ] Custo real em vez dos dados fictícios: exportação FOCUS agendada de cada tenant ou acesso de leitura ao Cost Management
 - [ ] Inventário real pelo Azure Resource Graph em cada tenant (com Azure Lighthouse para ler vários de um lugar só)
@@ -384,7 +424,7 @@ Guia detalhado de cada parte (todos os comandos, arquivos e o gabarito das anoma
 ## Fontes oficiais
 
 - **Docker:** [Docker Agent](https://docs.docker.com/ai/docker-agent/) · [Docker Model Runner (provider dmr)](https://docs.docker.com/ai/docker-agent/providers/dmr/) · [Ferramenta script](https://docs.docker.com/ai/docker-agent/tools/script/) · [Modelos locais e chamada de ferramentas](https://www.docker.com/blog/local-llm-tool-calling-a-practical-evaluation/)
-- **Logic Apps:** [Workflow Definition Language](https://learn.microsoft.com/azure/logic-apps/workflow-definition-language-schema) · [Gatilhos e ações](https://learn.microsoft.com/azure/logic-apps/logic-apps-workflow-actions-triggers) · [Tratamento de erros](https://learn.microsoft.com/azure/logic-apps/error-exception-handling) · [Cobrança](https://learn.microsoft.com/azure/logic-apps/logic-apps-pricing) · [Métricas](https://learn.microsoft.com/azure/logic-apps/monitor-logic-apps-reference#metrics) · [Versões (REST)](https://learn.microsoft.com/rest/api/logic/workflow-versions/list)
+- **Logic Apps:** [Workflow Definition Language](https://learn.microsoft.com/azure/logic-apps/workflow-definition-language-schema) · [Gatilhos e ações](https://learn.microsoft.com/azure/logic-apps/logic-apps-workflow-actions-triggers) · [Tratamento de erros](https://learn.microsoft.com/azure/logic-apps/error-exception-handling) · [Histórico e reenvio de execuções](https://learn.microsoft.com/azure/logic-apps/view-workflow-status-run-history) · [Conexões de API](https://learn.microsoft.com/azure/logic-apps/manage-logic-apps-with-azure-portal#view-connections) · [Recurso de conexão (Microsoft.Web/connections)](https://learn.microsoft.com/azure/templates/microsoft.web/connections) · [Cobrança](https://learn.microsoft.com/azure/logic-apps/logic-apps-pricing) · [Métricas](https://learn.microsoft.com/azure/logic-apps/monitor-logic-apps-reference#metrics) · [Versões (REST)](https://learn.microsoft.com/rest/api/logic/workflow-versions/list)
 - **FinOps:** [FinOps Framework](https://www.finops.org/framework/) · [FOCUS](https://focus.finops.org/) · [FinOps hubs (vários tenants)](https://learn.microsoft.com/cloud-computing/finops/toolkit/hubs/finops-hubs-overview) · [Exportações do Cost Management](https://learn.microsoft.com/azure/cost-management-billing/costs/tutorial-improved-exports) · [Azure Lighthouse](https://learn.microsoft.com/azure/lighthouse/concepts/cross-tenant-management-experience) · [Lighthouse em empresas com vários tenants](https://learn.microsoft.com/azure/lighthouse/concepts/enterprise) · [Vários tenants Microsoft Entra (CAF)](https://learn.microsoft.com/azure/cloud-adoption-framework/ready/landing-zone/design-area/multi-tenant/scenarios) · [Auto-shutdown de VM](https://learn.microsoft.com/azure/virtual-machines/auto-shutdown-vm) · [Start/Stop VMs v2](https://learn.microsoft.com/azure/azure-functions/start-stop-v2/overview) · [Coletar e revisar dados de custo (Well-Architected)](https://learn.microsoft.com/azure/well-architected/cost-optimization/collect-review-cost-data)
 - **Azure e Windows:** [Esquema FOCUS do Azure](https://learn.microsoft.com/azure/cost-management-billing/dataset-schema/cost-usage-details-focus) · [Agendador de Tarefas (schtasks create)](https://learn.microsoft.com/windows-server/administration/windows-commands/schtasks-create)
 - **Grafana:** [Alertas por arquivo](https://grafana.com/docs/grafana/latest/alerting/set-up/provision-alerting-resources/file-provisioning/) · [Webhook e assinatura HMAC](https://grafana.com/docs/grafana/latest/alerting/configure-notifications/manage-contact-points/integrations/webhook-notifier/) · [Datasource PostgreSQL](https://grafana.com/docs/grafana/latest/datasources/postgres/configure/)

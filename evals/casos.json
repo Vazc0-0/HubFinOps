@@ -1,5 +1,5 @@
 {
-  "sobre": "Perguntas com resposta conhecida para medir os agentes. Cada exigência é um texto (sem diferenciar maiúsculas e acentos), um número (aceita 732, 732,00, R$ 732,00 ou 1.615,92 / 1615.92) ou {\"qualquer\": [...]} quando vale uma de várias formas. As respostas certas foram tiradas das ferramentas (tools/cost_query.py, tools/doc_logicapp.py e tools/comparar_logicapp.py) e dos gabaritos (data/anomalias_esperadas.json e logicapps/achados_esperados.json).",
+  "sobre": "Perguntas com resposta conhecida para medir os agentes. Cada exigência é um texto (sem diferenciar maiúsculas e acentos), um número (aceita 732, 732,00, R$ 732,00 ou 1.615,92 / 1615.92) ou {\"qualquer\": [...]} quando vale uma de várias formas. As respostas certas foram tiradas das ferramentas (tools/cost_query.py, tools/doc_logicapp.py, tools/comparar_logicapp.py e tools/catalogo_logicapps.py) e dos gabaritos (data/anomalias_esperadas.json e logicapps/achados_esperados.json).",
   "casos": [
     {
       "id": "finops-anomalias",
@@ -124,6 +124,24 @@
       "pergunta": "O que a Logic App lgc-folha-pagamento faz?",
       "deve_conter": [{"qualquer": ["nao encontr", "nao existe", "nao ha", "nao consta", "nao aparece", "nao esta", "nao tem", "inexistente", "nao foi encontrad", "nao possui"]}],
       "armadilha": "lgc-folha-pagamento"
+    },
+    {
+      "id": "docs-catalogo-criticas",
+      "equipe": "documentacao",
+      "pergunta": "Quais Logic Apps estão críticas agora e por quê?",
+      "deve_conter": ["lgc-desvios-processo", "lgc-relatorio-custos", {"qualquer": ["sharepoint"]}]
+    },
+    {
+      "id": "docs-catalogo-conexao",
+      "equipe": "documentacao",
+      "pergunta": "Alguma conexão das Logic Apps está com erro? Qual e desde quando?",
+      "deve_conter": [{"qualquer": ["sharepoint"]}, {"qualquer": ["18/11", "18 de novembro", "2026-11-18"]}]
+    },
+    {
+      "id": "docs-catalogo-dono",
+      "equipe": "documentacao",
+      "pergunta": "Qual Logic App está sem dono?",
+      "deve_conter": ["lgc-chamados-nao-respondentes"]
     }
   ]
 }

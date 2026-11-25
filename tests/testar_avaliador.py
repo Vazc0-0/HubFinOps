@@ -53,6 +53,7 @@ def main():
         "docs-quando-roda": ("sem resposta", []),
         "ambientes-isolamento": ("parcial", ["vazou 'pip-teste-dev'", "vazou 'snap-build-dev-2026-03'"]),
         "ambientes-armadilha": ("errou", ["vm-pagamentos-prd", "4.210,00"]),
+        "docs-catalogo-criticas": ("parcial", ["lgc-folha-pagamento"]),
     }
     for cid, (situacao, inventos) in esperado.items():
         r = avaliar.corrigir(casos[cid], ruins[cid], universo)

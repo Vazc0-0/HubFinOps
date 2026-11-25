@@ -46,10 +46,14 @@ TAREFAS = {
     "paginas_hub_teste": ("Teste das páginas do hub", [PY, "tests/testar_paginas_hub.py"],
                           "Confere que painel, operação e documentos usam as mesmas cores, o mesmo modo claro/escuro e a "
                           "mesma barra de ícones, e que cada ícone abre a sua seção.", "Testes"),
+    "catalogo_teste": ("Teste do catálogo de automações", [PY, "tests/testar_catalogo.py"],
+                       "Confere o catálogo com o gabarito escrito à mão (execuções, falhas, conexões, dono, quem chama quem), "
+                       "casos de borda (parada, 10% de falhas) e a leitura do Azure com um Azure falso.", "Testes"),
     "relatorio_finops": ("Relatório FinOps", [PY, "tools/gerar_relatorio.py"],
                          "Gera relatorios/relatorio-finops.md em código e valida contra os dados.", "Gerar"),
     "docs_logicapps": ("Documentação das Logic Apps", [PY, "tools/doc_logicapp.py", "gerar"],
-                       "Gera docs/logicapps/*.md (passo a passo, diagrama, custo) e valida.", "Gerar"),
+                       "Gera docs/logicapps/*.md (passo a passo, diagrama, custo, conexões, tratamento de erro e runbook), "
+                       "o catálogo de automações e valida.", "Gerar"),
     "executivo_ambientes": ("Relatórios executivos por ambiente", [PY, "tools/finops_tenants.py", "executivo"],
                            "Um relatório de 1 página por ambiente (tenant) + o consolidado: previsão × orçamento, economia "
                            "possível e realizada, quem gasta. Gera relatorios/executivo/.", "Gerar"),
@@ -58,7 +62,7 @@ TAREFAS = {
                          "riscos. Gera docs/comparacoes/. Para a Logic App real: python tools/comparar_logicapp.py azure.",
                          "Gerar"),
     "azure": ("Sincronizar com o Azure", [PY, "tools/azure_logicapp.py", "sincronizar"],
-              "Só leitura: definição, execuções, métricas de cobrança e preços da Logic App real. "
+              "Só leitura: definição, execuções, métricas de cobrança, preços e operação (para o catálogo) da Logic App real. "
               "Precisa de az login.", "Azure"),
     "agendador": ("Sincronização agendada (uma rodada)", [PY, "tools/agendador.py", "--uma-vez"],
                   "Sincroniza com o Azure e carrega no Grafana, como o agendador faz a cada N horas. Para agendar: "
@@ -88,7 +92,8 @@ def falta(tarefa):
 
 # o que roda sem Docker, sem Azure e sem modelo: é o que o GitHub Actions roda a cada push
 SEQUENCIA_CI = ["testes", "gabarito_finops", "chamados_teste", "avaliador_teste", "agendador_teste", "comparacao_teste",
-               "finops_tenants_teste", "paginas_hub_teste", "relatorio_finops", "docs_logicapps", "comparar_versoes", "executivo_ambientes"]
+               "finops_tenants_teste", "paginas_hub_teste", "catalogo_teste", "relatorio_finops", "docs_logicapps",
+               "comparar_versoes", "executivo_ambientes"]
 SEQUENCIA_TUDO = SEQUENCIA_CI + ["azure", "grafana"]
 SEQUENCIAS = {"tudo": SEQUENCIA_TUDO, "ci": SEQUENCIA_CI}
 

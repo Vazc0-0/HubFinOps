@@ -37,7 +37,7 @@ PERMITIDAS = {
     "finops": ["resumo_custos", "detectar_anomalias", "detalhar_recurso", "gerar_relatorio", "ambientes_resumo",
                "ambiente_detalhe", "economia_ambiente", "relatorio_executivo_ambiente", "transfer_task"],
     "documentacao": ["listar_logicapps", "resumo_logicapp", "achados_boas_praticas", "comparar_versoes", "gerar_documentacao",
-                     "transfer_task"],
+                     "catalogo_automacoes", "transfer_task"],
 }
 TOLERANCIA = 0.011
 
@@ -115,7 +115,8 @@ def saida_das_ferramentas():
         return r.stdout
 
     partes = [roda(["tools/cost_query.py", "resumo"]), roda(["tools/cost_query.py", "anomalias"]),
-              roda(["tools/doc_logicapp.py", "listar"]), roda(["tools/doc_logicapp.py", "achados"])]
+              roda(["tools/doc_logicapp.py", "listar"]), roda(["tools/doc_logicapp.py", "achados"]),
+              roda(["tools/catalogo_logicapps.py"])]
     nomes_csv = set(re.findall(r"Disponíveis: (.*)", roda(["tools/cost_query.py", "recurso"], {"nome": "?"})) or [""])
     for linha in nomes_csv:
         for n in [x.strip() for x in linha.split(",") if x.strip()]:

@@ -2,11 +2,11 @@
 type: nota
 tags: [documentacao, logic-apps, gerado-automaticamente]
 area: projetos
-created: 2026-11-11
-updated: 2026-11-11
+created: 2026-11-25
+updated: 2026-11-25
 ---
 # Documentação — la-precos-logicapps
-> Gerada automaticamente a partir de `logicapps/reais/la-precos-logicapps.json` em 11/11/2026 11:57:22. Conteúdo extraído do JSON por código (tools/logicapp_parser.py) e conferido por `tests/validar_docs.py`.
+> Gerada automaticamente a partir de `logicapps/reais/la-precos-logicapps.json` em 25/11/2026 10:17:36. Conteúdo extraído do JSON por código (tools/logicapp_parser.py) e conferido por `tests/validar_docs.py`.
 
 ## Resumo
 Roda todo dia, às 08:00 — fuso E. South America Standard Time. Usa nenhum conector gerenciado. Tem 12 ações e trata erros. Nenhum achado de boas práticas.
@@ -143,6 +143,30 @@ No plano Consumption, cada execução de gatilho e de ação é medida; dentro d
 | Só rodam se algo falhar (não entram na conta) | Encerrar_com_falha, Registrar_falha |
 | Execuções do gatilho por mês | 30,42 |
 | Ações fixas por mês (execuções × ações fixas) | 243,33 + as dos loops |
+
+## Conexões
+Nenhuma conexão gerenciada: usa só ações nativas.
+
+## Dependências
+O fluxo precisa destes serviços de pé:
+
+- `Consultar_precos` → endereço HTTP `https://prices.azure.com/api/retail/prices`
+
+## Tratamento de erro
+- `Registrar_falha` roda se `Tentar` falhar ou esgotar o tempo (cobre 9 ação(ões): Achou_precos, Acrescentar_linha, Consultar_precos, Filtrar_consumo, Ler_precos, Para_cada_preco, Resumo, Sem_precos, Tentar).
+- Fora da proteção (uma falha nelas não aciona o tratamento): `Inicializar_linhas`
+- Retentativa: todas as ações usam a política padrão (até 4 novas tentativas em erros 408, 429 e 5xx).
+- Referência: [tratar erros e exceções](https://learn.microsoft.com/azure/logic-apps/error-exception-handling).
+
+## Runbook: quando falhar
+1. **Ver o erro:** portal do Azure > Logic App `la-precos-logicapps` > Visão geral (Overview) > Histórico de execuções (Runs history) > abrir a execução com falha. A ação em vermelho mostra o código e a mensagem ([Microsoft Learn](https://learn.microsoft.com/azure/logic-apps/view-workflow-status-run-history)).
+2. **Identificar a causa pelo código:**
+   - **401/403 (não autorizado/proibido):** conexão expirada ou sem permissão. Logic App > Conexões de API (API connections) > a conexão > Editar conexão de API (Edit API connection) > autorizar de novo com a conta certa.
+   - **404 (não encontrado):** lista, arquivo, caixa ou endereço foi renomeado ou apagado; ajustar a ação.
+   - **408, 429 ou 5xx (passageiro):** costuma resolver sozinho; com a retentativa padrão o Azure tenta de novo até 4 vezes.
+   - Pontos que dependem de fora (os primeiros a conferir): `Consultar_precos` (endereço HTTP `https://prices.azure.com/api/retail/prices`).
+3. **Reenviar depois de corrigir:** na execução com falha, **Reenviar** (Resubmit) roda o fluxo inteiro de novo com as mesmas entradas e a mesma versão do fluxo, ou **Enviar a partir desta ação** (Submit from this action) para recomeçar do ponto da falha (não vale para ações dentro de loops e de ramos de condição).
+4. **Quem acionar:** a Logic App não tem dono definido (tag owner); defina um antes de precisar.
 
 ## Ações
 | # | Ação | Tipo | Conector | Dentro de | Executa após |

@@ -130,6 +130,21 @@ python tools/azure_logicapp.py sincronizar   # termina com "AZURE E LEITURA BATE
 python tools/agendador.py --instalar --a-cada 6   # opcional: sincroniza sozinho a cada 6 h (Agendador de Tarefas do Windows)
 ```
 
+## Catálogo de automações
+
+`tools/catalogo_logicapps.py` junta a definição de cada Logic App com os dados de operação (estado, tags, execuções
+por dia, últimas execuções e status das conexões) e classifica cada uma em Crítico, Atenção, OK ou Sem dados. Os
+exemplos usam `logicapps/operacao/exemplos.json` (fictício, com gabarito à mão em `logicapps/operacao/gabarito_catalogo.json`);
+a Logic App real usa o arquivo gravado por `python tools/azure_logicapp.py operacao` (também roda no `sincronizar`).
+
+```bash
+python tools/catalogo_logicapps.py gerar   # docs/logicapps/CATALOGO.md
+python tests/testar_catalogo.py            # termina com "CATÁLOGO CORRETO"
+```
+
+No hub: ícone **Catálogo de automações** na barra lateral (`/operacao#automacoes`). A equipe de documentação usa a
+ferramenta `catalogo_automacoes` para responder "o que está falhando", "quem é o dono" e "qual conexão está com erro".
+
 ## Hub (tudo numa página)
 
 ```bash

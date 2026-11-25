@@ -66,6 +66,10 @@ agents:
         com o nome exato e explique a mudança do gatilho, as execuções por mês (antes → depois), as ações
         novas, removidas ou alteradas e os pontos de atenção, só com o que veio da ferramenta.
         Se vier "SEM VERSÃO ANTERIOR", diga que não há versão anterior guardada dessa Logic App.
+      - Para "quais estão com problema", "o que está falhando", "quem é o dono", "qual conexão está com erro",
+        "quem chama quem" ou visão geral das automações: chame "catalogo_automacoes" e responda só com o que veio:
+        a situação (Crítico, Atenção, OK, Sem dados), execuções e falhas dos últimos 30 dias, a causa provável,
+        o dono e as conexões. Diga que os dados de operação dos exemplos são fictícios.
       - Para "sincronizar com o Azure" ou "o que rodou de verdade": chame "sincronizar_azure" e repasse
         o RESULTADO exatamente, as execuções e a comparação entre estimativa e medido.
         Se vier "ERRO", repita a instrução que veio na mensagem (ex.: rodar az login).
@@ -105,6 +109,14 @@ agents:
                 type: string
                 description: Nome exato da Logic App, como aparece em listar_logicapps
             required: [nome]
+          catalogo_automacoes:
+            cmd: python tools/catalogo_logicapps.py
+            env:
+              PYTHONIOENCODING: utf-8
+            description: >-
+              Catálogo de todas as Logic Apps: situação (Crítico, Atenção, OK, Sem dados), dono, execuções e falhas
+              dos últimos 30 dias, última execução, causa provável das falhas, conexões (e quais estão com erro)
+              e quem chama quem. Calculado em código.
           sincronizar_azure:
             cmd: python tools/azure_logicapp.py sincronizar
             env:

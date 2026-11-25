@@ -6,6 +6,8 @@ Para cada Logic App:
   - toda ação aparece no "Passo a passo";
   - os achados batem com o gabarito (logicapps/achados_esperados.json) nos exemplos,
     ou com a leitura do JSON numa Logic App real;
+  - a seção "Conexões" tem exatamente as conexões do JSON ($connections);
+  - "Dependências" e o runbook só citam Logic Apps e ações que existem;
   - o arquivo não é antigo (gerado há menos de 10 minutos).
 
 Uso:  python tests/validar_docs.py
@@ -79,6 +81,19 @@ for nome in dl.nomes():
     passos = set(re.findall(r"^#{3,6} \S+\. (\S+) — ", secao(texto, "Passo a passo") or texto, re.M))
     for a in sorted(reais - passos):
         erros.append(f"FALTOU      {nome}: ação '{a}' não aparece no passo a passo")
+    _, params, _ = dl.carregar(nome)
+    conns = set(((params or {}).get("$connections") or {}).get("value") or {})
+    conns_doc = set(linhas_tabela(secao(texto, "Conexões"), 0))
+    for c in sorted(conns_doc - conns):
+        erros.append(f"INVENTADO   {nome}: conexão '{c}' não existe no JSON")
+    for c in sorted(conns - conns_doc):
+        erros.append(f"FALTOU      {nome}: conexão '{c}' não foi documentada")
+    citadas = set(re.findall(r"\[\[([^\]]+)\]\]", secao(texto, "Dependências") + secao(texto, "Runbook: quando falhar")))
+    for la in sorted(citadas - set(dl.nomes())):
+        erros.append(f"INVENTADO   {nome}: cita a Logic App '{la}', que não existe")
+    repete = re.search(r"reenviar repete:\*\* (.+)", texto)
+    for a in sorted(set(re.findall(r"`([^`]+)` \(", repete.group(1))) - reais if repete else []):
+        erros.append(f"INVENTADO   {nome}: o runbook cita a ação '{a}', que não existe")
     for r in sorted(esperados - achados_doc):
         erros.append(f"ACHADO      {nome}: faltou o achado {r}")
     for r in sorted(achados_doc - esperados):

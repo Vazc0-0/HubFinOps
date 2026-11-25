@@ -137,6 +137,7 @@ iframe.grafana{width:100%;height:760px;border:1px solid var(--card-borda);border
     <a class="ico" href="/" data-s="finops" data-rotulo="Painel FinOps" aria-label="Painel FinOps: custos por ambiente"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.2 15.9A10 10 0 1 1 8 2.8"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg></a>
     <span class="divisor" aria-hidden="true"></span>
     <a class="ico" href="/operacao#visao" data-s="visao" data-rotulo="Operação: visão geral" aria-label="Operação: visão geral"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></a>
+    <a class="ico" href="/operacao#automacoes" data-s="automacoes" data-rotulo="Catálogo de automações" aria-label="Catálogo de automações (Logic Apps)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="6" height="6" rx="1.5"/><rect x="15" y="15" width="6" height="6" rx="1.5"/><path d="M6 9v3a3 3 0 0 0 3 3h6"/><circle cx="18" cy="6" r="3"/><path d="M15 6H9"/></svg><span class="contador" id="n-criticas" hidden></span></a>
     <a class="ico" href="/operacao#executar" data-s="executar" data-rotulo="Executar tarefas" aria-label="Executar tarefas"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4z"/></svg><span class="contador" id="n-andamento" hidden></span></a>
     <a class="ico" href="/operacao#historico" data-s="historico" data-rotulo="Histórico de execuções" aria-label="Histórico de execuções"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg></a>
     <a class="ico" href="/operacao#resultados" data-s="resultados" data-rotulo="Resultados: anomalias e Logic Apps" aria-label="Resultados: anomalias de custo e Logic Apps"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><path d="M8 11l2 2 4-4"/></svg></a>
@@ -171,6 +172,17 @@ iframe.grafana{width:100%;height:760px;border:1px solid var(--card-borda);border
       <div class="bloco"><h2>Rodando agora</h2><div id="agora"></div></div>
       <div class="bloco"><h2>Logic Apps que mais custam</h2><div id="ranking-visao"></div></div>
       <div class="bloco"><h2>Últimas execuções</h2><div id="ultimas"></div></div>
+    </section>
+
+    <!-- AUTOMAÇÕES -->
+    <section id="s-automacoes">
+      <div class="topo"><div><div class="rotulo">Automações</div><h1>Catálogo de automações</h1>
+        <p class="sub">Todas as Logic Apps num lugar só: dono, execuções e falhas dos últimos 30 dias, conexões e quem chama quem. Calculado em código (<code>tools/catalogo_logicapps.py</code>); nada é alterado no Azure.</p></div>
+        <a class="botao sec" href="/ver?arquivo=docs/logicapps/CATALOGO.md" target="_blank" rel="noopener">Abrir o catálogo completo</a></div>
+      <div class="grade bloco" id="cat-kpis"></div>
+      <div class="bloco"><h2>Logic Apps</h2><div id="cat-lista"></div></div>
+      <div class="bloco"><h2>O que precisa de ação</h2><div id="cat-acao"></div></div>
+      <div class="dois bloco"><div><h2>Conexões</h2><div id="cat-conexoes"></div></div><div><h2>Quem chama quem</h2><div id="cat-deps"></div></div></div>
     </section>
 
     <!-- EXECUTAR -->
@@ -244,7 +256,9 @@ const dur = s => s == null ? '–' : (s < 60 ? `${Number(s).toFixed(1)} s` : `${
 function pill(status){
   const m = {'ok':['ok','OK'],'falhou':['falhou','Falhou'],'em andamento':['andamento','Rodando'],'sem resposta':['aviso','Sem resposta'],'pulada':['neutro','Pulada'],'atencao':['aviso','Atenção'],'recusado':['aviso','Recusado'],
              'Succeeded':['ok','Sucesso'],'Failed':['falhou','Falhou'],'Aberto':['aviso','Aberto'],'Resolvido':['ok','Resolvido'],
-             'Alta':['falhou','Alta'],'Média':['aviso','Média'],'Baixa':['neutro','Baixa']}[status] || ['neutro', status||'–'];
+             'Alta':['falhou','Alta'],'Média':['aviso','Média'],'Baixa':['neutro','Baixa'],
+             'Crítico':['falhou','Crítico'],'Atenção':['aviso','Atenção'],'OK':['ok','OK'],'Sem dados':['neutro','Sem dados'],
+             'Connected':['ok','Conectada'],'Error':['falhou','Com erro'],'desconhecido':['neutro','Sem dados']}[status] || ['neutro', status||'–'];
   return `<span class="pill ${m[0]}">${m[0]==='andamento'?'<span class="gira" aria-hidden="true"></span>':''}${esc(m[1])}</span>`;
 }
 const doc = c => c ? `<a href="/ver?arquivo=${encodeURIComponent(c)}" target="_blank" rel="noopener">abrir</a>` : '–';
@@ -279,7 +293,9 @@ async function atualiza(){
   const nAnd = E.em_andamento.length, nCh = E.chamados.filter(c => c.status === 'Aberto').length;
   $('#n-andamento').hidden = !nAnd; $('#n-andamento').textContent = nAnd;
   $('#n-chamados').hidden = !nCh; $('#n-chamados').textContent = nCh;
-  renderVisao(); renderTarefas(); renderHistorico(); renderResultados(); renderChamados(); renderMetodos(); renderDocs();
+  const nCr = ((E.catalogo || {}).por_situacao || {})['Crítico'] || 0;
+  $('#n-criticas').hidden = !nCr; $('#n-criticas').textContent = nCr;
+  renderVisao(); renderCatalogo(); renderTarefas(); renderHistorico(); renderResultados(); renderChamados(); renderMetodos(); renderDocs();
   if ((location.hash||'#visao') === '#grafana' && !$('#grafana-conteudo').dataset.feito) renderGrafana();
   clearTimeout(window._t); window._t = setTimeout(atualiza, nAnd ? 2500 : 10000);
 }
@@ -301,6 +317,9 @@ function renderVisao(){
     cartao('Logic App real (Azure)', p ? `${p.previsto_por_execucao} × ${p.medido_por_execucao ?? '…'}` : 'não sincronizado',
       p ? `ações por execução: previsto × medido${bate===true?' · bate':bate===false?' · NÃO bate':''} · custo/mês ${brl(p.custo_mes_brl)}` : 'Rode “Sincronizar com o Azure”.', 'resultados', bate===null?null:(bate?'ok':'falhou')),
     cartao('FinOps (dados fictícios)', E.finops.total != null ? brl(E.finops.total) : '–', `${(E.finops.anomalias||[]).length} anomalias · relatório ${rel ? esc(rel.resumo) : 'não gerado'}`, 'resultados', rel && rel.status),
+    (() => { const C = E.catalogo || {}; if (!C.total) return ''; const ps = C.por_situacao;
+      return cartao('Catálogo de automações', `${C.total} Logic Apps`, `${ps['Crítico']} crítica(s) · ${ps['Atenção']} com atenção · ${ps['OK']} ok`
+        + ((C.conexoes||[]).some(c => c.status === 'Error') ? ' · conexão com erro' : ''), 'automacoes', ps['Crítico'] ? 'Crítico' : (ps['Atenção'] ? 'Atenção' : 'OK')); })(),
     cartao('Documentação das Logic Apps', `${(E.logicapps||[]).length} fluxos`, `${reais} real(is) · ${achados} achados · ${d ? esc(d.resumo) : 'não gerada'}`, 'resultados', d && d.status),
     cartao('Chamados dos alertas', `${abertos} aberto(s)`, `${resolvidos} resolvido(s) · receptor ${E.servicos.receptor?'no ar':'fora do ar'}${r?` · teste: ${esc(r.resumo)}`:''}`, 'chamados', abertos ? 'Aberto' : (E.chamados.length ? 'Resolvido' : null)),
     (() => { const T = (E.tenants || {}).lista || []; if (!T.length) return '';
@@ -336,6 +355,45 @@ document.addEventListener('click', e => {
   const b = e.target.closest('[data-log]'); if (!b) return;
   location.hash = 'executar'; abreLog(b.dataset.log, b.dataset.titulo);
 });
+
+/* ---------- catálogo de automações ---------- */
+const dataBR = d => d ? `${d.slice(8,10)}/${d.slice(5,7)}/${d.slice(0,4)}` : '–';
+const num = v => v == null ? '–' : Number(v).toLocaleString('pt-BR');
+function renderCatalogo(){
+  const C = E.catalogo || {};
+  if (!C.total) { ['#cat-kpis','#cat-lista','#cat-acao','#cat-conexoes','#cat-deps'].forEach((s, i) => $(s).innerHTML = i ? '' : vazio('Catálogo indisponível.')); return; }
+  const ps = C.por_situacao, connErro = C.conexoes.filter(c => c.status !== 'Connected' && c.status !== 'desconhecido');
+  const semDono = C.logicapps.filter(l => l.operacao && !l.dono).length;
+  $('#cat-kpis').innerHTML = [
+    `<div class="cartao"><span class="rotulo">Logic Apps</span><div class="valor">${C.total}</div><div class="det">${ps['OK']} ok · ${ps['Sem dados']} sem dados de operação · 30 dias até ${dataBR(C.data_referencia)}</div></div>`,
+    `<div class="cartao"><div class="faixa" style="justify-content:space-between"><span class="rotulo">Críticas</span>${ps['Crítico'] ? pill('Crítico') : pill('OK')}</div><div class="valor">${ps['Crítico']}</div><div class="det">conexão com erro, 10% ou mais de falhas, parada ou risco alto</div></div>`,
+    `<div class="cartao"><div class="faixa" style="justify-content:space-between"><span class="rotulo">Com atenção</span>${ps['Atenção'] ? pill('Atenção') : pill('OK')}</div><div class="valor">${ps['Atenção']}</div><div class="det">${semDono} sem dono · falhas pontuais ou riscos médios</div></div>`,
+    `<div class="cartao"><div class="faixa" style="justify-content:space-between"><span class="rotulo">Conexões</span>${connErro.length ? pill('Error') : pill('Connected')}</div><div class="valor">${connErro.length}/${C.conexoes.length}</div><div class="det">com erro${connErro.length ? ': ' + connErro.map(c => esc(c.nome) + ' (usada por ' + c.usada_por.length + ')').join(', ') : ''}</div></div>`
+  ].join('');
+  $('#cat-lista').innerHTML = `<div class="tabela"><table><thead><tr><th>Situação</th><th>Logic App</th><th>Dono</th><th>Quando roda</th><th class="num">Execuções 30d</th><th class="num">Falhas</th><th>Última execução</th><th>Conexões</th><th>Doc</th></tr></thead><tbody>${
+    C.logicapps.map(l => { const o = l.operacao;
+      return `<tr><td>${pill(l.situacao)}</td><td><code>${esc(l.nome)}</code>${l.ficticio ? ' <span class="pill neutro">exemplo</span>' : ''}</td>
+        <td>${o ? (l.dono ? esc(l.dono) : '<strong>sem dono</strong>') : '–'}</td><td>${esc(l.gatilho)}</td>
+        <td class="num">${o ? num(o.execucoes_30d) : '–'}</td><td class="num">${o ? `${num(o.falhas_30d)} (${String(o.taxa_falha_pct.toFixed(1)).replace('.', ',')}%)` : '–'}</td>
+        <td>${o ? `${dataBR(o.ultima_execucao)} ${pill(o.ultimo_status)}` : '–'}</td>
+        <td>${l.conexoes.length ? l.conexoes.map(c => c.status === 'Connected' || c.status === 'desconhecido' ? `<span class="pill neutro">${esc(c.nome)}</span>` : pill('Error').replace('Com erro', esc(c.nome) + ' com erro')).join(' ') : '–'}</td>
+        <td>${doc(l.doc)}</td></tr>`; }).join('')
+  }</tbody></table></div>`;
+  const acao = C.logicapps.filter(l => l.situacao === 'Crítico' || l.situacao === 'Atenção');
+  $('#cat-acao').innerHTML = !acao.length ? vazio('Nada precisa de ação.') : `<div class="dois">${acao.map(l => `<div class="cartao chamado ${l.situacao==='Crítico'?'':'resolvido'}" style="border-left-color:var(${l.situacao==='Crítico'?'--erro':'--alerta'})">
+      <div class="faixa" style="justify-content:space-between"><span class="rotulo">${esc(l.nome)}</span>${pill(l.situacao)}</div>
+      <div class="det" style="margin-top:4px">dono: ${l.dono ? esc(l.dono) : '<strong>sem dono</strong>'}${l.afeta.length ? ' · se parar, afeta: ' + l.afeta.map(esc).join(', ') : ''}</div>
+      <ul>${l.sinais.map(s => `<li>${pill(s.severidade)} <strong>${esc(s.sinal)}</strong>: ${md(s.detalhe)}. <span class="det">${esc(s.recomendacao)}</span></li>`).join('')}
+        ${l.achados.map(a => `<li>${pill(a.severidade)} <strong>${esc(a.regra)}</strong> em <code>${esc(a.onde)}</code></li>`).join('')}</ul>
+      <p class="det" style="margin-top:8px">${doc(l.doc)} a documentação com o runbook</p></div>`).join('')}</div>`;
+  $('#cat-conexoes').innerHTML = !C.conexoes.length ? vazio('Nenhuma conexão gerenciada.') : `<div class="tabela"><table><thead><tr><th>Conexão</th><th>Status</th><th>Usada por</th></tr></thead><tbody>${
+    C.conexoes.map(c => `<tr><td>${esc(c.nome)}<div class="det">${esc(c.recurso)}${c.nome_exibicao ? ' · ' + esc(c.nome_exibicao) : ''}</div></td>
+      <td>${pill(c.status)}${c.erro ? `<div class="det">${esc(c.erro.codigo)} desde ${dataBR(c.erro.desde)}</div>` : ''}</td><td>${c.usada_por.map(u => `<code>${esc(u)}</code>`).join(' ')}</td></tr>`).join('')
+  }</tbody></table></div>`;
+  $('#cat-deps').innerHTML = !C.dependencias.length ? vazio('Nenhuma Logic App chama outra.') : `<div class="tabela"><table><thead><tr><th>Quem chama</th><th></th><th>Quem é chamada</th><th>Por</th></tr></thead><tbody>${
+    C.dependencias.map(d => `<tr><td><code>${esc(d.de)}</code></td><td aria-hidden="true">→</td><td><code>${esc(d.para || 'não identificada')}</code></td><td class="det">${d.por.map(esc).join(', ')} (${esc(d.como)})</td></tr>`).join('')
+  }</tbody></table></div><p class="det">Se a Logic App chamada parar, quem chama também falha.</p>`;
+}
 
 function renderTarefas(){
   const grupos = {};

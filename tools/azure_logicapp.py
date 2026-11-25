@@ -5,7 +5,9 @@ Usa a Azure CLI (`az`), já logada com `az login`, para chamar as APIs oficiais:
   - Workflow Runs - List ........ últimas execuções
   - Workflow Run Actions - List . status de cada ação em cada execução
   - Workflow Versions - List ... versões salvas da Logic App (para comparar o que mudou)
-  - Azure Monitor Metrics ...... BillableActionExecutions, BillableTriggerExecutions, TotalBillableExecutions
+  - Azure Monitor Metrics ...... BillableActionExecutions, BillableTriggerExecutions, TotalBillableExecutions,
+                                  RunsSucceeded e RunsFailed (execuções por dia, para o catálogo)
+  - Connections - Get .......... status das conexões usadas (Microsoft.Web/connections), para o catálogo
 A Azure CLI só entrega o token de acesso (az account get-access-token); as chamadas são feitas direto.
 Nada é criado, alterado ou apagado no Azure.
 
@@ -16,6 +18,7 @@ Referências oficiais:
   https://learn.microsoft.com/rest/api/logic/workflow-run-actions/list?view=rest-logic-2019-05-01
   https://learn.microsoft.com/azure/azure-monitor/reference/supported-metrics/microsoft-logic-workflows-metrics
   https://learn.microsoft.com/rest/api/monitor/metrics/list
+  https://learn.microsoft.com/azure/templates/microsoft.web/connections
   https://learn.microsoft.com/cli/azure/account#az-account-get-access-token
 
 Comandos (rodar na raiz do projeto):
@@ -24,6 +27,7 @@ Comandos (rodar na raiz do projeto):
   python tools/azure_logicapp.py execucoes     últimas execuções e o status de cada ação
   python tools/azure_logicapp.py metricas      execuções cobradas por dia (últimos 7 dias)
   python tools/azure_logicapp.py precos        saída da ação 'Resumo' da última execução com sucesso
+  python tools/azure_logicapp.py operacao      estado, tags, execuções por dia (30 dias) e conexões -> catálogo de automações
   python tools/azure_logicapp.py versoes       versões salvas -> relatorios/azure/versoes/ (compare com comparar_logicapp.py)
   python tools/azure_logicapp.py conferir      compara o que rodou no Azure com a leitura do JSON
   python tools/azure_logicapp.py sincronizar   tudo acima, em sequência
@@ -241,6 +245,71 @@ def metricas(dias=7):
     return tot
 
 
+def operacao(dias=30):
+    """Dados de operação para o catálogo (tools/catalogo_logicapps.py): estado e tags da Logic App, execuções com
+    sucesso e com falha por dia (Azure Monitor), últimas execuções com a ação que falhou e o status de cada conexão.
+    Guarda só o necessário: nada de valores de parâmetros nem credenciais das conexões."""
+    c = cfg()
+    wf = get(f"{c['id']}?api-version={API}")
+    props = wf.get("properties") or {}
+    fim = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+    ini = fim - timedelta(days=dias)
+    m = get(f"{c['id']}/providers/Microsoft.Insights/metrics?api-version=2018-01-01"
+            f"&metricnames=RunsSucceeded,RunsFailed&aggregation=Total&interval=P1D"
+            f"&timespan={ini.strftime('%Y-%m-%dT%H:%M:%SZ')}/{fim.strftime('%Y-%m-%dT%H:%M:%SZ')}")
+    series = m if isinstance(m, list) else (m or {}).get("value", [])
+    por_dia = {}
+    for serie in series:
+        status = {"RunsSucceeded": "Succeeded", "RunsFailed": "Failed"}.get(serie["name"]["value"])
+        for ts in serie.get("timeseries", []):
+            for d in ts.get("data", []):
+                n = int(d.get("total") or 0)
+                if status and n:
+                    por_dia.setdefault(d["timeStamp"][:10], {})[status] = n
+    ultimas = []
+    for r in get(f"{c['id']}/runs?api-version={API}&$top=10")[:10]:
+        p = r.get("properties", {})
+        e = {"inicio": p.get("startTime"), "status": p.get("status")}
+        if p.get("status") == "Failed":
+            acoes = get(f"{c['id']}/runs/{r['name']}/actions?api-version={API}")
+            falhou = next((a for a in acoes if (a.get("properties") or {}).get("status") == "Failed"), None)
+            if falhou:
+                e["acao_com_falha"] = falhou["name"]
+                e["codigo"] = (falhou.get("properties") or {}).get("code")
+        ultimas.append(e)
+    conexoes = {}
+    valores = ((props.get("parameters") or {}).get("$connections") or {}).get("value") or {}
+    for v in valores.values():
+        cid = (v or {}).get("connectionId")
+        if not cid:
+            continue
+        try:
+            cn = get(f"{cid}?api-version=2016-06-01")
+        except ErroAzure as e:
+            conexoes[cid] = {"api": None, "status": "sem acesso", "erro": {"codigo": "Leitura", "mensagem": str(e)}}
+            continue
+        cp = cn.get("properties") or {}
+        st = (cp.get("statuses") or [{}])[0]
+        err = (st.get("error") or {}).get("properties") or st.get("error") or {}
+        conexoes[cid] = {"api": (cp.get("api") or {}).get("name"), "nome_exibicao": cp.get("displayName"),
+                         "status": st.get("status") or "desconhecido", "criada_em": (cp.get("createdTime") or "")[:10]}
+        if err.get("code") or err.get("message"):
+            conexoes[cid]["erro"] = {"codigo": err.get("code"), "mensagem": err.get("message"),
+                                     "desde": (cp.get("changedTime") or "")[:10] or None}
+    dados = {"nome": c["nome"], "data_referencia": (fim - timedelta(days=1)).date().isoformat(), "dias": dias,
+             "estado": props.get("state"), "grupo_recursos": c["grupo"], "tags": wf.get("tags") or {},
+             "execucoes_por_dia": dict(sorted(por_dia.items())), "ultimas_execucoes": ultimas, "conexoes": conexoes,
+             # a definição baixada não guarda os parâmetros; aqui fica só o mapa chave → id da conexão (não é segredo)
+             "conexoes_por_chave": {k: (v or {}).get("connectionId") for k, v in valores.items() if (v or {}).get("connectionId")}}
+    p = salvar(f"{c['nome']}-operacao.json", dados)
+    ok = sum(v.get("Succeeded", 0) for v in por_dia.values())
+    falhas = sum(v.get("Failed", 0) for v in por_dia.values())
+    print(f"Operação salva em {p.relative_to(ROOT) if p.is_relative_to(ROOT) else p}: estado {dados['estado']}, "
+          f"{ok + falhas} execuções em {dias} dias ({falhas} com falha), {len(conexoes)} conexão(ões), "
+          f"dono: {(dados['tags'] or {}).get('owner') or 'sem tag owner'}")
+    return dados
+
+
 def precos():
     c = cfg()
     runs = get(f"{c['id']}/runs?api-version={API}&$top=20")
@@ -339,6 +408,8 @@ def main(argv):
             execucoes()
         elif cmd == "metricas":
             metricas()
+        elif cmd == "operacao":
+            operacao()
         elif cmd == "versoes":
             versoes()
         elif cmd == "precos":
@@ -346,7 +417,7 @@ def main(argv):
         elif cmd == "conferir":
             return conferir()
         elif cmd == "sincronizar":
-            for etapa in (baixar, execucoes, metricas, precos):
+            for etapa in (baixar, execucoes, metricas, precos, operacao):
                 print(f"\n== {etapa.__name__} ==")
                 etapa()
             print("\n== conferir ==")

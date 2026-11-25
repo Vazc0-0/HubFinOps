@@ -18,5 +18,8 @@
  "ambientes-realizada": "O ambiente de integração já economiza R$ 153,27 por mês: o disco órfão disk-hml-antigo foi excluído em 14/10/2026 e o custo zerou nos dados.",
  "ambientes-isolamento": "Não. A Contoso Produção não tem disco órfão, IP sem uso nem snapshot antigo: o disk-dados-01 está anexado à vm-erp-conector-prd. A única oportunidade em produção é reduzir o tamanho da vm-erp-conector-prd.",
  "ambientes-nao-producao": "Desenvolvimento e integração custaram R$ 5.431,41 em 30 dias, 85,5% do custo de produção. O app que mais pesa fora de produção é o pedidos: R$ 2.876,19 fora de produção contra R$ 1.742,48 em produção (165,1%).",
- "ambientes-armadilha": "O app pagamentos não existe nos dados de produção. Os apps de produção são integracao-erp e pedidos."
+ "ambientes-armadilha": "O app pagamentos não existe nos dados de produção. Os apps de produção são integracao-erp e pedidos.",
+ "docs-catalogo-criticas": "Duas Logic Apps estão críticas: a lgc-desvios-processo, com 2.304 de 8.640 execuções com falha (26,7%) desde 18/11, porque a conexão do SharePoint está com erro (Unauthorized); e a lgc-relatorio-custos, com 4 de 30 execuções com falha (13,3%): a ação Chamar_function_de_custos falha com ServiceUnavailable e está sem retentativa. Os dados de operação dos exemplos são fictícios.",
+ "docs-catalogo-conexao": "Sim: a conexão sharepointonline (SharePoint) está com erro Unauthorized desde 18/11/2026. Ela é usada pela lgc-desvios-processo.",
+ "docs-catalogo-dono": "A lgc-chamados-nao-respondentes está sem dono: não tem a tag owner."
 }

@@ -1,0 +1,27 @@
+{
+ "sobre": "Gabarito ESCRITO À MÃO do catálogo de automações com os dados de operação fictícios (logicapps/operacao/exemplos.json). Contas: lgc-desvios-processo roda 288 vezes por dia; de 27/10 a 17/11 (22 dias) tudo certo e de 18/11 a 25/11 (8 dias) todas falharam (conexão do SharePoint com erro): 22×288 + 8×288 = 8.640 execuções e 8×288 = 2.304 falhas = 26,7%. lgc-relatorio-custos roda 1 vez por dia: 30 execuções, 4 falhas (04, 12, 19 e 24/11) = 13,3%.",
+ "data_referencia": "2026-11-25",
+ "por_situacao": {"Crítico": 2, "Atenção": 1, "OK": 2, "Sem dados": 1},
+ "logicapps": {
+  "lgc-desvios-processo": {"situacao": "Crítico", "dono": "time-processos", "execucoes_30d": 8640, "falhas_30d": 2304, "taxa_falha_pct": 26.7,
+     "ultima_execucao": "2026-11-25", "ultimo_status": "Failed", "sinais": ["CONEXAO_COM_ERRO", "FALHANDO"],
+     "causa_contem": ["Obter_desvios_da_semana", "SharePoint"]},
+  "lgc-relatorio-custos": {"situacao": "Crítico", "dono": "time-finops", "execucoes_30d": 30, "falhas_30d": 4, "taxa_falha_pct": 13.3,
+     "ultima_execucao": "2026-11-25", "ultimo_status": "Succeeded", "sinais": ["FALHANDO"],
+     "causa_contem": ["Chamar_function_de_custos", "sem retentativa"]},
+  "lgc-chamados-nao-respondentes": {"situacao": "Atenção", "dono": null, "execucoes_30d": 1, "falhas_30d": 0, "taxa_falha_pct": 0.0,
+     "ultima_execucao": "2026-11-01", "ultimo_status": "Succeeded", "sinais": ["SEM_DONO"]},
+  "lgc-orquestrador-fechamento": {"situacao": "OK", "dono": "time-automacao", "execucoes_30d": 1, "falhas_30d": 0, "taxa_falha_pct": 0.0,
+     "ultima_execucao": "2026-11-01", "ultimo_status": "Succeeded", "sinais": [], "chama": ["lgc-notificar-equipe"]},
+  "lgc-notificar-equipe": {"situacao": "OK", "dono": "time-automacao", "execucoes_30d": 1, "falhas_30d": 0, "taxa_falha_pct": 0.0,
+     "ultima_execucao": "2026-11-01", "ultimo_status": "Succeeded", "sinais": [], "chamada_por": ["lgc-orquestrador-fechamento"]},
+  "la-precos-logicapps": {"situacao": "Sem dados"}
+ },
+ "conexoes": {
+  "office365": {"status": "Connected", "usada_por": ["lgc-chamados-nao-respondentes", "lgc-desvios-processo", "lgc-relatorio-custos"]},
+  "sharepointonline": {"status": "Error", "usada_por": ["lgc-desvios-processo"]},
+  "excelonlinebusiness": {"status": "Connected", "usada_por": ["lgc-chamados-nao-respondentes"]},
+  "teams": {"status": "Connected", "usada_por": ["lgc-notificar-equipe"]}
+ },
+ "dependencias": [{"de": "lgc-orquestrador-fechamento", "para": "lgc-notificar-equipe", "por": ["Avisar_inicio", "Avisar_falha"]}]
+}

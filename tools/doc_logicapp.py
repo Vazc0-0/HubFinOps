@@ -285,7 +285,7 @@ def mermaid(i):
 
 
 # ---------------------------------------------------------------- página
-def documento(i):
+def documento(i, cat=None):
     g = i["gatilho"]
     ag = g.get("agenda") if g else None
     agora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
@@ -370,6 +370,7 @@ def documento(i):
         L.append(f"| Ações fixas por mês (execuções × ações fixas) | {num(c['acoes_fixas_por_mes'])}"
                  + (" + as dos loops" if c["por_item_de_loop"] else "") + " |")
         L += custo_em_reais(i)
+    L += [""] + secoes_operacionais(i, cat)
     L += ["", "## Ações", "| # | Ação | Tipo | Conector | Dentro de | Executa após |", "|---|---|---|---|---|---|"]
     for x in i["acoes"]:
         ra = "; ".join(f"{d} ({', '.join(s)})" for d, s in x["run_after"].items()) or "início do bloco"
@@ -386,6 +387,186 @@ def documento(i):
         L.append("Nenhum achado.")
     L += ["", "---", "↩︎ [[INDICE Logic Apps]]"]
     return "\n".join(L) + "\n"
+
+
+# ---------------------------------------------------------------- documentação operacional
+DOC_HISTORICO = "https://learn.microsoft.com/azure/logic-apps/view-workflow-status-run-history"
+DOC_ERROS = "https://learn.microsoft.com/azure/logic-apps/error-exception-handling"
+DOC_CONEXOES = "https://learn.microsoft.com/azure/logic-apps/manage-logic-apps-with-azure-portal#view-connections"
+METODOS_QUE_ALTERAM = {"post", "put", "patch", "delete"}
+
+
+def _descendentes(i, nome):
+    """Ações dentro de um bloco (Escopo, Condição, Loop), em qualquer nível."""
+    filhos = [x["nome"] for x in i["acoes"] if x["pai"] == nome]
+    out = list(filhos)
+    for f in filhos:
+        out += _descendentes(i, f)
+    return out
+
+
+def tratamento(i):
+    """Quem trata erro de quem: ações com 'executar após' Falhou/Tempo esgotado e o que elas cobrem."""
+    tratadores, cobertas = [], set()
+    for x in i["acoes"]:
+        alvos = [d for d, st in x["run_after"].items() if set(st) & lp.STATUS_ERRO]
+        if alvos:
+            protege = set()
+            for d in alvos:
+                protege |= {d, *_descendentes(i, d)}
+            cobertas |= protege
+            tratadores.append({"nome": x["nome"], "depois_de": alvos, "protege": sorted(protege)})
+    nomes_trat = {t["nome"] for t in tratadores}
+    so_falha = set(i["cobranca"]["so_em_caso_de_falha"])
+    principais = [x["nome"] for x in i["acoes"] if x["nivel"] == 0 and x["nome"] not in nomes_trat | so_falha]
+    sem = [n for n in principais if n not in cobertas]
+    sem_retry = [x["nome"] for x in i["acoes"] if x["retentativa"]["tipo"] == "none"]
+    return {"tratadores": tratadores, "sem_protecao": sem, "sem_retentativa": sem_retry}
+
+
+def efeitos_externos(i):
+    """Ações que mudam algo fora do fluxo (enviam, criam, apagam, chamam): reenviar a execução repete essas ações."""
+    out = []
+    for x in i["acoes"]:
+        inp = x["acao"].get("inputs") if isinstance(x["acao"].get("inputs"), dict) else {}
+        metodo = str(inp.get("method") or "").lower()
+        if x["tipo"] in lp.CONECTOR_TIPOS and metodo in METODOS_QUE_ALTERAM:
+            out.append((x["nome"], f"{con_pt(x['conector'])} ({metodo.upper()})"))
+        elif x["tipo"] in ("Http", "HttpWebhook") and metodo in METODOS_QUE_ALTERAM:
+            out.append((x["nome"], f"chamada HTTP {metodo.upper()}"))
+        elif x["tipo"] == "Workflow":
+            out.append((x["nome"], f"chama a Logic App `{_ultimo(x['detalhes'].get('fluxo_filho'))}`"))
+        elif x["tipo"] == "Function":
+            out.append((x["nome"], "chama uma Azure Function"))
+    return out
+
+
+def _ultimo(rid):
+    return (rid or "?").rstrip("/").rsplit("/", 1)[-1]
+
+
+def dependencias_externas(i):
+    """O que precisa estar de pé para o fluxo rodar: conectores, endereços HTTP, Functions e outras Logic Apps."""
+    out = []
+    for x in i["acoes"]:
+        inp = x["acao"].get("inputs") if isinstance(x["acao"].get("inputs"), dict) else {}
+        if x["conector"]:
+            out.append((x["nome"], f"conector {con_pt(x['conector'])} (conexão `{x['conector']}`)"))
+        elif x["tipo"] in ("Http", "HttpWebhook"):
+            uri = mascara(literal_ou_expr(inp.get("uri")))
+            out.append((x["nome"], f"endereço HTTP `{curto(uri.split('?')[0], 80)}`"))
+        elif x["tipo"] == "Workflow":
+            out.append((x["nome"], f"Logic App `{_ultimo(x['detalhes'].get('fluxo_filho'))}`"))
+        elif x["tipo"] == "Function":
+            out.append((x["nome"], f"Azure Function `{_ultimo(x['detalhes'].get('funcao'))}`"))
+    return out
+
+
+def data_br(d):
+    d = str(d or "")
+    return f"{d[8:10]}/{d[5:7]}/{d[:4]}" if len(d) >= 10 else (d or "?")
+
+
+def literal_ou_expr(v):
+    return v if isinstance(v, str) else json.dumps(v, ensure_ascii=False)
+
+
+def secoes_operacionais(i, cat=None):
+    """Conexões, dependências, tratamento de erro e runbook. `cat` é o item do catálogo (operação e dependências)."""
+    try:  # a definição pode vir de fora das pastas (ex.: fluxos gerados nos testes): sem arquivo, sem $connections
+        _, params, _ = carregar(i["nome"])
+    except KeyError:
+        params = {}
+    conns = ((params or {}).get("$connections") or {}).get("value") or {}
+    cat = cat or {}
+    por_chave = {c["chave"]: c for c in cat.get("conexoes", [])}
+    L = ["## Conexões"]
+    if conns:
+        L += ["Conexões são recursos separados no Azure (Microsoft.Web/connections); uma conexão com erro derruba todas as "
+              f"ações que a usam ([Microsoft Learn]({DOC_CONEXOES})).", "",
+              "| Chave no fluxo | Serviço | Recurso de conexão | Ações que usam | Status | Também usada por |", "|---|---|---|---|---|---|"]
+        for k, v in sorted(conns.items()):
+            usam = [x["nome"] for x in i["acoes"] if x["conector"] == k]
+            if i["gatilho"] and i["gatilho"].get("conector") == k:
+                usam.insert(0, f"{i['gatilho']['nome']} (gatilho)")
+            c = por_chave.get(k, {})
+            st = c.get("status", "sem dados")
+            if c.get("erro"):
+                st += f" ({c['erro'].get('codigo')} desde {data_br(c['erro'].get('desde'))})"
+            L.append(f"| {k} | {con_pt(k)} | {_ultimo((v or {}).get('connectionId'))} | {', '.join(usam) or '-'} | {st} | "
+                     f"{', '.join(f'[[{x}]]' for x in c.get('compartilhada_com', [])) or '-'} |")
+    else:
+        L.append("Nenhuma conexão gerenciada: usa só ações nativas.")
+    L += ["", "## Dependências"]
+    ext = dependencias_externas(i)
+    chama = cat.get("chama") or []
+    chamada_por = cat.get("chamada_por") or []
+    if ext:
+        L += ["O fluxo precisa destes serviços de pé:", ""] + [f"- `{a}` → {d}" for a, d in ext]
+    else:
+        L.append("Nenhuma dependência externa nas ações (só ações nativas).")
+    if chama:
+        alvos = sorted({c["nome"] or "Logic App não identificada" for c in chama})
+        L.append("- **Chama:** " + ", ".join(f"[[{a}]]" for a in alvos) + ". Se ela falhar, esta também é afetada.")
+    if chamada_por:
+        L.append("- **É chamada por:** " + ", ".join(f"[[{a}]]" for a in chamada_por) + ". Se esta parar, elas falham.")
+    t = tratamento(i)
+    L += ["", "## Tratamento de erro"]
+    if t["tratadores"]:
+        for h in t["tratadores"]:
+            L.append(f"- `{h['nome']}` roda se {', '.join(f'`{d}`' for d in h['depois_de'])} falhar ou esgotar o tempo "
+                     f"(cobre {len(h['protege'])} ação(ões): {', '.join(h['protege'])}).")
+    else:
+        L.append("- **Nenhuma ação trata falha:** se algo der errado, a execução termina como Falhou e ninguém é avisado.")
+    if t["sem_protecao"] and t["tratadores"]:
+        L.append("- Fora da proteção (uma falha nelas não aciona o tratamento): " + ", ".join(f"`{n}`" for n in t["sem_protecao"]))
+    if t["sem_retentativa"]:
+        L.append("- **Sem retentativa:** " + ", ".join(f"`{n}`" for n in t["sem_retentativa"]) +
+                 ". Um erro passageiro (408, 429 ou 5xx) já derruba a execução.")
+    else:
+        L.append("- Retentativa: todas as ações usam a política padrão (até 4 novas tentativas em erros 408, 429 e 5xx).")
+    L.append(f"- Referência: [tratar erros e exceções]({DOC_ERROS}).")
+    L += runbook(i, cat, t)
+    return L
+
+
+def runbook(i, cat, t):
+    efe = efeitos_externos(i)
+    paralelo = any(x["paralelo_com"] for x in i["acoes"])
+    pode_da_acao = len(i["acoes"]) <= 40 and not paralelo
+    dono = cat.get("dono")
+    L = ["", "## Runbook: quando falhar",
+         f"1. **Ver o erro:** portal do Azure > Logic App `{i['nome']}` > Visão geral (Overview) > Histórico de execuções (Runs history) > "
+         f"abrir a execução com falha. A ação em vermelho mostra o código e a mensagem ([Microsoft Learn]({DOC_HISTORICO})).",
+         "2. **Identificar a causa pelo código:**",
+         "   - **401/403 (não autorizado/proibido):** conexão expirada ou sem permissão. Logic App > Conexões de API (API connections) > "
+         "a conexão > Editar conexão de API (Edit API connection) > autorizar de novo com a conta certa."
+         + (f" Conexões deste fluxo: {', '.join(con_pt(c) for c in i['conectores'])}." if i["conectores"] else ""),
+         "   - **404 (não encontrado):** lista, arquivo, caixa ou endereço foi renomeado ou apagado; ajustar a ação.",
+         "   - **408, 429 ou 5xx (passageiro):** costuma resolver sozinho; com a retentativa padrão o Azure tenta de novo até 4 vezes."
+         + (f" Atenção: {', '.join(f'`{n}`' for n in t['sem_retentativa'])} está(ão) sem retentativa." if t["sem_retentativa"] else "")]
+    ext = dependencias_externas(i)
+    if ext:
+        L.append("   - Pontos que dependem de fora (os primeiros a conferir): " + "; ".join(f"`{a}` ({d})" for a, d in ext) + ".")
+    L.append("3. **Reenviar depois de corrigir:** na execução com falha, **Reenviar** (Resubmit) roda o fluxo inteiro "
+             "de novo com as mesmas entradas e a mesma versão do fluxo"
+             + (", ou **Enviar a partir desta ação** (Submit from this action) para recomeçar do ponto da falha "
+                "(não vale para ações dentro de loops e de ramos de condição)." if pode_da_acao else
+                ". Recomeçar a partir de uma ação não está disponível aqui (fluxo com ramos paralelos ou mais de 40 ações)."))
+    if efe:
+        L.append("   - **Cuidado, reenviar repete:** " + "; ".join(f"`{a}` ({d})" for a, d in efe) +
+                 ". Confira se isso já aconteceu na execução que falhou para não duplicar.")
+    L.append("4. **Quem acionar:** " + (f"dono `{dono}` (tag owner)." if dono else
+             "a Logic App não tem dono definido (tag owner); defina um antes de precisar."))
+    if cat.get("chamada_por"):
+        L.append("   - Avise também quem usa esta Logic App: " + ", ".join(f"[[{a}]]" for a in cat["chamada_por"]) + ".")
+    if cat.get("operacao"):
+        o = cat["operacao"]
+        L += ["", "### Situação atual" + (" (dados de operação fictícios)" if cat.get("ficticio") else ""),
+              f"- **{cat.get('situacao')}** · {br(o['execucoes_30d'], 0)} execução(ões) nos últimos 30 dias, "
+              f"{br(o['falhas_30d'], 0)} com falha · última em {data_br(o['ultima_execucao'])} ({o['ultimo_status']})."]
+        L += [f"- {s['sinal']} ({s['severidade']}): {s['detalhe']}" for s in cat.get("sinais", [])]
+    return L
 
 
 PRECOS = ROOT / "relatorios" / "azure" / "precos_logicapps.json"
@@ -447,16 +628,21 @@ def indice(infos):
         L.append(f"| [[{i['nome']}]]{' (exemplo)' if i.get('ficticio') else ''} | {i['gatilho']['texto'] if i['gatilho'] else '-'} | "
                  f"{', '.join(con_pt(c) for c in i['conectores']) or '-'} | {len(i['acoes'])} | "
                  f"{'sim' if i['trata_erro'] else 'não'} | {cnt['Alta']}/{cnt['Média']}/{cnt['Baixa']} |")
-    L += ["", f"**Total de achados:** {sum(len(i['achados']) for i in infos)}"]
+    L += ["", f"**Total de achados:** {sum(len(i['achados']) for i in infos)}", "",
+          "Situação de cada uma (execuções, falhas, conexões e dono): [[CATALOGO]]."]
     return "\n".join(L) + "\n"
 
 
 def gerar(hook=False):
     OUT.mkdir(parents=True, exist_ok=True)
     infos = [analisar(n) for n in nomes()]
+    import catalogo_logicapps as cl  # aqui dentro: o catálogo também importa este arquivo
+    cat = cl.montar()
+    por_nome = {it["nome"]: it for it in cat["logicapps"]}
     for i in infos:
-        (OUT / f"{i['nome']}.md").write_text(documento(i), encoding="utf-8")
+        (OUT / f"{i['nome']}.md").write_text(documento(i, por_nome.get(i["nome"])), encoding="utf-8")
     (OUT / "INDICE Logic Apps.md").write_text(indice(infos), encoding="utf-8")
+    cl.SAIDA_MD.write_text(cl.markdown(cat), encoding="utf-8")
     r = subprocess.run([sys.executable, str(ROOT / "tests" / "validar_docs.py")], capture_output=True, text=True,
                        encoding="utf-8", env={**os.environ, "PYTHONIOENCODING": "utf-8"})
     resultado = (r.stdout.strip().splitlines() or ["RESULTADO: sem saída"])[-1]

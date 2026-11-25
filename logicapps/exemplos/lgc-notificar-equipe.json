@@ -1,0 +1,110 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "$connections": {
+        "defaultValue": {},
+        "type": "Object"
+      },
+      "equipeId": {
+        "defaultValue": "11111111-aaaa-bbbb-cccc-000000000000",
+        "type": "String"
+      },
+      "canalId": {
+        "defaultValue": "19:canal-automacoes-demo@thread.tacv2",
+        "type": "String"
+      }
+    },
+    "triggers": {
+      "manual": {
+        "type": "Request",
+        "kind": "Http",
+        "inputs": {
+          "method": "POST",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "titulo": {
+                "type": "string"
+              },
+              "mensagem": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "actions": {
+      "Enviar": {
+        "type": "Scope",
+        "actions": {
+          "Postar_no_canal": {
+            "type": "ApiConnection",
+            "inputs": {
+              "host": {
+                "connection": {
+                  "name": "@parameters('$connections')['teams']['connectionId']"
+                }
+              },
+              "method": "post",
+              "path": "/v1.0/teams/@{encodeURIComponent(parameters('equipeId'))}/channels/@{encodeURIComponent(parameters('canalId'))}/messages",
+              "body": {
+                "body": {
+                  "contentType": "html",
+                  "content": "<b>@{triggerBody()?['titulo']}</b><br>@{triggerBody()?['mensagem']}"
+                }
+              }
+            },
+            "runAfter": {}
+          }
+        },
+        "runAfter": {}
+      },
+      "Responder_ok": {
+        "type": "Response",
+        "kind": "Http",
+        "inputs": {
+          "statusCode": 200,
+          "body": {
+            "enviado": true
+          }
+        },
+        "runAfter": {
+          "Enviar": [
+            "Succeeded"
+          ]
+        }
+      },
+      "Responder_erro": {
+        "type": "Response",
+        "kind": "Http",
+        "inputs": {
+          "statusCode": 500,
+          "body": {
+            "erro": "Falha ao postar no Teams"
+          }
+        },
+        "runAfter": {
+          "Enviar": [
+            "Failed",
+            "TimedOut"
+          ]
+        }
+      }
+    },
+    "outputs": {}
+  },
+  "parameters": {
+    "$connections": {
+      "value": {
+        "teams": {
+          "connectionId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-automacao-prod/providers/Microsoft.Web/connections/teams",
+          "connectionName": "teams",
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Web/locations/brazilsouth/managedApis/teams"
+        }
+      }
+    }
+  }
+}

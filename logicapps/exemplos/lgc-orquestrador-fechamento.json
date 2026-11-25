@@ -1,0 +1,79 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "$connections": {
+        "defaultValue": {},
+        "type": "Object"
+      }
+    },
+    "triggers": {
+      "Todo_dia_1": {
+        "type": "Recurrence",
+        "recurrence": {
+          "frequency": "Month",
+          "interval": 1,
+          "startTime": "2026-01-01T08:00:00",
+          "timeZone": "E. South America Standard Time"
+        }
+      }
+    },
+    "actions": {
+      "Fechamento": {
+        "type": "Scope",
+        "actions": {
+          "Competencia": {
+            "type": "Compose",
+            "inputs": "@{formatDateTime(addDays(startOfMonth(utcNow()), -1), 'MM/yyyy')}",
+            "runAfter": {}
+          },
+          "Avisar_inicio": {
+            "type": "Workflow",
+            "inputs": {
+              "host": {
+                "triggerName": "manual",
+                "workflow": {
+                  "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-automacao-prod/providers/Microsoft.Logic/workflows/lgc-notificar-equipe"
+                }
+              },
+              "body": {
+                "titulo": "Fechamento iniciado",
+                "mensagem": "Competência @{outputs('Competencia')}"
+              }
+            },
+            "runAfter": {
+              "Competencia": [
+                "Succeeded"
+              ]
+            }
+          }
+        },
+        "runAfter": {}
+      },
+      "Avisar_falha": {
+        "type": "Workflow",
+        "inputs": {
+          "host": {
+            "triggerName": "manual",
+            "workflow": {
+              "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-automacao-prod/providers/Microsoft.Logic/workflows/lgc-notificar-equipe"
+            }
+          },
+          "body": {
+            "titulo": "Fechamento FALHOU",
+            "mensagem": "Veja o histórico de execuções da lgc-orquestrador-fechamento."
+          }
+        },
+        "runAfter": {
+          "Fechamento": [
+            "Failed",
+            "TimedOut"
+          ]
+        }
+      }
+    },
+    "outputs": {}
+  },
+  "parameters": {}
+}
